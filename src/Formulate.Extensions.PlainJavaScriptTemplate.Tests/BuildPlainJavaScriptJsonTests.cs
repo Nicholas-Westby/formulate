@@ -32,28 +32,47 @@ public sealed class BuildPlainJavaScriptJsonTests
         Assert.Equal(1234, payload["PageId"]!.Value<int>());
     }
 
+    // Some clients post every payload value as text, and "null" is not a valid page ID, so a form
+    // without a page ID leaves it out of the payload rather than sending null.
     [Fact]
-    public void Page_id_is_null_when_the_page_key_has_no_id()
+    public void Payload_has_no_page_id_when_the_page_key_has_no_id()
     {
         var idKeyMap = new Mock<IIdKeyMap>();
         idKeyMap.Setup(x => x.GetIdForKey(It.IsAny<Guid>(), It.IsAny<UmbracoObjectTypes>())).Returns(Attempt<int>.Fail());
 
         var payload = BuildPayload(Guid.NewGuid(), idKeyMap.Object);
 
-        Assert.Equal(JTokenType.Null, payload["PageId"]!.Type);
+        Assert.False(payload.ContainsKey("PageId"));
+        Assert.True(payload.ContainsKey("FormId"));
+    }
+
+    [Fact]
+    public void Payload_has_no_page_id_when_the_form_is_not_on_a_content_page()
+    {
+        var payload = BuildPayload(pageKey: null, Mock.Of<IIdKeyMap>());
+
+        Assert.False(payload.ContainsKey("PageId"));
+        Assert.True(payload.ContainsKey("FormId"));
     }
 
     /// <summary>
-    /// Renders a form on a page with the given key and returns the payload the browser posts back.
+    /// Renders a form on a page with the given key (or on no content page, when null) and returns
+    /// the payload the browser posts back.
     /// </summary>
-    private static JObject BuildPayload(Guid pageKey, IIdKeyMap idKeyMap)
+    private static JObject BuildPayload(Guid? pageKey, IIdKeyMap idKeyMap)
     {
         // The page's Id is a different number, so reading it instead of looking up the key fails the test.
         // Umbraco 18 moved Id off IPublishedContent, so code compiled against 17 cannot call it there.
-        var page = new Mock<IPublishedContent>();
-        page.SetupGet(x => x.Key).Returns(pageKey);
-        page.SetupGet(x => x.Id).Returns(999);
-        var request = Mock.Of<IPublishedRequest>(x => x.PublishedContent == page.Object);
+        IPublishedContent? page = null;
+        if (pageKey is not null)
+        {
+            var pageMock = new Mock<IPublishedContent>();
+            pageMock.SetupGet(x => x.Key).Returns(pageKey.Value);
+            pageMock.SetupGet(x => x.Id).Returns(999);
+            page = pageMock.Object;
+        }
+
+        var request = Mock.Of<IPublishedRequest>(x => x.PublishedContent == page);
         var umbracoContext = Mock.Of<IUmbracoContext>(x => x.PublishedRequest == request);
         var umbracoContextAccessor = new Mock<IUmbracoContextAccessor>();
         umbracoContextAccessor.Setup(x => x.TryGetUmbracoContext(out umbracoContext)).Returns(true);

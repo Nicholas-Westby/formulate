@@ -4,6 +4,9 @@
     {
         public Guid FormId { get; set; }
 
-        public int PageId { get; set; }
+        /// <summary>
+        /// Gets or sets the ID of the content page the form is on, or null when it is not on one.
+        /// </summary>
+        public int? PageId { get; set; }
     }
 }

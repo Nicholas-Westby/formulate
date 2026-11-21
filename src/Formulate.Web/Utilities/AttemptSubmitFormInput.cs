@@ -4,7 +4,7 @@
 
     public sealed class AttemptSubmitFormInput
     {
-        public AttemptSubmitFormInput(Guid formId, int pageId, IFormCollection form, IFormFileCollection files)
+        public AttemptSubmitFormInput(Guid formId, int? pageId, IFormCollection form, IFormFileCollection files)
         {
             Files = files;
             Form = form;
@@ -18,6 +18,9 @@
 
         public Guid FormId { get; init; }
 
-        public int PageId { get; init; }
+        /// <summary>
+        /// Gets the ID of the content page the form was on, or null when it was not on one.
+        /// </summary>
+        public int? PageId { get; init; }
     }
 }

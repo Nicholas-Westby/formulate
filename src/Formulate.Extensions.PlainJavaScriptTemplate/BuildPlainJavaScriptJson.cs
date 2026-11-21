@@ -101,6 +101,20 @@
                 }).ToArray()
             }).ToArray();
 
+            // The values the browser posts back with the field values. A form that is not on a
+            // content page has no page ID, so it is left out: some clients post every value as
+            // text, and "null" is not a number the submission endpoint can bind.
+            var payload = new Dictionary<string, object>
+            {
+                ["FormId"] = renderModel.Form.Id.ToString("N"),
+            };
+
+            if (pageId.HasValue)
+            {
+                payload["PageId"] = pageId.Value;
+            }
+
+            payload["__RequestVerificationToken"] = csrfToken;
 
             // Convert to a JSON string that can be consumed by JavaScript.
             return _jsonUtility.Serialize(new
@@ -118,12 +132,7 @@
                     fields = fieldsData,
                     // The rows that define the form layout.
                     rows = rowsData,
-                    payload = new
-                    {
-                        FormId = renderModel.Form.Id.ToString("N"),
-                        PageId = pageId,
-                        __RequestVerificationToken = csrfToken
-                    },
+                    payload,
                     url = "/api/formulate/plain-js/submit"
                 }
             });

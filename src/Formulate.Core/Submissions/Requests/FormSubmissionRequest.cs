@@ -10,11 +10,11 @@
         /// Creates a new instance of a <see cref="FormSubmissionRequest"/>.
         /// </summary>
         /// <param name="form">The form.</param>
-        /// <param name="pageId">The page ID.</param>
+        /// <param name="pageId">The page ID, or null when the form was not on a content page.</param>
         /// <param name="fieldValues">The field values.</param>
         /// <param name="fileValues">The file values.</param>
         /// <remarks>This is the preferred constructor as it provides a new ID.</remarks>
-        public FormSubmissionRequest(PersistedForm form, int pageId, Dictionary<Guid, IStringFormFieldValues> fieldValues, Dictionary<Guid, IFileFormFieldValues> fileValues) : this(Guid.NewGuid(), form, pageId, fieldValues, fileValues)
+        public FormSubmissionRequest(PersistedForm form, int? pageId, Dictionary<Guid, IStringFormFieldValues> fieldValues, Dictionary<Guid, IFileFormFieldValues> fileValues) : this(Guid.NewGuid(), form, pageId, fieldValues, fileValues)
         {
         }
 
@@ -23,11 +23,11 @@
         /// </summary>
         /// <param name="id">The ID.</param>
         /// <param name="form">The form.</param>
-        /// <param name="pageId">The page ID.</param>
+        /// <param name="pageId">The page ID, or null when the form was not on a content page.</param>
         /// <param name="fieldValues">The field values.</param>
         /// <param name="fileValues">The file values.</param>
         /// <remarks>This constructor is useful if a ID is provided from another source or requires custom logic.</remarks>
-        public FormSubmissionRequest(Guid id, PersistedForm form, int pageId, Dictionary<Guid, IStringFormFieldValues> fieldValues, Dictionary<Guid, IFileFormFieldValues> fileValues)
+        public FormSubmissionRequest(Guid id, PersistedForm form, int? pageId, Dictionary<Guid, IStringFormFieldValues> fieldValues, Dictionary<Guid, IFileFormFieldValues> fileValues)
         {
             Id = id;
             Form = form;
@@ -54,7 +54,10 @@
 
         public PersistedForm Form { get; init; }
 
-        public int PageId { get; init; }
+        /// <summary>
+        /// Gets the ID of the content page the form was on, or null when it was not on one.
+        /// </summary>
+        public int? PageId { get; init; }
 
         public IReadOnlyDictionary<Guid, IStringFormFieldValues> FieldValues { get; init; } = new Dictionary<Guid, IStringFormFieldValues>();
 
