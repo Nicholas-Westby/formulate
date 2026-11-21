@@ -10,7 +10,19 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Migrations, scopes and the submissions table. -->
+        <PackageReference Include="Umbraco.Cms.Infrastructure" />
+        <!-- MapPathWebRoot for uploaded files. -->
+        <PackageReference Include="Umbraco.Cms.Web.Common" />
+        <!-- The table attributes on the submission DTO. -->
+        <PackageReference Include="NPoco.Abstractions" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
     </ItemGroup>
 

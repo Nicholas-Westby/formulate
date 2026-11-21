@@ -10,7 +10,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
     </ItemGroup>
 

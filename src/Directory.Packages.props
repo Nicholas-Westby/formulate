@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+    <!-- The version Umbraco 17.6 depends on (later Umbraco versions bring newer ones). -->
+    <PackageVersion Include="NPoco.Abstractions" Version="6.2.0" />
   </ItemGroup>
 
   <!--

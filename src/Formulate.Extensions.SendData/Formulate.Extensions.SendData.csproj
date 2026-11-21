@@ -10,8 +10,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
-        <ProjectReference Include="..\Formulate.Web\Formulate.Web.csproj" />
+        <!-- IHttpClientFactory (Microsoft.Extensions.Http) is part of the ASP.NET Core shared framework. -->
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
     </ItemGroup>
 
 </Project>
