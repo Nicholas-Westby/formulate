@@ -1,5 +1,4 @@
 using Formulate.Core.Forms;
-using Formulate.Core.Utilities;
 using Formulate.Web.Persistence;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -86,15 +85,42 @@ namespace Formulate.Web.Tests.PersistenceTests
             var form = PersistenceFixture.NewForm("Contact");
             site.Forms().Save(form);
             var path = Path.Combine(site.FormsFolder, form.Id.ToString("N") + ".form");
-            var counting = new CountingJsonUtility(site.JsonUtility);
-            var cache = new FileSystemPersistedEntityCache(counting,
-                new CapturingLogger<FileSystemPersistedEntityCache>());
+            var reads = 0;
+            var cache = new FileSystemPersistedEntityCache(site.JsonUtility,
+                new CapturingLogger<FileSystemPersistedEntityCache>(), p =>
+                {
+                    reads++;
+                    return File.ReadAllText(p);
+                });
 
             var first = cache.Get<PersistedForm>(path);
             var second = cache.Get<PersistedForm>(path);
 
-            Assert.Same(first, second);
-            Assert.Equal(1, counting.DeserializeCalls);
+            Assert.Equal("Contact", first!.Name);
+            Assert.Equal("Contact", second!.Name);
+            Assert.Equal(1, reads);
+        }
+
+        [Fact]
+        public void Changing_an_entity_that_was_not_saved_does_not_change_the_next_Get()
+        {
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            var form = PersistenceFixture.NewForm("Contact");
+            repository.Save(form);
+            var originalPath = form.Path.ToArray();
+
+            var fetched = repository.Get(form.Id);
+            fetched.Name = "Changed but not saved";
+            fetched.Path[0] = Guid.NewGuid();
+            var fromListing = Assert.Single(repository.GetRootItems());
+            fromListing.Alias = "changed-but-not-saved";
+
+            var next = repository.Get(form.Id);
+
+            Assert.Equal("Contact", next.Name);
+            Assert.Equal("alias", next.Alias);
+            Assert.Equal(originalPath, next.Path);
         }
 
         [Fact]
@@ -166,23 +192,6 @@ namespace Formulate.Web.Tests.PersistenceTests
             var entry = Assert.Single(site.CacheLogger.Entries, x => x.Level == LogLevel.Warning);
             Assert.Contains(brokenPath, entry.Message);
             Assert.Contains(reason, entry.Message);
-        }
-
-        private sealed class CountingJsonUtility : IJsonUtility
-        {
-            private readonly IJsonUtility _inner;
-
-            public CountingJsonUtility(IJsonUtility inner) => _inner = inner;
-
-            public int DeserializeCalls { get; private set; }
-
-            public T Deserialize<T>(string value)
-            {
-                DeserializeCalls++;
-                return _inner.Deserialize<T>(value);
-            }
-
-            public string Serialize(object value) => _inner.Serialize(value);
         }
     }
 }

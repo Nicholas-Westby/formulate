@@ -10,8 +10,15 @@ namespace Formulate.Web.Persistence
     /// accessing the file system unnecessarily).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An entry is only reused while the file's last-write time and length are unchanged, so
     /// files edited on disk (a deploy, a copy) are picked up by the next read.
+    /// </para>
+    /// <para>
+    /// The cache keeps each file's text, not the entity, and every Get deserializes a new entity.
+    /// Entities are mutable, so a shared instance changed by one caller (without saving) would
+    /// change what every other caller, including site visitors, sees.
+    /// </para>
     /// </remarks>
     internal sealed class FileSystemPersistedEntityCache : IPersistedEntityCache
     {
@@ -20,7 +27,7 @@ namespace Formulate.Web.Persistence
         private readonly Func<string, string> _readAllText;
 
         /// <summary>
-        /// The cache of entities, by file path. An entry with a null entity is a file that could not be read.
+        /// The cache of file contents, by file path. An entry with null contents is a file that cannot be used.
         /// </summary>
         private readonly ConcurrentDictionary<string, CacheEntry> _entities = new(StringComparer.Ordinal);
 
@@ -62,16 +69,20 @@ namespace Formulate.Web.Persistence
             if (_entities.TryGetValue(path, out var cached)
                 && cached.LastWrite == lastWrite
                 && cached.Length == length
-                && (cached.Entity is null || cached.Entity is TPersistedEntity))
+                && cached.EntityType == typeof(TPersistedEntity))
             {
-                return cached.Entity as TPersistedEntity;
+                // The text was checked when it was read, so it deserializes to a usable entity.
+                return cached.Contents is null
+                    ? null
+                    : _jsonUtility.Deserialize<TPersistedEntity>(cached.Contents);
             }
 
-            var entity = Read<TPersistedEntity>(path, out var cacheable);
+            var entity = Read<TPersistedEntity>(path, out var contents, out var cacheable);
 
             if (cacheable)
             {
-                _entities[path] = new CacheEntry(lastWrite, length, entity);
+                var usableContents = entity is null ? null : contents;
+                _entities[path] = new CacheEntry(lastWrite, length, typeof(TPersistedEntity), usableContents);
             }
             else
             {
@@ -96,15 +107,14 @@ namespace Formulate.Web.Persistence
         /// Reads and deserializes the file, logging and returning null when that fails.
         /// </summary>
         /// <param name="path">The file path.</param>
+        /// <param name="contents">The text of the file, or null when it could not be read.</param>
         /// <param name="cacheable">
         /// False when the file could not be read (locked, permissions), so the next Get retries.
         /// A file that read fine but holds invalid JSON, or an entity without a usable ID or path,
         /// is cacheable (as null) until it changes.
         /// </param>
-        private TPersistedEntity? Read<TPersistedEntity>(string path, out bool cacheable) where TPersistedEntity : class, IPersistedEntity
+        private TPersistedEntity? Read<TPersistedEntity>(string path, out string? contents, out bool cacheable) where TPersistedEntity : class, IPersistedEntity
         {
-            string contents;
-
             try
             {
                 contents = _readAllText(path);
@@ -112,6 +122,7 @@ namespace Formulate.Web.Persistence
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _logger.LogWarning(ex, "Could not read the Formulate file {Path}. It will be retried.", path);
+                contents = null;
                 cacheable = false;
                 return null;
             }
@@ -170,6 +181,9 @@ namespace Formulate.Web.Persistence
             return null;
         }
 
-        private sealed record CacheEntry(DateTime LastWrite, long Length, IPersistedEntity? Entity);
+        /// <summary>
+        /// A file's text as of a last-write time and length, checked for the given entity type.
+        /// </summary>
+        private sealed record CacheEntry(DateTime LastWrite, long Length, Type EntityType, string? Contents);
     }
 }
