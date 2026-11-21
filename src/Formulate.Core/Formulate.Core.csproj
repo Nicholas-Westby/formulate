@@ -14,5 +14,6 @@
     <ItemGroup>
         <InternalsVisibleTo Include="Formulate.Core.Tests" />
         <InternalsVisibleTo Include="Formulate.Web.Tests" />
+        <InternalsVisibleTo Include="Formulate.Extensions.PlainJavaScriptTemplate.Tests" />
     </ItemGroup>
 </Project>

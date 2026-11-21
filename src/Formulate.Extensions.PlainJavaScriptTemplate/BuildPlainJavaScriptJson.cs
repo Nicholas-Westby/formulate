@@ -5,6 +5,8 @@
     using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Http;
     using Umbraco.Cms.Core.Mapping;
+    using Umbraco.Cms.Core.Models;
+    using Umbraco.Cms.Core.Services;
     using Umbraco.Cms.Core.Web;
 
     public sealed class BuildPlainJavaScriptJson : IBuildPlainJavaScriptJson
@@ -14,14 +16,16 @@
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IAntiforgery _antiforgery;
         private readonly IUmbracoMapper _umbracoMapper;
-        
-        public BuildPlainJavaScriptJson(IJsonUtility jsonUtility, IUmbracoContextAccessor umbracoContextAccessor, IHttpContextAccessor httpContextAccessor, IAntiforgery antiforgery, IUmbracoMapper umbracoMapper)
+        private readonly IIdKeyMap _idKeyMap;
+
+        public BuildPlainJavaScriptJson(IJsonUtility jsonUtility, IUmbracoContextAccessor umbracoContextAccessor, IHttpContextAccessor httpContextAccessor, IAntiforgery antiforgery, IUmbracoMapper umbracoMapper, IIdKeyMap idKeyMap)
         {
             _jsonUtility = jsonUtility;
             _umbracoContextAccessor = umbracoContextAccessor;
             _httpContextAccessor = httpContextAccessor;
             _antiforgery = antiforgery;
             _umbracoMapper = umbracoMapper;
+            _idKeyMap = idKeyMap;
         }
 
         public string Build(FormLayoutRenderModel renderModel, string containerId)
@@ -153,7 +157,12 @@
                 return default;
             }
 
-            return request.PublishedContent.Id;
+            // Look the ID up by key: Umbraco 18 moved Id from IPublishedContent to IPublishedElement,
+            // so reading it here would throw MissingMethodException there. Key is on IPublishedElement
+            // in every supported version.
+            var attempt = _idKeyMap.GetIdForKey(request.PublishedContent.Key, UmbracoObjectTypes.Document);
+
+            return attempt.Success ? attempt.Result : default(int?);
         }
     }
 }
