@@ -1,0 +1,38 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Umbraco libraries the packages build against. The range lives in Directory.Build.props. -->
+  <ItemGroup>
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="$(UmbracoVersionRange)" />
+  </ItemGroup>
+
+  <!-- The dev site. -->
+  <ItemGroup>
+    <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoSiteVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
+
+  <!--
+    Tests run through VSTest (plain `dotnet test`). The plain xunit.v3 package turns on Microsoft
+    Testing Platform v2, which the .NET 10 SDK will not run through VSTest, so use its mtp-off build.
+  -->
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector" Version="10.1.1" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageVersion Include="Moq" Version="4.21.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+    <PackageVersion Include="xunit.v3.mtp-off" Version="4.0.3" />
+  </ItemGroup>
+
+</Project>

@@ -1,31 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <IsPackable>true</IsPackable>
         <Title>Formulate.Core</Title>
-        <PackageId>Formulate.Core</PackageId>
-        <Authors>Nicholas Westby, Jamie Pollock</Authors>
-        <Company>Rhythm</Company>
         <Description>Core functionality for Formulate, an advanced form builder for Umbraco.</Description>
-        <Product>Formulate.Core</Product>
-        <Copyright>Copyright 2022</Copyright>
-        <PackageProjectUrl>https://www.formulate.rocks</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/rhythmagency/formulate/</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageTags>Umbraco;forms</PackageTags>
-        <PackageReleaseNotes>4.0.0 - .net core / Umbraco 10 version</PackageReleaseNotes>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Http" Version="6.0.0" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-        <PackageReference Include="Umbraco.Cms.Core" Version="10.0.1" />
+        <PackageReference Include="Newtonsoft.Json" />
+        <PackageReference Include="Umbraco.Cms.Core" />
     </ItemGroup>
 
     <ItemGroup>
-        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-            <_Parameter1>Formulate.Core.Tests</_Parameter1>
-        </AssemblyAttribute>
+        <InternalsVisibleTo Include="Formulate.Core.Tests" />
     </ItemGroup>
 </Project>
