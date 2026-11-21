@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- A developer tool: it reads metadata with the BCL only, so it has no package references. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+</Project>
