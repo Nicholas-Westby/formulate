@@ -6,6 +6,7 @@
     using Formulate.Core.Layouts;
     using Formulate.Core.RenderModels;
     using Formulate.Web.RenderModels;
+    using Microsoft.Extensions.Logging;
 
     public sealed class BuildFormLayoutRenderModel : IBuildFormLayoutRenderModel
     {
@@ -15,9 +16,11 @@
 
         private readonly ILayoutEntityRepository _layoutEntityRepository;
         private readonly ILayoutFactory _layoutFactory;
+        private readonly ILogger<BuildFormLayoutRenderModel> _logger;
 
-        public BuildFormLayoutRenderModel(IFormEntityRepository formEntityRepository, IFormFieldFactory formFieldFactory, FormFieldDefinitionCollection formFieldDefinitions, ILayoutEntityRepository layoutEntityRepository, ILayoutFactory layoutFactory)
+        public BuildFormLayoutRenderModel(IFormEntityRepository formEntityRepository, IFormFieldFactory formFieldFactory, FormFieldDefinitionCollection formFieldDefinitions, ILayoutEntityRepository layoutEntityRepository, ILayoutFactory layoutFactory, ILogger<BuildFormLayoutRenderModel> logger)
         {
+            _logger = logger;
             _formEntityRepository = formEntityRepository;
             _formFieldFactory = formFieldFactory;
             _formFieldDefinitions = formFieldDefinitions;
@@ -68,7 +71,9 @@
 
                 if (createdField is null)
                 {
-                    // LOG: log this form field was not implemented as there was no definition.
+                    _logger.LogWarning(
+                        "Skipping field {FieldId} on form {FormId} because its kind {FieldKindId} is not installed.",
+                        field.Id, form.Id, field.KindId);
                     continue;
                 }
 
@@ -76,7 +81,9 @@
 
                 if (fieldDefinition is null)
                 {
-                    // LOG: log this form field was not implemented as there was no definition.
+                    _logger.LogWarning(
+                        "Skipping field {FieldId} on form {FormId} because it has no definition for kind {FieldKindId}.",
+                        field.Id, form.Id, createdField.KindId);
                     continue;
                 }
 
