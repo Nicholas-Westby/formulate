@@ -3,6 +3,8 @@
   <PropertyGroup>
     <!-- xUnit.net v3 test projects are executables. -->
     <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

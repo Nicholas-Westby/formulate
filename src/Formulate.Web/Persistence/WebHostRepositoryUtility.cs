@@ -163,7 +163,10 @@ namespace Formulate.Web.Persistence
         {
             // Ensure folder exists.
             var folderPath = Path.GetDirectoryName(path);
-            EnsurePathExists(folderPath);
+            if (folderPath is not null)
+            {
+                EnsurePathExists(folderPath);
+            }
 
             // Write file contents.
             File.WriteAllText(path, contents);

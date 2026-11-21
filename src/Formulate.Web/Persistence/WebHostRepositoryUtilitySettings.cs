@@ -17,19 +17,19 @@
         }
 
         /// <summary>
-        /// Gets or sets the base path to JSON files.
+        /// Gets the base path to JSON files.
         /// </summary>
-        public string BasePath { get; init; }
+        public string BasePath { get; }
 
         /// <summary>
-        /// Gets or sets the extension of JSON files.
+        /// Gets the extension of JSON files.
         /// </summary>
-        public string Extension { get; init; }
+        public string Extension { get; }
 
         /// <summary>
-        /// Gets or sets the wildcard used to match JSON files.
+        /// Gets the wildcard used to match JSON files.
         /// </summary>
-        public string Wildcard { get; init; }
+        public string Wildcard { get; }
 
         /// <summary>
         /// Settings used for data values entities.
@@ -39,21 +39,21 @@
         /// <summary>
         /// Settings used for form entities.
         /// </summary>
-        public static readonly WebHostRepositoryUtilitySettings Forms = new("forms", ".form");
+        public static readonly WebHostRepositoryUtilitySettings Forms = new("Forms", ".form");
 
         /// <summary>
         /// Settings used for folder entities.
         /// </summary>
-        public static readonly WebHostRepositoryUtilitySettings Folders = new("folders", ".folder");
+        public static readonly WebHostRepositoryUtilitySettings Folders = new("Folders", ".folder");
 
         /// <summary>
         /// Settings used for layout entities.
         /// </summary>
-        public static readonly WebHostRepositoryUtilitySettings Layouts = new("layouts", ".layout");
+        public static readonly WebHostRepositoryUtilitySettings Layouts = new("Layouts", ".layout");
 
         /// <summary>
         /// Settings used for validation entities.
         /// </summary>
-        public static WebHostRepositoryUtilitySettings Validations = new("validations", ".validation");
+        public static readonly WebHostRepositoryUtilitySettings Validations = new("Validations", ".validation");
     }
 }

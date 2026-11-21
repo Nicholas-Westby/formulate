@@ -7,24 +7,17 @@ using Formulate.Core.Utilities;
 using Formulate.Core.Validations;
 using Microsoft.Extensions.Logging;
 
-using Microsoft.AspNetCore.Hosting;
-
-using Umbraco.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Formulate.Web.Configuration;
 
 namespace Formulate.Web.Persistence
 {
     /// <summary>
-    /// The default implementation of <see cref="IRepositoryUtilityFactory"/> which uses the <see cref="IWebHostEnvironment"/>.
+    /// The default implementation of <see cref="IRepositoryUtilityFactory"/> which stores files under the content root.
     /// </summary>
     internal sealed class WebHostRepositoryUtilityFactory : IRepositoryUtilityFactory
     {
-        /// <summary>
-        /// The web host environment.
-        /// </summary>
-        private readonly IWebHostEnvironment _webHostEnvironment;
-
         /// <summary>
         /// The json utility.
         /// </summary>
@@ -48,19 +41,19 @@ namespace Formulate.Web.Persistence
         /// <summary>
         /// Initializes a new instance of the <see cref="WebHostRepositoryUtilityFactory"/> class.
         /// </summary>
-        /// <param name="webHostEnvironment">The web host environment.</param>
+        /// <param name="hostEnvironment">The host environment.</param>
         /// <param name="jsonUtility">The json utility.</param>
         /// <param name="entityCache">The entity cache.</param>
         /// <param name="logger">The logger.</param>
-        public WebHostRepositoryUtilityFactory(IOptions<FormulateWebsiteOptions> options, IWebHostEnvironment webHostEnvironment, IJsonUtility jsonUtility, IPersistedEntityCache entityCache, ILogger<WebHostRepositoryUtilityFactory> logger)
+        public WebHostRepositoryUtilityFactory(IOptions<FormulateWebsiteOptions> options, IHostEnvironment hostEnvironment, IJsonUtility jsonUtility, IPersistedEntityCache entityCache, ILogger<WebHostRepositoryUtilityFactory> logger)
         {
-            _webHostEnvironment = webHostEnvironment;
             _jsonUtility = jsonUtility;
             _entityCache = entityCache;
             _logger = logger;
 
             var persistence = options.Value.Persistence;
-            _jsonRootPath = persistence.DataFolderPath;
+            _jsonRootPath = ResolveDataFolder(persistence.DataFolderPath, hostEnvironment.ContentRootPath);
+            _logger.LogInformation("Formulate stores its JSON files in {DataFolder}.", _jsonRootPath);
         }
 
         /// <inheritdoc />
@@ -74,14 +67,32 @@ namespace Formulate.Web.Persistence
         }
 
         /// <summary>
+        /// Resolves the configured data folder to a full path.
+        /// </summary>
+        /// <remarks>
+        /// A leading "~/" or "~\" and a plain relative path are relative to the content root. Any
+        /// other rooted path (such as "/var/formulate" or "C:\data") is used as is.
+        /// </remarks>
+        private static string ResolveDataFolder(string configured, string contentRootPath)
+        {
+            if (configured.StartsWith("~/") || configured.StartsWith("~\\"))
+            {
+                configured = configured.Substring(2)
+                    .Replace('\\', Path.DirectorySeparatorChar)
+                    .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+
+            return Path.GetFullPath(configured, contentRootPath);
+        }
+
+        /// <summary>
         /// Updates the settings to be rooted in the application.
         /// </summary>
         /// <param name="settings">The current settings.</param>
         /// <returns>A <see cref="WebHostRepositoryUtilitySettings"/>.</returns>
         private WebHostRepositoryUtilitySettings UpdateSettings(WebHostRepositoryUtilitySettings settings)
         {
-            var baseVirtualPath = $"{_jsonRootPath.TrimEnd('/')}/{settings.BasePath}";
-            var mappedBasePath = _webHostEnvironment.MapPathWebRoot(baseVirtualPath.ToString());
+            var mappedBasePath = Path.Combine(_jsonRootPath, settings.BasePath);
 
             return new WebHostRepositoryUtilitySettings(mappedBasePath, settings.Extension, settings.Wildcard);
         }

@@ -1,5 +1,6 @@
 using Formulate.Core.Persistence;
 using Formulate.Core.Utilities;
+using Microsoft.Extensions.Logging;
 
 namespace Formulate.Web.Persistence
 {
@@ -15,7 +16,7 @@ namespace Formulate.Web.Persistence
         /// Initializes a new instance of the <see cref="FileSystemPersistedEntityCache"/> class.
         /// </summary>
         /// <param name="jsonUtility"></param>
-        public FileSystemPersistedEntityCache(IJsonUtility jsonUtility)
+        public FileSystemPersistedEntityCache(IJsonUtility jsonUtility, ILogger<FileSystemPersistedEntityCache> logger)
         {
             _jsonUtility = jsonUtility;
         }
