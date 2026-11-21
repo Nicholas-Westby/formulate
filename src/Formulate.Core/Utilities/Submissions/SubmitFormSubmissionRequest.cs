@@ -36,14 +36,19 @@
             _formHandlerFactory = formHandlerFactory;
         }
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// The handlers do not get <paramref name="cancellationToken"/>. The submission has arrived, so
+        /// a visitor who closes the page must not stop it half way through being stored or sent.
+        /// </remarks>
         public async Task<bool> SubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken)
         {
             var modifiedInput = NotifySubmission(input);
 
-            return await PerformSubmitAsync(modifiedInput, cancellationToken);
+            return await PerformSubmitAsync(modifiedInput);
         }
 
-        private async Task<bool> PerformSubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken)
+        private async Task<bool> PerformSubmitAsync(FormSubmissionRequest input)
         {
             var form = input.Form;
             var succeeded = true;
@@ -75,12 +80,8 @@
 
                     if (item is AsyncFormHandler asyncFormHandler)
                     {
-                        await asyncFormHandler.HandleAsync(input, cancellationToken);
+                        await asyncFormHandler.HandleAsync(input, CancellationToken.None);
                     }
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    throw;
                 }
                 catch (Exception ex)
                 {

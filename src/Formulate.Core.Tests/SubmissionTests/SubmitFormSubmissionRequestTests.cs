@@ -72,6 +72,23 @@ namespace Formulate.Core.Tests.SubmissionTests
         }
 
         [Fact]
+        public async Task Submission_runs_every_handler_after_the_visitor_disconnects()
+        {
+            var run = new List<string>();
+            var harness = new Harness();
+            var request = harness.Request(
+                harness.Handler("one", run, asyncHandler: true),
+                harness.Handler("two", run),
+                harness.Handler("three", run, asyncHandler: true));
+
+            var result = await harness.SubmitAfterTheVisitorDisconnects(request);
+
+            Assert.True(result);
+            Assert.Equal(new[] { "one", "two", "three" }, run);
+            Assert.Empty(harness.Logger.Entries);
+        }
+
+        [Fact]
         public async Task Submission_skips_handlers_whose_kind_is_not_installed()
         {
             var run = new List<string>();
@@ -131,10 +148,26 @@ namespace Formulate.Core.Tests.SubmissionTests
 
             public Task<bool> Submit(FormSubmissionRequest request)
             {
+                return SubmitWithToken(request, CancellationToken.None);
+            }
+
+            /// <summary>
+            /// Submits with the request's token already cancelled, as when the visitor closes the page.
+            /// </summary>
+            public async Task<bool> SubmitAfterTheVisitorDisconnects(FormSubmissionRequest request)
+            {
+                using var disconnected = new CancellationTokenSource();
+                disconnected.Cancel();
+
+                return await SubmitWithToken(request, disconnected.Token);
+            }
+
+            private Task<bool> SubmitWithToken(FormSubmissionRequest request, CancellationToken cancellationToken)
+            {
                 var scopeProvider = new Mock<ICoreScopeProvider>() { DefaultValue = DefaultValue.Mock };
                 var submitter = new SubmitFormSubmissionRequest(scopeProvider.Object, _factory.Object, Logger);
 
-                return submitter.SubmitAsync(request, CancellationToken.None);
+                return submitter.SubmitAsync(request, cancellationToken);
             }
         }
 
@@ -173,7 +206,8 @@ namespace Formulate.Core.Tests.SubmissionTests
 
             public override async Task HandleAsync(FormSubmissionRequest submission, CancellationToken cancellationToken = default)
             {
-                await Task.Yield();
+                // Like a real handler's HTTP or database call, stop when the token is cancelled.
+                await Task.Delay(1, cancellationToken);
 
                 if (_throws != null)
                 {
