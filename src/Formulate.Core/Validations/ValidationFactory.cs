@@ -34,7 +34,12 @@
 
             var foundValidationDefinition = _validationDefinitions.FirstOrDefault(settings.KindId);
 
-            var validation = foundValidationDefinition?.CreateValidation(settings);
+            if (foundValidationDefinition is null)
+            {
+                return default;
+            }
+
+            var validation = foundValidationDefinition.CreateValidation(settings);
 
             // Set the attributes on the validation that can be obtained from
             // the validation definition.
