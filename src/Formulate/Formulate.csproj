@@ -11,6 +11,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- The Umbraco Marketplace lists a package only with a direct Umbraco dependency, and reads the supported versions from its range. -->
+        <PackageReference Include="Umbraco.Cms.Core" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
         <ProjectReference Include="..\Formulate.Extensions.PlainJavaScriptTemplate\Formulate.Extensions.PlainJavaScriptTemplate.csproj" />
         <ProjectReference Include="..\Formulate.Extensions.SendData\Formulate.Extensions.SendData.csproj" />
