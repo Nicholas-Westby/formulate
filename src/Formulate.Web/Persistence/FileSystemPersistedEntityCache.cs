@@ -32,12 +32,23 @@ namespace Formulate.Web.Persistence
         private readonly ConcurrentDictionary<string, CacheEntry> _entities = new(StringComparer.Ordinal);
 
         /// <summary>
+        /// A counter per file path that <see cref="Invalidate"/> increments. An entry is only used
+        /// while its path is still at the version it was read at.
+        /// </summary>
+        /// <remarks>
+        /// A save can land while a read is in flight. When the new file has the same length and
+        /// last-write time (within the file system's timestamp resolution), only the version shows
+        /// that the text the read got is stale.
+        /// </remarks>
+        private readonly ConcurrentDictionary<string, long> _versions = new(StringComparer.Ordinal);
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="FileSystemPersistedEntityCache"/> class.
         /// </summary>
         /// <param name="jsonUtility">The json utility.</param>
         /// <param name="logger">The logger.</param>
         public FileSystemPersistedEntityCache(IJsonUtility jsonUtility, ILogger<FileSystemPersistedEntityCache> logger)
-            : this(jsonUtility, logger, File.ReadAllText)
+            : this(jsonUtility, logger, ReadSharedText)
         {
         }
 
@@ -55,6 +66,9 @@ namespace Formulate.Web.Persistence
         /// <inheritdoc />
         public TPersistedEntity? Get<TPersistedEntity>(string path) where TPersistedEntity : class, IPersistedEntity
         {
+            // Taken before the file is looked at, so a save that invalidates the path while this
+            // read is in flight changes the version.
+            var version = GetVersion(path);
             var file = new FileInfo(path);
 
             if (!file.Exists)
@@ -67,6 +81,7 @@ namespace Formulate.Web.Persistence
             var length = file.Length;
 
             if (_entities.TryGetValue(path, out var cached)
+                && cached.Version == version
                 && cached.LastWrite == lastWrite
                 && cached.Length == length
                 && cached.EntityType == typeof(TPersistedEntity))
@@ -79,12 +94,15 @@ namespace Formulate.Web.Persistence
 
             var entity = Read<TPersistedEntity>(path, out var contents, out var cacheable);
 
-            if (cacheable)
+            // A save during the read may have changed the file, so the read is only cached when the
+            // version is unchanged. An Invalidate between this check and the store is still caught:
+            // the entry keeps the old version, so the next Get ignores it.
+            if (cacheable && GetVersion(path) == version)
             {
                 var usableContents = entity is null ? null : contents;
-                _entities[path] = new CacheEntry(lastWrite, length, typeof(TPersistedEntity), usableContents);
+                _entities[path] = new CacheEntry(version, lastWrite, length, typeof(TPersistedEntity), usableContents);
             }
-            else
+            else if (!cacheable)
             {
                 _entities.TryRemove(path, out _);
             }
@@ -100,7 +118,46 @@ namespace Formulate.Web.Persistence
         /// </param>
         public void Invalidate(string path)
         {
+            // Change the version first, so a read already in flight cannot cache what it read.
+            _versions.AddOrUpdate(path, 1, (_, version) => version + 1);
             _entities.TryRemove(path, out _);
+        }
+
+        /// <summary>
+        /// Gets the current version of a path (see <see cref="_versions"/>).
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <returns>The version.</returns>
+        private long GetVersion(string path)
+        {
+            return _versions.TryGetValue(path, out var version) ? version : 0;
+        }
+
+        /// <summary>
+        /// Opens a file for reading without stopping a save or a delete from replacing or removing it.
+        /// </summary>
+        /// <remarks>
+        /// Windows refuses to delete or replace a file while any open handle on it does not share
+        /// delete access, so a visitor's read could otherwise make a back office save fail.
+        /// </remarks>
+        /// <param name="path">The file path.</param>
+        /// <returns>The open file.</returns>
+        internal static FileStream OpenForReading(string path)
+        {
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        }
+
+        /// <summary>
+        /// Reads a whole file as text through <see cref="OpenForReading"/>.
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <returns>The file's text.</returns>
+        private static string ReadSharedText(string path)
+        {
+            using var stream = OpenForReading(path);
+            using var reader = new StreamReader(stream);
+
+            return reader.ReadToEnd();
         }
 
         /// <summary>
@@ -182,8 +239,8 @@ namespace Formulate.Web.Persistence
         }
 
         /// <summary>
-        /// A file's text as of a last-write time and length, checked for the given entity type.
+        /// A file's text as of a version, last-write time and length, checked for the given entity type.
         /// </summary>
-        private sealed record CacheEntry(DateTime LastWrite, long Length, Type EntityType, string? Contents);
+        private sealed record CacheEntry(long Version, DateTime LastWrite, long Length, Type EntityType, string? Contents);
     }
 }

@@ -26,6 +26,61 @@ namespace Formulate.Web.Tests.PersistenceTests
         }
 
         [Fact]
+        public void A_read_that_overlaps_a_save_does_not_cache_the_old_text()
+        {
+            Action? duringRead = null;
+            using var site = new PersistenceFixture(readAllText: p =>
+            {
+                var text = File.ReadAllText(p);
+                var action = duringRead;
+                duringRead = null;
+                action?.Invoke();
+                return text;
+            });
+            var repository = site.Forms();
+            var form = PersistenceFixture.NewForm("Before");
+            repository.Save(form);
+            var path = Path.Combine(site.FormsFolder, form.Id.ToString("N") + ".form");
+            var lastWrite = File.GetLastWriteTimeUtc(path);
+            var length = new FileInfo(path).Length;
+
+            // Another request saves after this read got the old text, but before it is cached. The
+            // new file is the same length and, as on a file system with coarse timestamps, has the
+            // same last-write time, so only the save's invalidation can tell the read is stale.
+            duringRead = () =>
+            {
+                form.Name = "Later!";
+                repository.Save(form);
+                File.SetLastWriteTimeUtc(path, lastWrite);
+            };
+            repository.Get(form.Id);
+            Assert.Equal(length, new FileInfo(path).Length);
+            Assert.Equal(lastWrite, File.GetLastWriteTimeUtc(path));
+
+            Assert.Equal("Later!", repository.Get(form.Id).Name);
+        }
+
+        [Fact]
+        public void An_entity_file_that_is_being_read_can_still_be_deleted()
+        {
+            // Unix lets a file be deleted or replaced while it is open. Windows only does when every
+            // open handle shares delete access, so this checks the cache's reader on Windows.
+            Assert.SkipUnless(OperatingSystem.IsWindows(), "Only Windows blocks deleting a file that is open.");
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            var form = PersistenceFixture.NewForm("Contact");
+            repository.Save(form);
+            var path = Path.Combine(site.FormsFolder, form.Id.ToString("N") + ".form");
+
+            using (FileSystemPersistedEntityCache.OpenForReading(path))
+            {
+                repository.Delete(form.Id);
+            }
+
+            Assert.False(File.Exists(path));
+        }
+
+        [Fact]
         public void Corrupt_json_file_is_skipped_and_logged()
         {
             using var site = new PersistenceFixture();

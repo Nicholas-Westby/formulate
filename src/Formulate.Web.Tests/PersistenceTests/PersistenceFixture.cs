@@ -16,7 +16,9 @@ namespace Formulate.Web.Tests.PersistenceTests
     /// </summary>
     internal sealed class PersistenceFixture : IDisposable
     {
-        public PersistenceFixture(string? dataFolderPath = null)
+        /// <param name="dataFolderPath">The configured data folder, or null for the default.</param>
+        /// <param name="readAllText">Replaces how the cache reads entity files, or null for the real reader.</param>
+        public PersistenceFixture(string? dataFolderPath = null, Func<string, string>? readAllText = null)
         {
             ContentRoot = Path.Combine(Path.GetTempPath(), "formulate-tests-" + Guid.NewGuid().ToString("N"));
             WebRoot = Path.Combine(ContentRoot, "wwwroot");
@@ -35,7 +37,9 @@ namespace Formulate.Web.Tests.PersistenceTests
             JsonUtility = new JsonUtility(new NewtonsoftJsonSerializer());
             CacheLogger = new CapturingLogger<FileSystemPersistedEntityCache>();
             FactoryLogger = new CapturingLogger<WebHostRepositoryUtilityFactory>();
-            Cache = new FileSystemPersistedEntityCache(JsonUtility, CacheLogger);
+            Cache = readAllText is null
+                ? new FileSystemPersistedEntityCache(JsonUtility, CacheLogger)
+                : new FileSystemPersistedEntityCache(JsonUtility, CacheLogger, readAllText);
             Factory = new WebHostRepositoryUtilityFactory(Options.Create(options), environment.Object,
                 JsonUtility, Cache, FactoryLogger);
         }
