@@ -1,0 +1,214 @@
+{
+  "data": {
+    "name": "Contact Us",
+    "alias": "contactUs",
+    "randomId": "22b1ec9e4f8848d0a6a65824ec877b10",
+    "fields": [
+      {
+        "alias": "introHeader",
+        "label": "Intro Header",
+        "id": "03fe0444f75e41be8c3e636737f6752b",
+        "randomId": "e81941b258c3496695d1b67db59ab6ea",
+        "fieldType": "header",
+        "validations": [],
+        "configuration": { "text": "Get in touch" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "name",
+        "label": "Your Name",
+        "id": "23fc13c8c6df4432a959e8dbd5c375db",
+        "randomId": "95810b7d07ab410d84961816249d2b73",
+        "fieldType": "text",
+        "validations": [
+          {
+            "id": "ef593ec0d47a469cb2ad645887a439c4",
+            "alias": "Name Is Required",
+            "validationType": "required",
+            "configuration": { "message": "Please enter your name." }
+          }
+        ],
+        "configuration": {},
+        "initialValue": "",
+        "category": "Contact Details"
+      },
+      {
+        "alias": "email",
+        "label": "Email Address",
+        "id": "230f6217065f430d8a52e6191f7a4a47",
+        "randomId": "3dcfc66efa4042a2933a5f48021dd703",
+        "fieldType": "text",
+        "validations": [
+          {
+            "id": "78a63610bd374d0990ed1c91d4aa38a6",
+            "alias": "Email Is Required",
+            "validationType": "required",
+            "configuration": { "message": "Please enter your email address." }
+          },
+          {
+            "id": "47033c127daf4b0b87b69e5aaea3f502",
+            "alias": "Email Format",
+            "validationType": "regex",
+            "configuration": {
+              "message": "Please enter a valid email address.",
+              "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+            }
+          }
+        ],
+        "configuration": {},
+        "initialValue": "",
+        "category": "Contact Details"
+      },
+      {
+        "alias": "topic",
+        "label": "Topic",
+        "id": "5b7dbeb463fd40f68dfb3ec15d0bf0cf",
+        "randomId": "7c67636eefc54431bbc8eae314e21603",
+        "fieldType": "select",
+        "validations": [
+          {
+            "id": "a53c4682c2a84a0da524f732902f1163",
+            "alias": "Topic Is Required",
+            "validationType": "required",
+            "configuration": { "message": "Please choose a topic." }
+          }
+        ],
+        "configuration": {
+          "items": [
+            { "value": "sales", "label": "Sales", "selected": false },
+            { "value": "support", "label": "Support", "selected": false },
+            { "value": "other", "label": "Something else", "selected": false }
+          ]
+        },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "interests",
+        "label": "Interests",
+        "id": "9a803ad7f3074b929e6e1ec964bd32dc",
+        "randomId": "f15b39d1c4504822b2cbb1ae96b01fc3",
+        "fieldType": "checkbox-list",
+        "validations": [
+          {
+            "id": "48361c599649431f8412d55de7b637ba",
+            "alias": "Interests Are Required",
+            "validationType": "required",
+            "configuration": { "message": "Please choose at least one interest." }
+          }
+        ],
+        "configuration": {
+          "items": [
+            { "value": "news", "label": "Newsletter", "selected": false },
+            { "value": "events", "label": "Events", "selected": false },
+            { "value": "offers", "label": "Offers", "selected": false }
+          ]
+        },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "message",
+        "label": "Message",
+        "id": "0dbb8ede8b72400b9e7836e9704f24ed",
+        "randomId": "0ff127cc68aa4265853ac36a99da8705",
+        "fieldType": "textarea",
+        "validations": [],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "attachment",
+        "label": "Attach Your CV",
+        "id": "54d9283794ca4dc1a7c660a5c3b0814d",
+        "randomId": "bdb0893e7f284a24b9b5673eb39a09c4",
+        "fieldType": "upload",
+        "validations": [
+          {
+            "id": "5ea1274192b345109da713274594dbd8",
+            "alias": "CV Is Required",
+            "validationType": "required",
+            "configuration": { "message": "Please attach your CV." }
+          }
+        ],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "source",
+        "label": "Source",
+        "id": "7aaf5e89a9534f388df57271de3e54b4",
+        "randomId": "918ffcc2e6fd4d8bb9aeff60c5183f39",
+        "fieldType": "hidden",
+        "validations": [],
+        "configuration": { "text": "website" },
+        "initialValue": "website",
+        "category": null
+      },
+      {
+        "alias": "send",
+        "label": "Send Message",
+        "id": "4d81de8862cc464d9f0820fb186eb6a1",
+        "randomId": "68dcd0095564404990cc49ff56fcf95d",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Submit" },
+        "initialValue": "",
+        "category": null
+      }
+    ],
+    "rows": [
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "03fe0444f75e41be8c3e636737f6752b" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 6, "fields": [{ "id": "23fc13c8c6df4432a959e8dbd5c375db" }] },
+          { "columns": 6, "fields": [{ "id": "230f6217065f430d8a52e6191f7a4a47" }] }
+        ]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 6, "fields": [{ "id": "5b7dbeb463fd40f68dfb3ec15d0bf0cf" }] },
+          { "columns": 6, "fields": [{ "id": "9a803ad7f3074b929e6e1ec964bd32dc" }] }
+        ]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "0dbb8ede8b72400b9e7836e9704f24ed" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          {
+            "columns": 12,
+            "fields": [
+              { "id": "54d9283794ca4dc1a7c660a5c3b0814d" },
+              { "id": "7aaf5e89a9534f388df57271de3e54b4" }
+            ]
+          }
+        ]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "4d81de8862cc464d9f0820fb186eb6a1" }] }]
+      }
+    ],
+    "payload": {
+      "FormId": "5c558cdf8e734c7da34079f09536b7e7",
+      "PageId": 1104,
+      "__RequestVerificationToken": "CfDJ8NrAkS9rKbVHnPzvlvK2vM0wh7Fq1XyK9pQe3Ff8mT0cYw2Lr5sJd4Hg7Bn1Va6Zx3Ce9Ru0Ik8Ol2Pm5Qn"
+    },
+    "url": "/site/api/formulate/plain-js/submit"
+  },
+  "assets": {
+    "script": "/site/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=5.0.0",
+    "theme": "/site/App_Plugins/Formulate/PlainJavaScript/themes/basic.css?v=5.0.0"
+  }
+}

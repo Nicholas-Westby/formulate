@@ -1,0 +1,269 @@
+{
+  "data": {
+    "name": "Every Field Type",
+    "alias": "everyFieldType",
+    "randomId": "6da6c3a0a4104ca6bd6655b5fef77832",
+    "fields": [
+      {
+        "alias": "heading",
+        "label": "Heading",
+        "id": "5cff0b01514a428dbf4952a8b4f52378",
+        "randomId": "d887f2afbfcd4fe98c3ff75ea716ecc1",
+        "fieldType": "header",
+        "validations": [],
+        "configuration": { "text": "Say \u003c/script\u003e and \u003c!-- out loud" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "privacyNotice",
+        "label": "Privacy Notice",
+        "id": "94b67087009a46fc9a854da83d66f2d2",
+        "randomId": "204be2b940ed42b1a5da2c1e879ee325",
+        "fieldType": "rich-text",
+        "validations": [],
+        "configuration": {
+          "text": "\u003cp\u003eWe \u003cstrong\u003erespect\u003c/strong\u003e your privacy \u0026amp; never share \u0026lt;/script\u0026gt; tags.\u003c/p\u003e"
+        },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "nickname",
+        "label": "Nickname \u003c/script\u003e\u003cscript\u003ewindow.__formulateXss = true\u003c/script\u003e",
+        "id": "d589ae5cf39f4c278632a0132128ce3c",
+        "randomId": "64d800d498ba43a6be3b979da8c5d847",
+        "fieldType": "text",
+        "validations": [],
+        "configuration": {},
+        "initialValue": "Sam",
+        "category": null
+      },
+      {
+        "alias": "birthday",
+        "label": "Birthday",
+        "id": "3bde5097b7274a58ae00f569579277b2",
+        "randomId": "59db6b12db554d98a48268c5c149eddc",
+        "fieldType": "date",
+        "validations": [],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "anythingElse",
+        "label": "Anything else you\u0027d like to say?",
+        "id": "71399922f9a84d5284186e86a703275e",
+        "randomId": "5643475d62c5401989773dc8d235fef9",
+        "fieldType": "textarea",
+        "validations": [],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "favoriteNumber",
+        "label": "Favorite Number",
+        "id": "cd69280323f643538c39f1738f5b3232",
+        "randomId": "639937a5a2d24c1593e2bc4bd4a39f53",
+        "fieldType": "select",
+        "validations": [],
+        "configuration": {
+          "items": [
+            { "value": "one", "label": "One", "selected": false },
+            { "value": "two", "label": "Two", "selected": false },
+            { "value": "three", "label": "Three", "selected": false }
+          ]
+        },
+        "initialValue": "two",
+        "category": null
+      },
+      {
+        "alias": "size",
+        "label": "Size",
+        "id": "ddd90fc03aa545ae8f98f46538c37b81",
+        "randomId": "9fb18be66ee64f2d9a885c6370ceadec",
+        "fieldType": "radio-list",
+        "validations": [],
+        "configuration": {
+          "orientation": "Horizontal",
+          "items": [
+            { "value": "small", "label": "Small", "selected": false },
+            { "value": "medium", "label": "Medium", "selected": false },
+            { "value": "large", "label": "Large", "selected": false }
+          ]
+        },
+        "initialValue": "medium",
+        "category": null
+      },
+      {
+        "alias": "colors",
+        "label": "Colors",
+        "id": "941a8108762b4e33955197403a6b0fb7",
+        "randomId": "e5805647bd034065a6e5b402cdeea445",
+        "fieldType": "checkbox-list",
+        "validations": [],
+        "configuration": {
+          "items": [
+            { "value": "red", "label": "Red", "selected": false },
+            { "value": "green", "label": "Green", "selected": false },
+            { "value": "blue", "label": "Blue", "selected": false }
+          ]
+        },
+        "initialValue": "blue",
+        "category": null
+      },
+      {
+        "alias": "delivery",
+        "label": "Delivery",
+        "id": "9f41f21e9b3048609252bdc180d8e2b9",
+        "randomId": "182ecfd2bfad49358a876119d0557d19",
+        "fieldType": "extended-radio-list",
+        "validations": [],
+        "configuration": {
+          "orientation": "Vertical",
+          "items": [
+            {
+              "value": "standard",
+              "label": "Standard",
+              "description": "Arrives in 3-5 days",
+              "selected": false
+            },
+            {
+              "value": "express",
+              "label": "Express",
+              "description": "Arrives tomorrow",
+              "selected": false
+            }
+          ]
+        },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "photo",
+        "label": "Photo",
+        "id": "e2aeaa0a896e43a39bf927e370b601a6",
+        "randomId": "8cc5028455404708a58bf0ef15a26a57",
+        "fieldType": "upload",
+        "validations": [],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "campaign",
+        "label": "Campaign",
+        "id": "5ea27eff298d41e8bd91c2e63fef9e34",
+        "randomId": "920f37599026438bb0b5ef1010839ad4",
+        "fieldType": "hidden",
+        "validations": [],
+        "configuration": { "text": "every-field-type" },
+        "initialValue": "spring-newsletter",
+        "category": null
+      },
+      {
+        "alias": "acceptTerms",
+        "label": "I accept the terms",
+        "id": "d6b6786530b742f4b2ad191bc638659b",
+        "randomId": "de4ac9c27bdb48edb3d640b500279f6b",
+        "fieldType": "checkbox",
+        "validations": [
+          {
+            "id": "716d85299602463ca464fe2e819f0dd3",
+            "alias": "Terms Must Be Accepted",
+            "validationType": "required",
+            "configuration": { "message": "You must accept the terms." }
+          }
+        ],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "captcha",
+        "label": "Captcha",
+        "id": "10ceb84982ed42eca9b89c18faa4e8da",
+        "randomId": "9063862ac57f4b8db2cbe3a76f795d9e",
+        "fieldType": "recaptcha",
+        "validations": [],
+        "configuration": { "siteKey": "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "submit",
+        "label": "Submit",
+        "id": "cb4bab2dcea848b28abd7caf8fe0cad1",
+        "randomId": "847c35f717a64e49a7d4c374bc91b250",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Submit" },
+        "initialValue": "",
+        "category": null
+      }
+    ],
+    "rows": [
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "5cff0b01514a428dbf4952a8b4f52378" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "94b67087009a46fc9a854da83d66f2d2" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 6, "fields": [{ "id": "d589ae5cf39f4c278632a0132128ce3c" }] },
+          { "columns": 6, "fields": [{ "id": "3bde5097b7274a58ae00f569579277b2" }] }
+        ]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "71399922f9a84d5284186e86a703275e" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 4, "fields": [{ "id": "cd69280323f643538c39f1738f5b3232" }] },
+          { "columns": 4, "fields": [{ "id": "ddd90fc03aa545ae8f98f46538c37b81" }] },
+          { "columns": 4, "fields": [{ "id": "941a8108762b4e33955197403a6b0fb7" }] }
+        ]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "9f41f21e9b3048609252bdc180d8e2b9" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 6, "fields": [{ "id": "e2aeaa0a896e43a39bf927e370b601a6" }] },
+          { "columns": 6, "fields": [{ "id": "5ea27eff298d41e8bd91c2e63fef9e34" }] }
+        ]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "d6b6786530b742f4b2ad191bc638659b" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "10ceb84982ed42eca9b89c18faa4e8da" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "cb4bab2dcea848b28abd7caf8fe0cad1" }] }]
+      }
+    ],
+    "payload": {
+      "FormId": "bacbc99c02ff41738f6a08ce16224764",
+      "PageId": 1301,
+      "__RequestVerificationToken": "CfDJ8Pq5Wd2Hk7Ls0Fb3Jt9Nc4Gv1Ry6Mx8Ze2Ua5Ki7Oh0Sw3Bp9Dn4Tl1Qf6Vj8Xg2Cm5Iy0Eo7Ar3Hu9Kz1Wb"
+    },
+    "url": "/api/formulate/plain-js/submit"
+  },
+  "assets": {
+    "script": "/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=5.0.0",
+    "theme": null
+  }
+}

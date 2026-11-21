@@ -1,0 +1,164 @@
+{
+  "data": {
+    "name": "Event Registration",
+    "alias": "eventRegistration",
+    "randomId": "dfaa75b6da8b476d8621dd19de840d94",
+    "fields": [
+      {
+        "alias": "firstName",
+        "label": "First Name",
+        "id": "4556e52bd5fe41afb52f3132e6fb6865",
+        "randomId": "495fa3a07a64443b9b939c190e7a7927",
+        "fieldType": "text",
+        "validations": [
+          {
+            "id": "c647944113a743d580b08312a1e720ae",
+            "alias": "First Name Is Required",
+            "validationType": "required",
+            "configuration": { "message": "Please enter your first name." }
+          }
+        ],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "toContactDetails",
+        "label": "Next",
+        "id": "573d87d23fac40babf94c3bd7e23ac6f",
+        "randomId": "b7fefc159d484798a3cab8dc7c4241b2",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Next" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "email",
+        "label": "Email Address",
+        "id": "f7ce016b458c4bcd89f25f35cd3f7a32",
+        "randomId": "90e8484a408c42088cdea3e75128f661",
+        "fieldType": "text",
+        "validations": [
+          {
+            "id": "38a197837524404fab69568cfbddd973",
+            "alias": "Email Is Required",
+            "validationType": "required",
+            "configuration": { "message": "Please enter your email address." }
+          },
+          {
+            "id": "c2e5a1d8785444fdb3c8fafcdb99eb32",
+            "alias": "Email Format",
+            "validationType": "regex",
+            "configuration": {
+              "message": "Please enter a valid email address.",
+              "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+            }
+          }
+        ],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "backToName",
+        "label": "Previous",
+        "id": "dfc489558db841309ff892d472f3e3dc",
+        "randomId": "3171aa88d146419491391ec13c3ffe0a",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Previous" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "toComments",
+        "label": "Next",
+        "id": "337c3c49479a4ac28c59d0b66230ec3e",
+        "randomId": "85322dafe40a4fc1bc2d0cffd98f240f",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Next" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "comments",
+        "label": "Comments",
+        "id": "1866acabb79c49e4b3beae0f9cec6a59",
+        "randomId": "c509733251a446daa353705d596ea873",
+        "fieldType": "textarea",
+        "validations": [],
+        "configuration": {},
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "backToContactDetails",
+        "label": "Previous",
+        "id": "0a7fb016258343d2b91cfb6b4ebcd64d",
+        "randomId": "bcbe5fca5bfd4b0db4be002cbd13906f",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Previous" },
+        "initialValue": "",
+        "category": null
+      },
+      {
+        "alias": "register",
+        "label": "Register",
+        "id": "359489a5aebd4ef993552541500bce4a",
+        "randomId": "e160a375733a4f3d8803a9cf27c6a944",
+        "fieldType": "button",
+        "validations": [],
+        "configuration": { "buttonKind": "Submit" },
+        "initialValue": "",
+        "category": null
+      }
+    ],
+    "rows": [
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "4556e52bd5fe41afb52f3132e6fb6865" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "573d87d23fac40babf94c3bd7e23ac6f" }] }]
+      },
+      { "isStep": true, "cells": [] },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "f7ce016b458c4bcd89f25f35cd3f7a32" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 6, "fields": [{ "id": "dfc489558db841309ff892d472f3e3dc" }] },
+          { "columns": 6, "fields": [{ "id": "337c3c49479a4ac28c59d0b66230ec3e" }] }
+        ]
+      },
+      { "isStep": true, "cells": [] },
+      {
+        "isStep": false,
+        "cells": [{ "columns": 12, "fields": [{ "id": "1866acabb79c49e4b3beae0f9cec6a59" }] }]
+      },
+      {
+        "isStep": false,
+        "cells": [
+          { "columns": 6, "fields": [{ "id": "0a7fb016258343d2b91cfb6b4ebcd64d" }] },
+          { "columns": 6, "fields": [{ "id": "359489a5aebd4ef993552541500bce4a" }] }
+        ]
+      }
+    ],
+    "payload": {
+      "FormId": "e2e297dbf327433da9c5d9f35f32e976",
+      "PageId": 1200,
+      "__RequestVerificationToken": "CfDJ8LmVq3Tz0Hf5Kc9Jw2Rb7Ny4Px1Ud6Ea8Gs3Wo5Ic0Mk7Bv2Ql9Zt4Ar6Hy1Sn8De3Fu5Jg0Ow7Lp2Ki4Xc"
+    },
+    "url": "/api/formulate/plain-js/submit"
+  },
+  "assets": {
+    "script": "/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=5.0.0",
+    "theme": null
+  }
+}
