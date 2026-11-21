@@ -3,31 +3,26 @@ layout: page
 title: Installing Formulate
 ---
 
-# Installing Locally
+# Installing Formulate 5
 
-There are a number of ways to install Formulate. This will cover the local installation method:
+Install Formulate with NuGet. From your Umbraco project folder, run:
 
-* Download the ZIP file from the latest release here: [Umbraco.com](https://our.umbraco.org/projects/backoffice-extensions/formulate/)
-* Do NOT unzip this zip file. Instead, you'll install it into Umbraco:
-  * Log into Umbraco.
-  * Navigate to the developer section.
-  * Expand the "Packages" node.
-  * Click the "Install local package" node.
-  * Select the ZIP file you downloaded and follow the instructions to complete the installation.
+```
+dotnet add package Umbraco.Community.Formulate
+```
 
-# Installing with NuGet
+Then run your website. Formulate adds a "Formulate" section to the back office. Administrators get access to it automatically. For other user groups, go to Users > User Groups and add the Formulate section to the group.
 
-If you have setup your Umbraco website with NuGet in Visual Studio, you can also install
-Formulate using NuGet. There are two packages available:
+Formulate 5 needs Umbraco 17.6 or later. See [Requirements](/requirements).
 
-* [Formulate](https://www.nuget.org/packages/Formulate/)
-* [Formulate Binaries](https://www.nuget.org/packages/Formulate.Binaries/)
+The package ID is `Umbraco.Community.Formulate`. The old `Formulate` package on NuGet is Formulate 3 for Umbraco 8. It belongs to Rhythm Agency's NuGet account and won't get any more updates.
 
-The main Formulate NuGet package is what you'd typically install into your website.
+# Where Formulate Stores Data
 
-The binaries package is what you'd install into a class library if you need to reference
-the Formulate DLL's (e.g., if you are creating a custom field).
+* **Form definitions** are JSON files under `App_Data/Formulate/Json`. This is outside the public web root.
+* **Submissions** from the Store Data handler go in the Umbraco database.
+* **Uploaded files** go under `App_Data/Formulate/Uploads`.
 
-Note that once you install with NuGet, you'll have to run the website and wait a minute or two.
-The first time the website is run with Formulate installed, Formulate will modify some files
-(e.g., it will change the web.config to point to the Formulate configuration files).
+# Installing Formulate 3
+
+Formulate 3 is for Umbraco 8. You can install it with the [Formulate](https://www.nuget.org/packages/Formulate/) NuGet package, or by downloading the ZIP file from [Umbraco.com](https://our.umbraco.org/projects/backoffice-extensions/formulate/) and using "Install local package" in the Packages section of the Umbraco back office.

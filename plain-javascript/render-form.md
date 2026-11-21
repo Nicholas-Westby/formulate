@@ -1,56 +1,58 @@
 ---
 layout: page
-title: Rendering a Form Using Formulate's Plain JavaScript Template
+title: Rendering a Form Using Formulate's Plain JavaScript Renderer
 ---
 
-# AngularJS Template Alternative
+# Rendering a Form in Formulate 5
 
-If you are using the AngularJS template rather than the plain JavaScript template, see: [Render AngularJS Form](/angularjs/render-form)
+Formulate 5 renders forms with plain JavaScript. There is no AngularJS template.
 
-# Plain JavaScript Template
+Once you've installed Formulate and created a form, there are five steps to show it on a page.
 
-Note that this page only applies to the plain JavaScript template (i.e., it does not apply to the AngularJS template).
+1. Create a data type that uses the "Formulate Form Layout Picker" property editor.
+2. Add a property that uses this data type (for example, with the alias `form`) to a document type.
+3. On a content node, pick a form layout.
+4. Render it in your Razor template:
 
-Also, this applies to Umbraco 8. For the Umbraco 7 version, go here: [github.com/.../plain-javascript/render-form.md](https://github.com/rhythmagency/formulate/blob/a0b705a71a6a9034e1041d7c8d08ee4a748a6359/plain-javascript/render-form.md)
+   ```csharp
+   @await Component.InvokeAsync("FormulateForm", Model.Value<Formulate.Core.FormLayout>("form"))
+   ```
 
-# Form Rendering
+   If you use Models Builder, this works too:
 
-Once you've gone through the trouble of installing Formulate, creating a form, and modifying a document type to pick a form,
-the final step is to render that form to HTML on your website.
+   ```csharp
+   @await Component.InvokeAsync("FormulateForm", Model.Form)
+   ```
 
-You can render your picked form like this (this assumes the document type is called "Contact" and the form picker property is called "My Form"):
+5. The form renderer script is added to the page automatically. To add it yourself instead, turn this off in `appsettings.json`:
+
+   ```json
+   {
+     "Formulate": {
+       "PlainJavaScript": {
+         "IncludeScript": false
+       }
+     }
+   }
+   ```
+
+![The Form Layout Picker on a content node, with a form layout selected](/images/v5/layout-picker-content-node.png)
+
+The front-end classes (BEM names such as `formulate__...`), the JavaScript events and the custom field type hooks (`window["formulate-plain-js-fields"]`) are the same as in Formulate 3. Existing styles and custom field types keep working.
+
+# Handling Events
+
+You can respond to the events that Formulate dispatches, such as a successful submission or validation errors. This example wraps the form in an element so the script can find it:
 
 ```csharp
-@inherits UmbracoViewPage<Contact>
-<!doctype html>
+<div class="formulate-wrapper">
+    @await Component.InvokeAsync("FormulateForm", Model.Form)
+</div>
 
-<html>
-<head>
-    <title>Formulate Plain JavaScript Example</title>
-</head>
-<body>
-
-    @* Wrap the form with this element so the custom JavaScript can find it. *@
-    <div class="formulate-wrapper">
-
-        @* Render the form. *@
-        @Html.Action("Render", "FormulateRendering", new { form = Model.MyForm })
-
-    </div>
-
-    @* The JavaScript file for Formulate's plain JavaScript template. *@
-    <script src="/App_Plugins/formulate/responsive.plain-javascript.min.js" async></script>
-
-    @* This is your JavaScript that handles events dispatched by Formulate. *@
-    <script src="/scripts/custom-formulate-script.js" async></script>
-
-</body>
-</html>
+<script src="/scripts/custom-formulate-script.js" async></script>
 ```
 
-That goes in a CSHTML file.
-
-You will also need some custom JavaScript to respond to the events dispatched by Formulate (this is the `custom-formulate-script.js` referenced above):
+Here is `custom-formulate-script.js`:
 
 ```js
 /* This file listens for events dispatched by Formulate and responds to them appropriately. */
@@ -120,4 +122,8 @@ setTimeout(function () {
 }, 0);
 ```
 
-Next up, you'll want to style the form: [Styles](/plain-javascript/styles)
+Next up, you'll want to style the form: [Styles](/plain-javascript/styles), or turn on the optional [basic theme](/pro/basic-theme).
+
+# Formulate 3
+
+The Formulate 3 version of this page used `@Html.Action("Render", "FormulateRendering", ...)` and a script tag for `/App_Plugins/formulate/responsive.plain-javascript.min.js`. For Umbraco 7, see [github.com/.../plain-javascript/render-form.md](https://github.com/Nicholas-Westby/formulate/blob/a0b705a71a6a9034e1041d7c8d08ee4a748a6359/plain-javascript/render-form.md). The AngularJS page, [Render AngularJS Form](/angularjs/render-form), applies to Formulate 3 only.

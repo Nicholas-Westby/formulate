@@ -3,25 +3,17 @@ layout: page
 title: Formulate Pro
 ---
 
-# Formulate Pro
+# Formulate Pro Is Now Part of Formulate
 
-Formulate Pro is the ~~paid~~ free package that adds additional functionality to Formulate. Now that we have no plans to upgrade Formulate to work with newer versions of Umbraco, you are free to use Formulate Pro going forward.
+Formulate Pro used to be a separate package. Its two features now ship in the main Formulate package, for free:
 
-Currently, this includes the following:
+* **Designed Emails.** A form handler that renders your emails from Razor views. See [Designed Emails](/pro/designed-emails).
+* **Basic Theme.** Optional CSS for your forms. See [Basic Theme](/pro/basic-theme).
 
-* **Designed Emails** A form submission handler that facilitates sending designed emails using Razor view files, which you can read about here: [Designed Emails](/pro/designed-emails)
-* **Basic Theme** A basic theme to save you the time of styling forms, which you can read about here: [Basic Theme](/pro/basic-theme)
+You don't need to install anything extra. Formulate Pro licences are no longer needed or sold.
 
-You can read more about Formulate Pro here: [Announcing Formulate Pro](https://code101.net/code-101/announcing-formulate-pro)
+Formulate 5 doesn't send any usage data. Formulate Pro used to report usage, and that is gone.
 
-You can view the source code here for free: [github.com/Formulate-Pro/Formulate-Pro](https://github.com/Formulate-Pro/Formulate-Pro)
+# Formulate 3 Users
 
-# Installing Formulate Pro
-
-You can install Formulate Pro using NuGet (search for "Formulate.Pro"): [Formulate.Pro](https://www.nuget.org/packages/Formulate.Pro)
-
-Be sure you've already installed the Umbraco 8 and Formulate 3 NuGet packages.
-
-# Paying for Formulate Pro
-
-Formulate Pro is now free, so no payment is required.
+The separate [Formulate.Pro](https://www.nuget.org/packages/Formulate.Pro) NuGet package is for Formulate 3 and Umbraco 8. It is free to use. The source is on [GitHub](https://github.com/Formulate-Pro/Formulate-Pro). The old announcement is here: [Announcing Formulate Pro](https://code101.net/code-101/announcing-formulate-pro).

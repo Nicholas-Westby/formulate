@@ -3,9 +3,21 @@ layout: page
 title: Formulate Requirements
 ---
 
+# Formulate 5 Requirements
+
+Formulate 5.0.0 supports these versions of Umbraco:
+
+| Umbraco | .NET |
+| --- | --- |
+| 17.6 or later (17 is the LTS release) | .NET 10 |
+| 18 | .NET 10 |
+| 19 | .NET 11 |
+
+Formulate 4 was never released.
+
 # Formulate 3 Requirements
 
-These are some things that Formulate 3 requires:
+Formulate 3 requires:
 
 * .NET 4.7.2.
 * Umbraco 8.1

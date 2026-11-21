@@ -5,16 +5,14 @@ title: Formulate Extensibility
 
 # Extensibility
 
-Most everything in Formulate can be extended or replaced. Here are some examples:
+You can extend or replace much of Formulate. Here are some examples:
 
-* **Fields.** You can create your own types of fields. If you want to create a field that allows users to choose their favorite cat pictures, you absolutely can do so. No judgement. Read more [here](/articles/custom-field-types).
-* **Layout Designers.** If you would like to create your own layout designer that supports grouping fields into wizard steps, this muggle isn't going to stand in your way. More power to you.
-* **Form Templates.** By default, Formulate comes with a form template that allows for responsive, Bootstrap, AngularJS forms. You can easily create your own jQuery version, if that's your thing. Or you could copy the existing AngularJS version and modify it slightly.
-* **Form Persistence.** Formulate stores all information about forms (fields, layouts, data values, validations, and so on) in JSON format on the file system, but it doesn't have to. The entire persistence layer can be swapped out. You could, for example, create a persistence layer that stores to SQL Server. Or XML, if you prefer inequality over curly braces. Heck, you could even store everything in a file format composed entirely of emojis  
-:+1:
-* **Handlers.** The basic idea is that when somebody clicks a button to submit their form to the website, server-side "handlers" can then do something with that data. Formulate comes with handlers to send emails, send data to external API's, and to store submissions to the database (which you can then view in the Formulate section). You can also create your own form submission handlers.
-* **Validations.** If you need something a little more sophisticated than a regular expression or a mandatory validation, it would be valid for you to create your own custom validation.
-* **Data Values.** You can currently create a simple list of strings. Here are some more ideas for custom data values you could create:
-  * You could fetch a list of strings from an uploaded file. You could then display that in a drop down.
-  * You could retrieve the latest background image from the Bing homepage. Once you have that, you could use the image in your custom image editor field.
-  * You could return pi to a specified number of digits. You could then display that in a read only text box.
+* **Fields.** You can create your own types of fields. A field has a back office part and a front-end renderer. The [custom field types](/articles/custom-field-types) page covers the front-end renderer, which works the same in Formulate 5.
+* **Handlers.** A handler runs on the server when somebody submits a form. Formulate comes with handlers to store data, send emails, send designed emails and send data to external APIs. You can also write your own.
+* **Validations.** Formulate comes with Mandatory and Regular Expression validations. If you need something more specific, you can create your own.
+* **Data Values.** Formulate comes with List, Pair List and US States. You can create your own kind of data value, such as a list that comes from an API.
+* **Form Rendering.** The front-end classes, events and field hooks are plain JavaScript and CSS. You can restyle forms or change what happens on submit. See [Render Form](/plain-javascript/render-form).
+
+For the Formulate 5 extension points and code samples, see the [extending docs on GitHub](https://github.com/Nicholas-Westby/formulate/blob/v5/main/docs/extending.md).
+
+The Formulate 3 extension points (AngularJS directives, the `IFormFieldType` interface and swappable persistence) are different. The AngularJS pages on this site apply to Formulate 3 only.

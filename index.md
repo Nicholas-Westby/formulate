@@ -3,20 +3,19 @@ layout: page
 title: Formulate
 ---
 
-<div class="formulate-pro-banner">
-    <h2>Formulate Pro Now Available!</h2>
-    <p>Looking to get even more out of Formulate? Check out <a href="/pro/" title="Learn About Formulate Pro">Formulate Pro</a>!</p>
+<div class="formulate-announcement">
+    <h2>Formulate 5 is here</h2>
+    <p>Formulate 5 runs on Umbraco 17.6 or later, Umbraco 18 and Umbraco 19. Formulate Pro is now part of Formulate, for free. See <a href="/whats-new-in-5" title="What's new in Formulate 5">what's new in Formulate 5</a>.</p>
 </div>
 
 <style>
-    .formulate-pro-banner {
+    .formulate-announcement {
         padding: 10px;
-        background-color: #fcc;
-        border: 5px dashed #f77;
-        box-shadow: 10px 10px 9px #600;
-        margin-bottom: 50px;
+        background-color: #eef4fb;
+        border: 2px solid #7aa7d9;
+        margin-bottom: 30px;
     }
-    .formulate-pro-banner h2 {
+    .formulate-announcement h2 {
         background: none;
     }
 </style>
@@ -25,10 +24,11 @@ title: Formulate
 
 Formulate is a free, open source form builder for Umbraco.
 
-![Formulate](/images/formulate-icon-zoomed-out.png)
+![The Formulate section in the Umbraco back office, showing the Forms, Data Values and Validation Library trees](/images/v5/formulate-section.png)
 
 Here are a few pages that will help you get started with Formulate:
 
+* [What's New in Formulate 5](/whats-new-in-5)
 * [What is Formulate?](/what-is-formulate)
 * [Requirements](/requirements)
 * [Installing](/installing)
@@ -38,23 +38,16 @@ Here are a few pages that will help you get started with Formulate:
 * [Render Form](/plain-javascript/render-form)
 * Additional Tips:
   * [Validations](/validations)
+  * [Designed Emails](/pro/designed-emails)
+  * [Basic Theme](/pro/basic-theme)
+  * [SMTP Configuration](/smtp-configuration)
 * Advanced Topics:
   * [Extensibility](/extensibility)
-  * [Contributing to Formulate](https://github.com/rhythmagency/formulate#contributing)
+  * [Contributing to Formulate](https://github.com/Nicholas-Westby/formulate#contributing)
   * [Custom Field Types](/articles/custom-field-types)
-  * [Custom Field Validation Types](https://code101.net/code-101/making-custom-field-validations-in-formulate)
-  * [Data Value List Functions](https://our.umbraco.org/projects/backoffice-extensions/formulate/formulate-questions/79633-formulate-036-just-released-data-value-list-functions)
 * [Frequently Asked Questions](/faq)
 * [Testimonials](/testimonials)
-* [A Guided Tour of Formulate](https://code101.net/a-guided-tour-of-umbraco-formulate-2016-edition-4a3ce6af6d36)
-  * [Umbraco Formulate 2.0, Plain JavaScript Edition](https://code101.net/umbraco-formulate-2-0-plain-javascript-edition-ecdb1ef27ea1)
 
-If you have any questions, feel free to ask them on [the forum](https://our.umbraco.com/packages/backoffice-extensions/formulate/formulate-questions/), [contact me](https://www.nicholaswestby.com/contact/) directly, or report an issue on the [issue tracker](https://github.com/rhythmagency/formulate/issues).
+If you have a question or find a problem, please [open an issue on GitHub](https://github.com/Nicholas-Westby/formulate/issues). You can also [contact me](https://www.nicholaswestby.com/contact/) directly.
 
-# Video: Introduction to Formulate
-
-For a short introduction to Formulate, watch this video (1 minute, 20 seconds):
-
-<a href="https://www.youtube.com/watch?feature=player_embedded&v=Vv3_9fWsq6M" target="_blank">
-<img src="https://img.youtube.com/vi/Vv3_9fWsq6M/0.jpg" alt="Introduction to Formulate" width="240" height="180" border="10" />
-</a>
+Using Formulate 3 with Umbraco 8? The pages above that mention Formulate 3 still apply to you. The old tutorials and the [forum](https://our.umbraco.com/packages/backoffice-extensions/formulate/formulate-questions/) are still there.

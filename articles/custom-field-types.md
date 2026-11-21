@@ -3,6 +3,9 @@ layout: page
 title: Creating Custom Formulate Field Types with Plain JavaScript
 ---
 
+**Formulate 3 and Formulate 5.** The back office directive and the C# field type on this page apply to Formulate 3 only. The front-end renderer (the `window["formulate-plain-js-fields"]` hook) works the same in Formulate 5. For extending Formulate 5, see the [extending docs](https://github.com/Nicholas-Westby/formulate/blob/v5/main/docs/extending.md).
+
+
 # Plain JavaScript or AngularJS?
 
 You are currently reading the documentation for adding custom fields with AngularJS.
@@ -23,8 +26,8 @@ When you are done, your new field type should appear in the dialog to add a fiel
 In order to allow for your custom field type to be used when constructing a form in the back office form designer,
 you'll need to create an AngularJS directive. There are typically two components to this, as shown with this drop down example:
 
-* [Directive Markup](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.html)
-* [Directive JavaScript](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.js)
+* [Directive Markup](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.html)
+* [Directive JavaScript](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.js)
 
 The markup is what is displayed below the main components (name, alias, label) of each field.
 In this example of the drop down, it is just displaying a data value picker
@@ -61,7 +64,7 @@ Formulate uses reflection to find any classes that implement this interface, and
 all it needs to know about those field types. Since the drop down example is a bit complex, I'll start with a simple example,
 the text field:
 
-* [TextField.cs](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/Text/TextField.cs)
+* [TextField.cs](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/Text/TextField.cs)
 
 It has just a few properties and a function. Here is the purpose of each of them:
 
@@ -71,7 +74,7 @@ It has just a few properties and a function. Here is the purpose of each of them
 * **TypeId.** This property is a GUID that uniquely identifies the field type (e.g., when serializing the form definition to the file system).
 * **DeserializeConfiguration.** This function deserializes the string version of the field's configuration. Since the text field doesn't have any configuration, it just returns null.
 
-For a more extensive example of a field type class, refer to [DropDownField.cs](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/DropDown/DropDownField.cs).
+For a more extensive example of a field type class, refer to [DropDownField.cs](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/DropDown/DropDownField.cs).
 
 # Render Field for Plain JavaScript Template
 
@@ -353,10 +356,10 @@ let setData = function (data, value, options, alias, id) {
 Notice the comment near the top that says most of the JavaScript near the bottom is copied from the Formulate
 core JavaScript. If you are familiar with modular JavaScript (the kind with `require` statements) and you would
 like to avoid copying all of that extra JavaScript, you can follow an example from the main Formulate code base.
-For example, you could refer to the JavaScript for the text field: [plain-text.js](https://github.com/rhythmagency/formulate/blob/v3/master/src/formulate.frontend/responsive.plain-javascript/fields/plain-text.js)
+For example, you could refer to the JavaScript for the text field: [plain-text.js](https://github.com/Nicholas-Westby/formulate/blob/v3/master/src/formulate.frontend/responsive.plain-javascript/fields/plain-text.js)
 
 These core JavaScript files are not available on NPM, so if you take the modular approach you will need to either
-[download them from GitHub](https://github.com/rhythmagency/formulate/tree/v3/master/src/formulate.frontend/responsive.plain-javascript)
+[download them from GitHub](https://github.com/Nicholas-Westby/formulate/tree/v3/master/src/formulate.frontend/responsive.plain-javascript)
 or refer to the ones that are installed into your website when Formulate is installed.
 
 If you need to support IE11 and you are using the non-modular approach, be sure to use Babel to transpile to ES5
@@ -372,6 +375,6 @@ You should now have a working custom field type. Here were the steps you took:
 * Create a C# class that implements the `IFormFieldType` interface.
 * Render the field renderer used by the plain JavaScript template (on the frontend of the website).
 
-If you have created a custom field type, be sure to [let me know](https://github.com/rhythmagency/formulate/issues) so it can be
+If you have created a custom field type, be sure to [let me know](https://github.com/Nicholas-Westby/formulate/issues) so it can be
 considered for incorporation into the core of Formulate.
 If you have any questions, feel free to post a message in the [forum](https://our.umbraco.org/projects/backoffice-extensions/formulate/formulate-questions/).

@@ -5,7 +5,31 @@ title: Configuration SMTP for Formulate Emails
 
 # Configuring SMTP for Emails
 
-If you'd like to send emails when Formulate forms are submitted, you'll have to configure SMTP. There are many ways to do this, though they all involve modifying the web.config. If you just want to test emails locally, you can configure SMTP to deliver emails to your file system as `.eml` files. You can do that by making these changes to your web.config:
+The Email and Designed Email handlers send mail through Umbraco's email settings. To send email, configure SMTP in `appsettings.json` under `Umbraco:CMS:Global:Smtp`:
+
+```json
+{
+  "Umbraco": {
+    "CMS": {
+      "Global": {
+        "Smtp": {
+          "From": "noreply@example.com",
+          "Host": "smtp.example.com",
+          "Port": 587,
+          "Username": "...",
+          "Password": "..."
+        }
+      }
+    }
+  }
+}
+```
+
+Replace the values with the ones from your mail provider.
+
+# Formulate 3
+
+Formulate 3 (Umbraco 8) reads SMTP settings from `web.config`. To write emails to your file system as `.eml` files, add this to your `web.config`:
 
 ```
 <configuration>
@@ -19,4 +43,4 @@ If you'd like to send emails when Formulate forms are submitted, you'll have to 
 </configuration>
 ```
 
-As long as you ensure the `temp-email` folder exists, you should see files appear there whenever you submit a Formulate form (assuming you have set up the form handler properly).
+Make sure the `temp-email` folder exists. Files appear there whenever you submit a form (assuming the form handler is set up).

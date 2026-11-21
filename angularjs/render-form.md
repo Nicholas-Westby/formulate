@@ -3,6 +3,9 @@ layout: page
 title: Rendering a Form in Formulate
 ---
 
+**This page applies to Formulate 3 only.**
+
+
 # Form Rendering
 
 Once you've gone through the trouble of installing Formulate, creating a form, and modifying a document type to pick a form, the final step is to render that form to HTML on your website.

@@ -3,6 +3,9 @@ layout: page
 title: Including Formulate JavaScript for the RBA Template
 ---
 
+**This page applies to Formulate 3 only.**
+
+
 # Include JavaScript
 
 If you've followed the instructions to [render a form](/angularjs/render-form), you will have a line that includes the JavaScript for the Responsive Bootstrap Angular template:

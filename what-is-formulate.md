@@ -5,18 +5,20 @@ title: What is Formulate?
 
 # What is Formulate?
 
-In short, Formulate allows non-technical users to design forms in Umbraco. That dynamically built form (e.g., a contact form) can then be displayed on the website. It's a free, open source form builder.
+Formulate lets non-technical users design forms in Umbraco. You then show that form (for example, a contact form) on your website. It's a free, open source form builder.
+
+![The Contact Us form open in the back office, showing its fields and layout](/images/v5/form-editor.png)
 
 # Features
 
-Here are some of Formulate's capabilities and features:
+* Build forms from fields: Text, Text Area, Hidden, Drop Down, Checkbox, Checkbox List, Radio Button List, Extended Radio Button List, Date, Upload, Button, Header, Rich Text, Text Constant and reCAPTCHA.
+* Do something with each submission using handlers: Store Data, Email, Designed Email and Send Data.
+* Reuse validations (Mandatory and Regular Expression), so you don't have to enter the same email pattern over and over.
+* Reuse data values (List, Pair List and US States) for drop downs and similar fields.
+* Use folders for forms, data values and validations to keep things organized.
+* View stored submissions in the back office and export them to CSV.
+* Submit forms with AJAX, so the page doesn't reload.
+* Style forms with your own CSS, or turn on the optional basic theme.
+* Extend it. Everything has an alias, so developers can add their own fields, handlers and validations.
 
-* Construct forms by adding any number of fields.
-* Send emails on form submission. You can also create custom handlers to perform any action on form submissions.
-* Everything is aliased, making it easy for web developers to customize functionality. Think of an alias as a way to programmatically refer to something (e.g., a form field).
-* Reusable validations mean you don't have to enter the same old email regular expression over and over again.
-* Folders for everything (forms, validations, data values, and so on) help keep you organized.
-* Customize form templates to display forms in any way you can imagine.
-* Extensible to support a virtually infinite variety of forms.
-* AJAX postbacks are the default in Formulate (i.e., no full page reloads on form submissions).
-* Super solid code makes it easy for web developers to work with. It's written in C#, ASP.NET MVC, and AngularJS.
+See [What's New in Formulate 5](/whats-new-in-5) for the latest release.

@@ -3,6 +3,9 @@ layout: page
 title: Creating Custom Formulate Field Types with AngularJS
 ---
 
+**This page applies to Formulate 3 only.**
+
+
 # AngularJS or Plain JavaScript?
 
 You are currently reading the documentation for adding custom fields with AngularJS.
@@ -23,8 +26,8 @@ When you are done, your new field type should appear in the dialog to add a fiel
 In order to allow for your custom field type to be used when constructing a form in the back office form designer,
 you'll need to create an AngularJS directive. There are typically two components to this, as shown with this drop down example:
 
-* [Directive Markup](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.html)
-* [Directive JavaScript](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.js)
+* [Directive Markup](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.html)
+* [Directive JavaScript](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Directives/fields/dropDownField/dropDownField.js)
 
 The markup is what is displayed below the main components (name, alias, label) of each field.
 In this example of the drop down, it is just displaying a data value picker
@@ -61,7 +64,7 @@ Formulate uses reflection to find any classes that implement this interface, and
 all it needs to know about those field types. Since the drop down example is a bit complex, I'll start with a simple example,
 the text field:
 
-* [TextField.cs](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/Text/TextField.cs)
+* [TextField.cs](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/Text/TextField.cs)
 
 It has just a few properties and a function. Here is the purpose of each of them:
 
@@ -71,7 +74,7 @@ It has just a few properties and a function. Here is the purpose of each of them
 * **TypeId.** This property is a GUID that uniquely identifies the field type (e.g., when serializing the form definition to the file system).
 * **DeserializeConfiguration.** This function deserializes the string version of the field's configuration. Since the text field doesn't have any configuration, it just returns null.
 
-For a more extensive example of a field type class, refer to [DropDownField.cs](https://github.com/rhythmagency/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/DropDown/DropDownField.cs).
+For a more extensive example of a field type class, refer to [DropDownField.cs](https://github.com/Nicholas-Westby/formulate/blob/af76b07d6e31755f32105ff502022060db31ae8e/src/formulate.app/Forms/Fields/DropDown/DropDownField.cs).
 
 # Render Field for Responsive Bootstrap Angular (RBA) Template
 
@@ -124,7 +127,7 @@ code, you will see something like this rather than a text input field:
 ![Formulate](/images/formulate-hello-field.png)
 
 That will get you started with a "hello world" field. Once you need to dig in and do something a bit more
-complicated, you can refer to the `createTextField` function in [builtin-types.js](https://github.com/rhythmagency/formulate/blob/6efc0cc3d0cd9ee4795639886898d4222bc359b2/src/formulate.app/JavaScript/FormTemplates/responsive.bootstrap.angular/builtin-types.js#L150):
+complicated, you can refer to the `createTextField` function in [builtin-types.js](https://github.com/Nicholas-Westby/formulate/blob/6efc0cc3d0cd9ee4795639886898d4222bc359b2/src/formulate.app/JavaScript/FormTemplates/responsive.bootstrap.angular/builtin-types.js#L150):
 
 ```javascript
 function createTextField(field, options) {
@@ -140,7 +143,7 @@ function createTextField(field, options) {
 
 Note that it's calling the `setGlobalInputAttributes` function, which is part of the core of Formulate,
 and is inaccessible to external code. That means you'll have to create that functionality from
-scratch. If you like, you can just copy that function from that same [builtin-types.js](https://github.com/rhythmagency/formulate/blob/6efc0cc3d0cd9ee4795639886898d4222bc359b2/src/formulate.app/JavaScript/FormTemplates/responsive.bootstrap.angular/builtin-types.js#L11) file:
+scratch. If you like, you can just copy that function from that same [builtin-types.js](https://github.com/Nicholas-Westby/formulate/blob/6efc0cc3d0cd9ee4795639886898d4222bc359b2/src/formulate.app/JavaScript/FormTemplates/responsive.bootstrap.angular/builtin-types.js#L11) file:
 
 ```javascript
 function setGlobalInputAttributes(field, el, options) {
@@ -184,6 +187,6 @@ You should now have a working custom field type. Here were the steps you took:
 * Create a C# class that implements the `IFormFieldType` interface.
 * Render the field renderer used by the Responsive Bootstrap Angular (RBA) template (on the frontend of the website).
 
-If you have created a custom field type, be sure to [let me know](https://github.com/rhythmagency/formulate/issues) so it can be
+If you have created a custom field type, be sure to [let me know](https://github.com/Nicholas-Westby/formulate/issues) so it can be
 considered for incorporation into the core of Formulate.
 If you have any questions, feel free to post a message in the [forum](https://our.umbraco.org/projects/backoffice-extensions/formulate/formulate-questions/).
