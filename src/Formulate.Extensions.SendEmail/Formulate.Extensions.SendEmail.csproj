@@ -1,36 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <!-- This project is annotated for nullable reference types, unlike the shared default. -->
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <IsPackable>true</IsPackable>
         <Title>Formulate.Extensions.SendEmail</Title>
-        <PackageId>Formulate.Extensions.SendEmail</PackageId>
-        <Authors>Nicholas Westby, Jamie Pollock</Authors>
-        <Company>Rhythm</Company>
         <Description>An email notification extension for Formulate, an advanced form builder for Umbraco.</Description>
-        <Product>Formulate.Extensions.SendEmail</Product>
-        <Copyright>Copyright 2022</Copyright>
-        <PackageProjectUrl>https://www.formulate.rocks</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/rhythmagency/formulate/</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageTags>Umbraco;forms</PackageTags>
-        <PackageReleaseNotes>4.0.0 - .net core / Umbraco 10 version</PackageReleaseNotes>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
-
-    <ItemGroup>
-        <Content Include="App_Plugins\**\*.*">
-            <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-            <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-        </Content>
-
-        <!-- target file to copy app_plugins in .netcore -->
-        <None Include="build\**\*.*">
-            <Pack>True</Pack>
-            <PackagePath>buildTransitive</PackagePath>
-        </None>
-    </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />

@@ -1,4 +1,4 @@
-﻿namespace Formulate.Extensions.SendData
+namespace Formulate.Extensions.SendData
 {
     using Umbraco.Cms.Core.Composing;
     using Umbraco.Cms.Core.DependencyInjection;
@@ -7,7 +7,6 @@
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.AddPackageManifest();
         }
     }
 }

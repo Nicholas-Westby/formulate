@@ -1,4 +1,4 @@
-﻿namespace Formulate.Extensions.StoreData
+namespace Formulate.Extensions.StoreData
 {
     using Formulate.Extensions.StoreData.Utilities;
     using Microsoft.Extensions.DependencyInjection;
@@ -12,10 +12,6 @@
             builder.Services.AddScoped<IStoreFields, StoreFields>();
             builder.Services.AddScoped<IStoreFiles, StoreFiles>();
             builder.Services.AddScoped<IStoreData, StoreData>();
-
-            builder.AddPackageManifest();
-
-            builder.RunMigrations();
         }
     }
 }

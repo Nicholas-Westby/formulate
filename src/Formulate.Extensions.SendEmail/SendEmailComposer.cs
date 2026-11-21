@@ -1,4 +1,4 @@
-﻿namespace Formulate.Extensions.SendEmail
+namespace Formulate.Extensions.SendEmail
 {
     using Umbraco.Cms.Core.Composing;
     using Umbraco.Cms.Core.DependencyInjection;
@@ -7,7 +7,6 @@
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.AddPackageManifest();
         }
     }
 }

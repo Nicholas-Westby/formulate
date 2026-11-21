@@ -1,4 +1,4 @@
-﻿namespace Formulate.Extensions.StoreData.Migrations
+namespace Formulate.Extensions.StoreData.Migrations
 {
     using Formulate.Extensions.StoreData.Models;
     using Microsoft.Extensions.Logging;
@@ -7,17 +7,20 @@
     using Umbraco.Cms.Infrastructure.Persistence.DatabaseAnnotations;
     using Umbraco.Cms.Infrastructure.Persistence.DatabaseModelDefinitions;
 
-    public sealed class AddTable : MigrationBase
+    /// <summary>
+    /// Creates the table that holds form submissions, if it does not already exist.
+    /// </summary>
+    public sealed class AddSubmissionsTable : AsyncMigrationBase
     {
-        public AddTable(IMigrationContext context) : base(context)
+        public AddSubmissionsTable(IMigrationContext context) : base(context)
         {
         }
 
-        protected override void Migrate()
+        protected override Task MigrateAsync()
         {
-            Logger.LogDebug("Running migration {MigrationStep}", nameof(AddTable));
+            Logger.LogDebug("Running migration {MigrationStep}", nameof(AddSubmissionsTable));
 
-            // Lots of methods available in the MigrationBase class - discover with this.
+            // Only create the table when it is missing, so re-running this step is safe.
             if (TableExists(FormulateSubmissionDto.TableName) == false)
             {
                 Create.Table<TableSchema>()
@@ -27,6 +30,8 @@
             {
                 Logger.LogDebug("The database table {DbTable} already exists, skipping", FormulateSubmissionDto.TableName);
             }
+
+            return Task.CompletedTask;
         }
 
         [ExplicitColumns]
@@ -48,12 +53,12 @@
             public DateTime CreationDate { get; set; }
 
             [Column(Name = nameof(DataValues))]
-            [SpecialDbType(SpecialDbTypes.NTEXT)]
+            [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
             [NullSetting(NullSetting = NullSettings.Null)]
             public string? DataValues { get; set; }
 
             [Column(Name = nameof(FileValues))]
-            [SpecialDbType(SpecialDbTypes.NTEXT)]
+            [SpecialDbType(SpecialDbTypes.NVARCHARMAX)]
             [NullSetting(NullSetting = NullSettings.Null)]
             public string? FileValues { get; set; }
 

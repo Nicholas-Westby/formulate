@@ -1,4 +1,4 @@
-﻿namespace Formulate.Extensions.PlainJavaScriptTemplate
+namespace Formulate.Extensions.PlainJavaScriptTemplate
 {
     using Formulate.Core.DependencyInjection;
     using Formulate.Extensions.PlainJavaScriptTemplate.Core;
@@ -10,7 +10,6 @@
     {
         public void Compose(IUmbracoBuilder builder)
         {
-            builder.AddPackageManifest();
             builder.AddMapDefinitions();
 
             builder.TemplateDefinitions().Append<PlainJavaScriptTemplateDefinition>();

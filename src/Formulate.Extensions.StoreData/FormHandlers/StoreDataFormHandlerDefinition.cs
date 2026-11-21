@@ -2,7 +2,6 @@
 {
     using Formulate.Core.FormHandlers;
     using Formulate.Extensions.StoreData.Utilities;
-    using Microsoft.AspNetCore.Razor.Language.Intermediate;
     using Microsoft.Extensions.DependencyInjection;
     using System;
 

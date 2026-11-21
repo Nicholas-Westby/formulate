@@ -9,6 +9,8 @@
     <Nullable>disable</Nullable>
     <!-- Using an [Obsolete] member is an error, so APIs Umbraco plans to remove fail the build. -->
     <WarningsAsErrors>$(WarningsAsErrors);CS0612;CS0618</WarningsAsErrors>
+    <!-- Libraries only audit their direct references: the dev site audits everything at the real site version. -->
+    <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 
   <!-- Umbraco versions. Override on the command line, e.g. -p:UmbracoSiteVersion=18.3.2 -->

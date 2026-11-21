@@ -1,39 +1,22 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <!-- This project is annotated for nullable reference types, unlike the shared default. -->
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <IsPackable>true</IsPackable>
+        <!-- The view is compiled into the assembly and served from the RCL, so no files are copied to sites. -->
+        <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
         <Title>Formulate.Extensions.PlainJavaScriptTemplate</Title>
-        <PackageId>Formulate.Extensions.PlainJavaScriptTemplate</PackageId>
-        <Authors>Nicholas Westby, Jamie Pollock</Authors>
-        <Company>Rhythm</Company>
         <Description>A plain JavaScript template extension for Formulate, an advanced form builder for Umbraco.</Description>
-        <Product>Formulate.Extensions.PlainJavaScriptTemplate</Product>
-        <Copyright>Copyright 2022</Copyright>
-        <PackageProjectUrl>https://www.formulate.rocks</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/rhythmagency/formulate/</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageTags>Umbraco;forms</PackageTags>
-        <PackageReleaseNotes>4.0.0 - .net core / Umbraco 10 version</PackageReleaseNotes>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Views\Shared\Components\FormulateForm\Plain JavaScript.cshtml" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <!-- target file to copy views in .netcore -->
-        <None Include="build\**\*.*">
-            <Pack>True</Pack>
-            <PackagePath>buildTransitive</PackagePath>
-        </None>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
-        <ProjectReference Include="..\Formulate.Extensions.PlainJavaScriptTemplate.Core\Formulate.Extensions.PlainJavaScriptTemplate.Core.csproj" />
         <ProjectReference Include="..\Formulate.Web\Formulate.Web.csproj" />
     </ItemGroup>
 
