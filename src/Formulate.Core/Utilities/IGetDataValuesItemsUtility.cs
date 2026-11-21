@@ -17,9 +17,12 @@
         /// <param name="id">
         /// The data values ID.
         /// </param>
+        /// <param name="fieldId">
+        /// The ID of the form field that uses the data values (used when logging a problem).
+        /// </param>
         /// <returns>
-        /// The data values.
+        /// The data values, or no items when the data values cannot be found.
         /// </returns>
-        IReadOnlyCollection<KeyValuePair<string, string>> GetValues(Guid id);
+        IReadOnlyCollection<KeyValuePair<string, string>> GetValues(Guid id, Guid fieldId);
     }
 }

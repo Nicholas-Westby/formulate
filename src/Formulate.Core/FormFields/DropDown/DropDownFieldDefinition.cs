@@ -90,7 +90,7 @@
 
             if (preValues is not null)
             {
-                var values = _getDataValuesItemsUtility.GetValues(preValues.DataValue);
+                var values = _getDataValuesItemsUtility.GetValues(preValues.DataValue, settings.Id);
 
                 if (values is not null)
                 {
