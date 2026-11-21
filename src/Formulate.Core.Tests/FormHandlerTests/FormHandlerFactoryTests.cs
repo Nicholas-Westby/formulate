@@ -18,8 +18,8 @@ namespace Formulate.Core.Tests.FormHandlerTests
             Assert.Throws<ArgumentNullException>(() => factory.Create(settings));
         }
 
-        [Fact(DisplayName = "When no KindId matches should throw a Not Supported Exception")]
-        public void WhenNoKindIdMatchesShouldThrowNotSupportedException()
+        [Fact(DisplayName = "When no KindId matches should throw a Form Handler Kind Not Found Exception")]
+        public void WhenNoKindIdMatchesShouldThrowFormHandlerKindNotFoundException()
         {
             // arrange
             var factory = CreateFactory();
@@ -28,8 +28,11 @@ namespace Formulate.Core.Tests.FormHandlerTests
                 KindId = Guid.Parse(Constants.MissingFormHandlerKindId)
             };
 
-            // act / assert
-            Assert.Throws<NotSupportedException>(() => factory.Create(settings));
+            // act
+            var exception = Assert.Throws<FormHandlerKindNotFoundException>(() => factory.Create(settings));
+
+            // assert
+            Assert.Equal(settings.KindId, exception.KindId);
         }
 
         [Fact(DisplayName = "When KindId matches a Form Handler Definition should return a Form Handler")]

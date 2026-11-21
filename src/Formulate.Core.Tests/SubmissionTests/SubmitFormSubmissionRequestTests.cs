@@ -94,7 +94,7 @@ namespace Formulate.Core.Tests.SubmissionTests
             var run = new List<string>();
             var harness = new Harness();
             var uninstalled = harness.Handler("two", run);
-            harness.FailCreate(uninstalled, new NotSupportedException("no definition"));
+            harness.FailCreate(uninstalled, new FormHandlerKindNotFoundException(uninstalled.KindId));
             var request = harness.Request(harness.Handler("one", run), uninstalled, harness.Handler("three", run));
 
             var result = await harness.Submit(request);
@@ -106,6 +106,24 @@ namespace Formulate.Core.Tests.SubmissionTests
             Assert.Contains(request.Form.Id.ToString(), entry.Message);
             Assert.Contains(uninstalled.Id.ToString(), entry.Message);
             Assert.Contains(uninstalled.KindId.ToString(), entry.Message);
+        }
+
+        [Fact]
+        public async Task Submission_fails_when_an_installed_handler_cannot_be_created()
+        {
+            var run = new List<string>();
+            var harness = new Harness();
+            var broken = harness.Handler("two", run);
+            harness.FailCreate(broken, new NotSupportedException("thrown by the definition's CreateHandler"));
+            var request = harness.Request(harness.Handler("one", run), broken, harness.Handler("three", run));
+
+            var result = await harness.Submit(request);
+
+            Assert.False(result);
+            Assert.Equal(new[] { "one", "three" }, run);
+            Assert.DoesNotContain(harness.Logger.Entries, x => x.Level == LogLevel.Warning);
+            var entry = Assert.Single(harness.Logger.Entries, x => x.Level == LogLevel.Error);
+            Assert.IsType<NotSupportedException>(entry.Exception);
         }
 
         private sealed class Harness

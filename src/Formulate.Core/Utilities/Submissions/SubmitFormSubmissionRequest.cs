@@ -64,9 +64,10 @@
                     {
                         item = _formHandlerFactory.Create(settings);
                     }
-                    catch (NotSupportedException)
+                    catch (FormHandlerKindNotFoundException)
                     {
-                        // The handler's kind is no longer installed, so there is nothing to run.
+                        // The handler's kind is no longer installed, so there is nothing to run. Any
+                        // other exception, even a NotSupportedException from the definition, is a failure.
                         _logger.LogWarning(
                             "Skipping form handler {HandlerId} on form {FormId} because its kind {HandlerKindId} is not installed.",
                             settings.Id, form.Id, settings.KindId);

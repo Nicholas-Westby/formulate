@@ -25,7 +25,7 @@
 
         /// <inheritdoc />
         /// <exception cref="ArgumentNullException">The provided settings are null.</exception>
-        /// <exception cref="NotSupportedException">The matched form definition handler is not supported.</exception>
+        /// <exception cref="FormHandlerKindNotFoundException">No installed definition matches the settings' kind.</exception>
         public IFormHandler Create(IFormHandlerSettings settings)
         {
             if (settings is null)
@@ -37,8 +37,7 @@
 
             if (foundFormHandlerDefinition is null)
             {
-                throw new NotSupportedException(
-                    $"No form handler definition matches the kind id '{settings.KindId}'.");
+                throw new FormHandlerKindNotFoundException(settings.KindId);
             }
 
             // Create an instance of the form handler.
