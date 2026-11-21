@@ -2,7 +2,9 @@
 {
     // Namespaces.
     using System;
+    using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Extensions.Logging;
     using Types;
     using Validations;
 
@@ -22,6 +24,9 @@
         /// <inheritdoc cref="IValidationEntityRepository" />
         private readonly IValidationEntityRepository _validationEntityRepository;
 
+        /// <inheritdoc cref="ILogger" />
+        private readonly ILogger<FormFieldFactory> _logger;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FormFieldFactory"/> class.
         /// </summary>
@@ -34,13 +39,18 @@
         /// <param name="validationEntityRepository">
         /// The repository of validations.
         /// </param>
+        /// <param name="logger">
+        /// The logger.
+        /// </param>
         public FormFieldFactory(FormFieldDefinitionCollection formFieldDefinitions,
             IValidationFactory validationFactory,
-            IValidationEntityRepository validationEntityRepository)
+            IValidationEntityRepository validationEntityRepository,
+            ILogger<FormFieldFactory> logger)
         {
             _formFieldDefinitions = formFieldDefinitions;
             _validationFactory = validationFactory;
             _validationEntityRepository = validationEntityRepository;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -72,10 +82,37 @@
                 .GetBackOfficeConfiguration(settings);
 
             // Set the validations.
-            field.Validations = settings.Validations
-                .Select(x => _validationEntityRepository.Get(x))
-                .Select(x => _validationFactory.Create(x))
-                .ToArray();
+            // Validations that were deleted (or have an unknown kind) are skipped.
+            var validations = new List<IValidation>();
+
+            foreach (var validationId in settings.Validations ?? Array.Empty<Guid>())
+            {
+                var persistedValidation = _validationEntityRepository.Get(validationId);
+
+                if (persistedValidation is null)
+                {
+                    _logger.LogWarning(
+                        "Form field {FieldId} references validation {ValidationId}, which no longer exists. Skipping it.",
+                        settings.Id,
+                        validationId);
+                    continue;
+                }
+
+                var validation = _validationFactory.Create(persistedValidation);
+
+                if (validation is null)
+                {
+                    _logger.LogWarning(
+                        "Form field {FieldId} references validation {ValidationId}, which has an unknown kind. Skipping it.",
+                        settings.Id,
+                        validationId);
+                    continue;
+                }
+
+                validations.Add(validation);
+            }
+
+            field.Validations = validations.ToArray();
 
             // Return the form field.
             return field;
