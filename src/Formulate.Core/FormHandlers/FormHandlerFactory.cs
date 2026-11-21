@@ -37,7 +37,8 @@
 
             if (foundFormHandlerDefinition is null)
             {
-                return default;
+                throw new NotSupportedException(
+                    $"No form handler definition matches the kind id '{settings.KindId}'.");
             }
 
             // Create an instance of the form handler.

@@ -18,31 +18,14 @@ namespace Formulate.Core.Tests.FormHandlerTests
             Assert.Throws<ArgumentNullException>(() => factory.Create(settings));
         }
 
-        [Fact(DisplayName = "When no KindId matches should return Default")]
-        public void WhenNoKindIdMatchesShouldReturnDefault()
+        [Fact(DisplayName = "When no KindId matches should throw a Not Supported Exception")]
+        public void WhenNoKindIdMatchesShouldThrowNotSupportedException()
         {
             // arrange
             var factory = CreateFactory();
             var settings = new TestFormHandlerSettings()
             {
                 KindId = Guid.Parse(Constants.MissingFormHandlerKindId)
-            };
-
-            // act
-            var handler = factory.Create(settings);
-
-            // assert
-            Assert.Equal(default, handler);
-        }
-
-        [Fact(DisplayName = "When KindId matches an unsupported Form Handler Definition should throw a Not Supported Exception")]
-        public void WhenKindIdMatchesAnUnsupportedFormHandlerDefinitionShouldThrowException()
-        {
-            // arrange
-            var factory = CreateFactory();
-            var settings = new TestFormHandlerSettings()
-            {
-                KindId = Guid.Parse(Constants.TestUnsupportedFormHandlerKindId)
             };
 
             // act / assert
@@ -71,8 +54,7 @@ namespace Formulate.Core.Tests.FormHandlerTests
         {
             var items = new List<IFormHandlerDefinition>
             {
-                new TestFormHandlerDefinition(), 
-                new TestUnsupportedFormHandlerDefinition()
+                new TestFormHandlerDefinition()
             };
 
             var collection = new FormHandlerDefinitionCollection(() => items);
