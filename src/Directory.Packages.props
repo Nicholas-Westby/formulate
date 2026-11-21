@@ -17,6 +17,7 @@
   <!-- The dev site. -->
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoSiteVersion)" />
+    <PackageVersion Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="$(UmbracoSiteVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,40 +1,39 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework Condition="'$(UmbracoMajor)' != '' and $([System.Int32]::Parse('$(UmbracoMajor)')) &gt;= 19">net11.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <CompressionEnabled>false</CompressionEnabled>
+    <!-- The site runs a real Umbraco version, so audit every package, not just direct references. -->
+    <NuGetAuditMode>all</NuGetAuditMode>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Umbraco.Cms" Version="10.0.1" />
-    </ItemGroup>
+  <PropertyGroup Condition="'$(UmbracoMajor)' != '' and $([System.Int32]::Parse('$(UmbracoMajor)')) &gt;= 18">
+    <DefineConstants>$(DefineConstants);UMBRACO_18_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UmbracoMajor)' != '' and $([System.Int32]::Parse('$(UmbracoMajor)')) &gt;= 19">
+    <DefineConstants>$(DefineConstants);UMBRACO_19_OR_GREATER</DefineConstants>
+  </PropertyGroup>
 
-    <!-- Force windows to use ICU. Otherwise Windows 10 2019H1+ will do it, but older windows 10 and most if not all winodws servers will run NLS -->
-    <ItemGroup>
-        <PackageReference Include="Microsoft.ICU.ICU4C.Runtime" Version="68.2.0.9" />
-        <RuntimeHostConfigurationOption Include="System.Globalization.AppLocalIcu" Value="68.2" />
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Views\Partials\" />
-    </ItemGroup>
-    <ItemGroup>
-      <ProjectReference Include="..\Formulate.Extensions.PlainJavaScriptTemplate\Formulate.Extensions.PlainJavaScriptTemplate.csproj" />
-      <ProjectReference Include="..\Formulate.Extensions.StoreData\Formulate.Extensions.StoreData.csproj" />
-      <ProjectReference Include="..\Formulate\Formulate.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms" />
+    <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" />
+    <ProjectReference Include="..\Formulate\Formulate.csproj" />
+  </ItemGroup>
 
+  <ItemGroup>
+    <!-- Developer-only overrides, loaded in Debug builds. Never published. -->
+    <Content Update="appsettings.Local.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
 
-
-    <PropertyGroup>
-        <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
-    </PropertyGroup>
-
-    <!-- Set this to true if ModelsBuilder mode is not InMemoryAuto-->
-    <PropertyGroup>
-        <RazorCompileOnBuild>false</RazorCompileOnBuild>
-        <RazorCompileOnPublish>false</RazorCompileOnPublish>
-    </PropertyGroup>
-    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="$(SolutionDir)/CustomBuildActions/bin/$(ConfigurationName)/net6.0/CustomBuildActions.exe -everything" />
-    </Target>
+  <PropertyGroup>
+    <!-- Razor files are needed for the backoffice to work correctly -->
+    <CopyRazorGenerateFilesToPublishDirectory>true</CopyRazorGenerateFilesToPublishDirectory>
+    <!-- Remove RazorCompileOnBuild and RazorCompileOnPublish when not using ModelsMode InMemoryAuto -->
+    <RazorCompileOnBuild>false</RazorCompileOnBuild>
+    <RazorCompileOnPublish>false</RazorCompileOnPublish>
+  </PropertyGroup>
 
 </Project>

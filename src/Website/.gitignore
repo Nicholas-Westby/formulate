@@ -486,11 +486,14 @@ $RECYCLE.BIN/
 # Nuget package Umbraco.Cms.StaticAssets will copy them in during dotnet build
 **/wwwroot/umbraco/
 
-# Copied Formulate plugin files.
-/App_Plugins/
+# Local appsettings.json override
+appsettings.Local.json
 
-# Files generated from sample files.
-/appsettings.json
-
-# App data.
-/wwwroot/App_Data/
+# Generated at runtime.
+/umbraco/Data/
+/umbraco/Logs/
+/umbraco/mediacache/
+/wwwroot/media/
+/App_Data/
+appsettings-schema*.json
+umbraco-package-schema.json
