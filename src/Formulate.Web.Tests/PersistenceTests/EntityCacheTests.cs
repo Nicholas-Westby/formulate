@@ -45,6 +45,41 @@ namespace Formulate.Web.Tests.PersistenceTests
         }
 
         [Fact]
+        public void Entity_file_without_an_Id_is_skipped_and_logged()
+        {
+            AssertInvalidFileIsSkipped(form => form.Id = Guid.Empty, "it has no Id");
+        }
+
+        [Fact]
+        public void Entity_file_without_a_Path_is_skipped_and_logged()
+        {
+            AssertInvalidFileIsSkipped(form => form.Path = null!, "it has no Path");
+        }
+
+        [Fact]
+        public void Entity_file_whose_Id_does_not_match_its_file_name_is_skipped_and_logged()
+        {
+            AssertInvalidFileIsSkipped(form => form.Id = Guid.NewGuid(), "does not match the file name");
+        }
+
+        [Fact]
+        public void Empty_entity_file_is_skipped_and_logged()
+        {
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            repository.Save(PersistenceFixture.NewForm("Good"));
+            var emptyPath = Path.Combine(site.FormsFolder, Guid.NewGuid().ToString("N") + ".form");
+            File.WriteAllText(emptyPath, "");
+
+            var item = Assert.Single(repository.GetRootItems());
+
+            Assert.Equal("Good", item.Name);
+            var entry = Assert.Single(site.CacheLogger.Entries, x => x.Level == LogLevel.Warning);
+            Assert.Contains(emptyPath, entry.Message);
+            Assert.Contains("it is empty", entry.Message);
+        }
+
+        [Fact]
         public void Get_twice_without_an_edit_reads_the_file_once()
         {
             using var site = new PersistenceFixture();
@@ -105,6 +140,32 @@ namespace Formulate.Web.Tests.PersistenceTests
             Assert.Single(logger.Entries, x => x.Level == LogLevel.Warning);
             Assert.NotNull(second);
             Assert.Equal("Contact", second.Name);
+        }
+
+        /// <summary>
+        /// Writes a form file that parses but is broken by <paramref name="breakIt"/>, next to a good
+        /// form, and checks both listings skip it and one warning names the file and the reason.
+        /// </summary>
+        private static void AssertInvalidFileIsSkipped(Action<PersistedForm> breakIt, string reason)
+        {
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            repository.Save(PersistenceFixture.NewForm("Good"));
+            var broken = PersistenceFixture.NewForm("Broken");
+            var brokenPath = Path.Combine(site.FormsFolder, broken.Id.ToString("N") + ".form");
+            breakIt(broken);
+            File.WriteAllText(brokenPath, site.JsonUtility.Serialize(broken));
+
+            var rootItems = repository.GetRootItems();
+            var children = repository.GetChildren(Guid.Empty);
+
+            Assert.Equal("Good", Assert.Single(rootItems).Name);
+            Assert.Equal("Good", Assert.Single(children).Name);
+
+            // One warning across both listings: the broken file is remembered until it changes.
+            var entry = Assert.Single(site.CacheLogger.Entries, x => x.Level == LogLevel.Warning);
+            Assert.Contains(brokenPath, entry.Message);
+            Assert.Contains(reason, entry.Message);
         }
 
         private sealed class CountingJsonUtility : IJsonUtility

@@ -98,7 +98,8 @@ namespace Formulate.Web.Persistence
         /// <param name="path">The file path.</param>
         /// <param name="cacheable">
         /// False when the file could not be read (locked, permissions), so the next Get retries.
-        /// A file that read fine but holds invalid JSON is cacheable (as null) until it changes.
+        /// A file that read fine but holds invalid JSON, or an entity without a usable ID or path,
+        /// is cacheable (as null) until it changes.
         /// </param>
         private TPersistedEntity? Read<TPersistedEntity>(string path, out bool cacheable) where TPersistedEntity : class, IPersistedEntity
         {
@@ -116,16 +117,57 @@ namespace Formulate.Web.Persistence
             }
 
             cacheable = true;
+            TPersistedEntity? entity;
 
             try
             {
-                return _jsonUtility.Deserialize<TPersistedEntity>(contents);
+                entity = _jsonUtility.Deserialize<TPersistedEntity>(contents);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Skipping the Formulate file {Path} because it is not valid.", path);
                 return null;
             }
+
+            var problem = FindProblem(entity, path);
+
+            if (problem is not null)
+            {
+                _logger.LogWarning("Skipping the Formulate file {Path} because {Problem}.", path, problem);
+                return null;
+            }
+
+            return entity;
+        }
+
+        /// <summary>
+        /// Checks that an entity read from a file can be used: the listings and the tree need its ID
+        /// and path, and the ID must match the file name, which is how entities are found by ID.
+        /// </summary>
+        /// <returns>The reason the entity cannot be used, or null when it can.</returns>
+        private static string? FindProblem(IPersistedEntity? entity, string path)
+        {
+            if (entity is null)
+            {
+                return "it is empty";
+            }
+
+            if (entity.Id == Guid.Empty)
+            {
+                return "it has no Id";
+            }
+
+            if (entity.Path is null || entity.Path.Length == 0)
+            {
+                return "it has no Path";
+            }
+
+            if (!Guid.TryParse(Path.GetFileNameWithoutExtension(path), out var fileId) || fileId != entity.Id)
+            {
+                return $"its Id {entity.Id:N} does not match the file name";
+            }
+
+            return null;
         }
 
         private sealed record CacheEntry(DateTime LastWrite, long Length, IPersistedEntity? Entity);
