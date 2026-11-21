@@ -39,6 +39,31 @@ public sealed class StoreDataFormHandlerTests
         Assert.All(scopedInstances, x => Assert.True(x.Disposed));
     }
 
+    [Fact]
+    public async Task StoreData_handler_disposes_services_that_can_only_be_disposed_asynchronously()
+    {
+        var services = new ServiceCollection();
+        var scopedInstances = new List<AsyncOnlyStoreData>();
+        services.AddScoped<IStoreData>(_ =>
+        {
+            var instance = new AsyncOnlyStoreData();
+            scopedInstances.Add(instance);
+            return instance;
+        });
+
+        await using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        var definition = new StoreDataFormHandlerDefinition(provider.GetRequiredService<IServiceScopeFactory>());
+        var handler = Assert.IsAssignableFrom<AsyncFormHandler>(
+            definition.CreateHandler(Mock.Of<IFormHandlerSettings>()));
+
+        // A synchronously disposed scope throws for a service that only implements IAsyncDisposable.
+        await handler.HandleAsync(CreateSubmission(), TestContext.Current.CancellationToken);
+
+        var instance = Assert.Single(scopedInstances);
+        Assert.Equal(1, instance.Calls);
+        Assert.True(instance.Disposed);
+    }
+
     private static FormSubmissionRequest CreateSubmission()
     {
         return new FormSubmissionRequest(
@@ -64,5 +89,24 @@ public sealed class StoreDataFormHandlerTests
         }
 
         public void Dispose() => Disposed = true;
+    }
+
+    private sealed class AsyncOnlyStoreData : IStoreData, IAsyncDisposable
+    {
+        public int Calls { get; private set; }
+
+        public bool Disposed { get; private set; }
+
+        public Task ExecuteAsync(FormSubmissionRequest submission, CancellationToken cancellationToken)
+        {
+            Calls++;
+            return Task.CompletedTask;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
+            return ValueTask.CompletedTask;
+        }
     }
 }

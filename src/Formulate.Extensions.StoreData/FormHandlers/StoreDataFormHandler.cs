@@ -22,8 +22,9 @@ namespace Formulate.Extensions.StoreData.FormHandlers
         public override async Task HandleAsync(FormSubmissionRequest submission,
             CancellationToken cancellationToken = default)
         {
-            // The store is scoped (it uses the database), so each submission gets its own scope.
-            using var scope = _scopeFactory.CreateScope();
+            // The store is scoped (it uses the database), so each submission gets its own scope. It is
+            // disposed asynchronously, since a scoped service may only implement IAsyncDisposable.
+            await using var scope = _scopeFactory.CreateAsyncScope();
             var storeData = scope.ServiceProvider.GetRequiredService<IStoreData>();
 
             await storeData.ExecuteAsync(submission, cancellationToken);
