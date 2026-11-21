@@ -7,6 +7,7 @@ namespace Formulate.Core.Tests.FormFieldTests
     using FormFields.RadioButtonList;
     using Moq;
     using Utilities;
+    using Utilities.Internal;
     using Xunit;
 
     public class RadioButtonListFieldDefinitionTests
@@ -14,20 +15,16 @@ namespace Formulate.Core.Tests.FormFieldTests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
+        [InlineData("  ")]
         [InlineData("{}")]
         public void RadioButtonList_with_empty_configuration_creates_field(string data)
         {
             // arrange
-            var json = new Mock<IJsonUtility>();
-
-            // Mirrors JsonUtility: blank input gives null, "{}" gives an empty object.
-            json.Setup(x => x.Deserialize<RadioButtonListFieldPreValues>(It.IsAny<string>()))
-                .Returns((string value) => string.IsNullOrWhiteSpace(value)
-                    ? null
-                    : new RadioButtonListFieldPreValues());
+            // The real JSON utility: blank input gives null, "{}" gives an empty object.
+            var json = new JsonUtility(new NewtonsoftJsonSerializer());
 
             var definition = new RadioButtonListFieldDefinition(
-                json.Object,
+                json,
                 Mock.Of<IGetDataValuesItemsUtility>());
             var settings = new TestSettings() { Data = data };
 

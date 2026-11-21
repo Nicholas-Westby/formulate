@@ -2,6 +2,7 @@ namespace Formulate.Core.Tests.FormFieldTests
 {
     // Namespaces.
     using FormFields;
+    using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
     using Moq;
     using System;
@@ -86,9 +87,77 @@ namespace Formulate.Core.Tests.FormFieldTests
             Assert.Same(validation, Assert.Single(formField.Validations));
         }
 
+        [Fact]
+        public void FormFieldFactory_logs_a_warning_for_a_validation_that_no_longer_exists()
+        {
+            // arrange
+            var deletedId = Guid.NewGuid();
+            var repository = new Mock<IValidationEntityRepository>();
+            repository.Setup(x => x.Get(deletedId)).Returns((PersistedValidation)null);
+            var logger = new CapturingLogger();
+            var factory = CreateFactory(repository: repository.Object, logger: logger);
+            var fieldId = Guid.NewGuid();
+            var settings = new TestFormFieldSettings()
+            {
+                Id = fieldId,
+                KindId = Guid.Parse(Constants.TestFormFieldKindId),
+                Validations = new[] { deletedId }
+            };
+
+            // act
+            var formField = factory.Create(settings);
+
+            // assert
+            Assert.Empty(formField.Validations);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(LogLevel.Warning, entry.Level);
+            Assert.Contains(fieldId.ToString(), entry.Message);
+            Assert.Contains(deletedId.ToString(), entry.Message);
+        }
+
+        [Fact]
+        public void FormFieldFactory_skips_validations_with_an_unknown_kind()
+        {
+            // arrange
+            var unknownId = Guid.NewGuid();
+            var unknown = new PersistedValidation() { Id = unknownId };
+            var repository = new Mock<IValidationEntityRepository>();
+            repository.Setup(x => x.Get(unknownId)).Returns(unknown);
+            var validationFactory = new Mock<IValidationFactory>();
+            validationFactory.Setup(x => x.Create(unknown)).Returns((IValidation)null);
+            var factory = CreateFactory(validationFactory.Object, repository.Object);
+            var settings = new TestFormFieldSettings()
+            {
+                KindId = Guid.Parse(Constants.TestFormFieldKindId),
+                Validations = new[] { unknownId }
+            };
+
+            // act
+            var formField = factory.Create(settings);
+
+            // assert
+            Assert.Empty(formField.Validations);
+        }
+
+        private sealed class CapturingLogger : ILogger<FormFieldFactory>
+        {
+            public List<(LogLevel Level, string Message)> Entries { get; } = new List<(LogLevel, string)>();
+
+            public IDisposable BeginScope<TState>(TState state) => null;
+
+            public bool IsEnabled(LogLevel logLevel) => true;
+
+            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
+                Func<TState, Exception, string> formatter)
+            {
+                Entries.Add((logLevel, formatter(state, exception)));
+            }
+        }
+
         private static IFormFieldFactory CreateFactory(
             IValidationFactory validationFactory = null,
-            IValidationEntityRepository repository = null)
+            IValidationEntityRepository repository = null,
+            ILogger<FormFieldFactory> logger = null)
         {
             var items = new List<IFormFieldDefinition>()
             {
@@ -101,7 +170,7 @@ namespace Formulate.Core.Tests.FormFieldTests
                 collection,
                 validationFactory ?? Mock.Of<IValidationFactory>(),
                 repository ?? Mock.Of<IValidationEntityRepository>(),
-                NullLogger<FormFieldFactory>.Instance);
+                logger ?? NullLogger<FormFieldFactory>.Instance);
         }
     }
 }
