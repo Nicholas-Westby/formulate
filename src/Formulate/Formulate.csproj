@@ -1,23 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <IsPackable>true</IsPackable>
         <Title>Formulate</Title>
-        <PackageId>Formulate</PackageId>
-        <Authors>Nicholas Westby, Jamie Pollock</Authors>
-        <Company>Rhythm</Company>
         <Description>An advanced form builder for Umbraco.</Description>
-        <Product>Formulate</Product>
-        <Copyright>Copyright 2022</Copyright>
-        <PackageProjectUrl>https://www.formulate.rocks</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/rhythmagency/formulate/</RepositoryUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageTags>Umbraco;forms</PackageTags>
-        <PackageReleaseNotes>4.0.0 - .net core / Umbraco 10 version</PackageReleaseNotes>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageTags>$(PackageTags) umbraco-marketplace</PackageTags>
+        <!-- A meta package: it has no code of its own and only carries its dependencies. -->
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Formulate.BackOffice.StaticAssets\Formulate.BackOffice.StaticAssets.csproj" />
         <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
         <ProjectReference Include="..\Formulate.Extensions.PlainJavaScriptTemplate\Formulate.Extensions.PlainJavaScriptTemplate.csproj" />
         <ProjectReference Include="..\Formulate.Extensions.SendData\Formulate.Extensions.SendData.csproj" />

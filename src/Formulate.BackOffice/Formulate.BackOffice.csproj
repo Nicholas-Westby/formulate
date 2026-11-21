@@ -1,25 +1,22 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <!-- This project is annotated for nullable reference types, unlike the shared default. -->
     <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
     <Title>Formulate.BackOffice</Title>
-    <PackageId>Formulate.BackOffice</PackageId>
-    <Authors>Nicholas Westby, Jamie Pollock</Authors>
-    <Company>Rhythm</Company>
     <Description>Backoffice functionality for Formulate, an advanced form builder for Umbraco.</Description>
-    <Product>Formulate.BackOffice</Product>
-    <Copyright>Copyright 2022</Copyright>
-    <PackageProjectUrl>https://www.formulate.rocks</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/rhythmagency/formulate/</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageTags>Umbraco;forms</PackageTags>
-    <PackageReleaseNotes>4.0.0 - .net core / Umbraco 10 version</PackageReleaseNotes>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Umbraco.Cms.Web.BackOffice" Version="10.0.1" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Umbraco.Cms.Api.Management" />
+    <PackageReference Include="Umbraco.Cms.Api.Common" />
+    <PackageReference Include="Umbraco.Cms.Web.Common" />
   </ItemGroup>
 
   <ItemGroup>
