@@ -1,4 +1,3 @@
-﻿using System.Runtime.Caching;
 using Formulate.Core.Persistence;
 using Formulate.Core.Utilities;
 
@@ -13,37 +12,21 @@ namespace Formulate.Web.Persistence
         private readonly IJsonUtility _jsonUtility;
 
         /// <summary>
-        /// The cache of entities.
-        /// </summary>
-        private readonly MemoryCache _entities;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="FileSystemPersistedEntityCache"/> class.
         /// </summary>
         /// <param name="jsonUtility"></param>
         public FileSystemPersistedEntityCache(IJsonUtility jsonUtility)
         {
             _jsonUtility = jsonUtility;
-            _entities = new MemoryCache("Formulate File System Persisted Entity Cache");
         }
 
         /// <inheritdoc />
         public TPersistedEntity? Get<TPersistedEntity>(string path) where TPersistedEntity : class, IPersistedEntity
         {
-            var key = path?.ToLower();
-            var exists = _entities.Contains(key);
-            var item = exists
-                ? _entities.Get(key) as TPersistedEntity
-                : _jsonUtility.Deserialize<TPersistedEntity>(GetFileContents(path));
+            // Temporary: reads the file every time until the cache is rebuilt.
+            var contents = GetFileContents(path);
 
-            if (!exists && item != null)
-            {
-                var policy = new CacheItemPolicy();
-                policy.ChangeMonitors.Add(new HostFileChangeMonitor(new[] { path }));
-                _entities.Set(key, item, policy);
-            }
-
-            return item;
+            return contents is null ? null : _jsonUtility.Deserialize<TPersistedEntity>(contents);
         }
 
         /// <summary>
@@ -54,8 +37,6 @@ namespace Formulate.Web.Persistence
         /// </param>
         public void Invalidate(string path)
         {
-            var key = path?.ToLower();
-            _entities.Remove(key);
         }
 
         /// <summary>
