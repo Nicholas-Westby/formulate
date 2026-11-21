@@ -1,7 +1,6 @@
-﻿namespace Formulate.Extensions.StoreData.FormHandlers
+namespace Formulate.Extensions.StoreData.FormHandlers
 {
     using Formulate.Core.FormHandlers;
-    using Formulate.Extensions.StoreData.Utilities;
     using Microsoft.Extensions.DependencyInjection;
     using System;
 
@@ -10,11 +9,11 @@
     /// </summary>
     public sealed class StoreDataFormHandlerDefinition : FormHandlerDefinition
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public StoreDataFormHandlerDefinition(IServiceProvider serviceProvider)
+        public StoreDataFormHandlerDefinition(IServiceScopeFactory scopeFactory)
         {
-            _serviceProvider = serviceProvider;
+            _scopeFactory = scopeFactory;
         }
 
         /// <summary>
@@ -61,13 +60,8 @@
         /// <inheritdoc />
         public override IFormHandler CreateHandler(IFormHandlerSettings settings)
         {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                var storeData = scope.ServiceProvider.GetRequiredService<IStoreData>();
-                var handler = new StoreDataFormHandler(settings, storeData);
-
-                return handler;
-            }
+            // Scoped services are resolved when the handler runs, not here.
+            return new StoreDataFormHandler(settings, _scopeFactory);
         }
 
         /// <inheritdoc />
