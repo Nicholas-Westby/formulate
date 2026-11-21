@@ -50,6 +50,26 @@ namespace Formulate.Core.Tests.FormHandlerTests
             Assert.NotEqual(default, handler);
         }
 
+        [Fact]
+        public void FormHandlerBase_KindId_comes_from_settings_KindId()
+        {
+            // arrange
+            var factory = CreateFactory();
+            var id = Guid.Parse("11111111111111111111111111111111");
+            var settings = new TestFormHandlerSettings()
+            {
+                Id = id,
+                KindId = Guid.Parse(Constants.TestFormHandlerKindId)
+            };
+
+            // act
+            var handler = factory.Create(settings);
+
+            // assert
+            Assert.Equal(settings.KindId, handler.KindId);
+            Assert.Equal(id, handler.Id);
+        }
+
         private static IFormHandlerFactory CreateFactory()
         {
             var items = new List<IFormHandlerDefinition>

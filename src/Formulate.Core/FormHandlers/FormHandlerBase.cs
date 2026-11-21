@@ -76,7 +76,7 @@
             }
 
             Id = settings.Id;
-            KindId = settings.Id;
+            KindId = settings.KindId;
             Alias = settings.Alias;
             Name = settings.Name;
             Enabled = settings.Enabled;
