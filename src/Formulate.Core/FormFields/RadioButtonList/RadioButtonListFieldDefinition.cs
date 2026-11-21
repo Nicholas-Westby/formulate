@@ -106,7 +106,7 @@
             var config = new RadioButtonListFieldConfiguration()
             {
                 Items = items,
-                Orientation = preValues.Orientation
+                Orientation = preValues?.Orientation
             };
 
             return new RadioButtonListField(settings, config);
