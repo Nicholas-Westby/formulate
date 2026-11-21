@@ -1,0 +1,43 @@
+@use '../settings' as *;
+
+// Date fields.
+.formulate__field {
+    &--date {
+
+        // Place the label before the field (since date fields show a format hint, they aren't well
+        // suited to showing the label as a placeholder).
+        display: flex;
+        flex-direction: column;
+        label {
+            order: -1;
+        }
+
+        // Style the date input element.
+        input {
+            border-radius: $formulate-size--field-radius;
+            border: $formulate-border--default;
+            height: $formulate-size--field-height;
+            line-height: $formulate-size--field-height;
+            background: $formulate-color--field;
+            &:focus {
+                background: $formulate-color--grey-light;
+                outline: 0;
+            }
+        }
+
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--date {
+            input[type=date] {
+                border-color: $formulate-color--error;
+                color: $formulate-color--error;
+                + label {
+                    color: $formulate-color--error;
+                }
+            }
+        }
+    }
+
+}

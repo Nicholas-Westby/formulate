@@ -1,0 +1,26 @@
+.formulate__form {
+
+    // Offset the field top margin.
+    margin-top: -20px;
+
+    // Allow descendants to be positioned relative to the entire form.
+    position: relative;
+
+    // Set all elements to use sensible box sizing. This is probably already part of your styles.
+    &,
+    * {
+        &,
+        &:before,
+        &:after {
+            box-sizing: border-box;
+        }
+    }
+
+}
+
+// The renderer hides inactive steps (and anything else it hides) with the hidden attribute.
+// Make sure no display rule in this theme, or in the site, can show them again.
+.formulate-wrapper [hidden],
+.formulate__form [hidden] {
+    display: none !important;
+}

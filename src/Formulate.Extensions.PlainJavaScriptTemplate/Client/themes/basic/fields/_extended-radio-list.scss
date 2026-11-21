@@ -1,0 +1,105 @@
+@use '../settings' as *;
+
+// Extended radio button list fields. These are similar to a radio button list, except
+// each option has two labels instead of one.
+.formulate__field {
+    &--extended-radio-list {
+
+        // The label that surrounds the input and text values.
+        label {
+
+            // Stack the text values vertically.
+            display: flex;
+            flex-direction: column;
+
+            // Separate each option a bit.
+            margin-top: $formulate-checkbox-vertical-option-gap;
+
+        }
+
+        // The two text elements.
+        .formulate__field__label-text {
+
+            // Position relative so the radio button element will be based on the text position
+            // rather than another ancestor.
+            position: relative;
+
+            // Give room for the radio button.
+            margin-left: $formulate-size--radio + $formulate-radio-label-gap;
+
+            // Style the "before" pseudo selector as a radio button (a circle).
+            &:before {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                content: '';
+                display: inline-block;
+                left: -$formulate-size--radio - 4px;
+                width: $formulate-size--radio;
+                height: $formulate-size--radio;
+                border: $formulate-border--default;
+                border-radius: $formulate-size--radio-radius;
+                background: $formulate-color--field;
+            }
+
+            // Style the second of the two text elements.
+            + .formulate__field__label-text {
+                font-weight: $formulate-font-weight--field-secondary-caption;
+
+                // Hide the second radio button (just need a radio button on the first text element).
+                &:before {
+                    display: none;
+                }
+
+            }
+
+        }
+
+        input {
+
+            // Hide the native radio button (we don't want the native styles).
+            position: absolute;
+            left: -9999px;
+
+            // The checked state.
+            &:checked {
+                + .formulate__field__label-text {
+                    &:before {
+
+                        // Create a dot at the center of the circle.
+                        background: $formulate-gradient--dot;
+
+                    }
+                }
+            }
+
+            // The focused state.
+            &:focus {
+                + .formulate__field__label-text {
+                    &:before {
+                        box-shadow: $formulate-shadow--box-medium;
+                    }
+                }
+            }
+
+        }
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--extended-radio-list {
+            label {
+                color: $formulate-color--error;
+            }
+            .formulate__field__label-text {
+                &:before {
+                    border-color: $formulate-color--error;
+                }
+            }
+            input:checked + .formulate__field__label-text:before {
+                background: $formulate-gradient--dot-error;
+            }
+        }
+    }
+
+}

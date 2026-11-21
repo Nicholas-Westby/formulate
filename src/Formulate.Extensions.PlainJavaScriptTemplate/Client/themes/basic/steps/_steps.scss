@@ -1,0 +1,33 @@
+@use '../settings' as *;
+
+// Manages multi-step form styles.
+.formulate__step {
+
+    // Ensure the steps are 100% of the width of the form (is useful during animations,
+    // during which the position is absolute).
+    width: 100%;
+
+    // Styles when a step is active and animating.
+    &--active.formulate__step--animating {
+
+        // Animate the step into view.
+        animation: show-formulate-step $formulate-transition-duration--long forwards;
+
+    }
+
+    // Styles when a step is inactive.
+    &--inactive {
+
+        // Animate the step out of view.
+        &.formulate__step--animating {
+            animation: hide-formulate-step $formulate-transition-duration--long forwards;
+        }
+
+        // For accessibility, fully hide the inactive steps once the animation is complete.
+        &:not(.formulate__step--animating) {
+            display: none;
+        }
+
+    }
+
+}

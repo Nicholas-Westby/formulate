@@ -1,0 +1,12 @@
+// Every setting of the theme. Forwarding them lets a site override any variable with
+// @use '.../app' with ($formulate-color--border: #48a);
+@forward 'colors';
+@forward 'spacing';
+@forward 'sizes';
+@forward 'breakpoints';
+@forward 'shadows';
+@forward 'borders';
+@forward 'fonts';
+@forward 'gradients';
+@forward 'timings';
+@forward 'animations';

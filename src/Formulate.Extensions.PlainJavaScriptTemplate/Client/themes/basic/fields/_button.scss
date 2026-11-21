@@ -1,0 +1,37 @@
+@use '../settings' as *;
+
+// Button fields.
+.formulate__field--button {
+    button {
+
+        // Style the button in the default state.
+        border: $formulate-border--default;
+        box-shadow: $formulate-shadow--box-deep;
+        height: $formulate-size--field-height;
+        line-height: $formulate-size--field-height;
+        padding: 0 $formulate-button-padding--horizontal;
+        min-width: $formulate-size--min-button-width;
+        background: $formulate-color--field;
+        border-radius: $formulate-size--field-radius;
+        font-weight: $formulate-font-weight--button;
+        font-family: $formulate-font-family--button;
+        font-size: $formulate-size--button-font-size;
+
+        // Remove the outline from the button on active/focus states.
+        &:active,
+        &:focus {
+            outline: 0;
+        }
+
+        // When the button is active, reduce the box shadow.
+        &:active {
+            box-shadow: $formulate-shadow--box-shallow;
+        }
+
+        // When the button is focused, add a text shadow.
+        &:focus {
+            text-shadow: $formulate-shadow--text-default;
+        }
+
+    }
+}

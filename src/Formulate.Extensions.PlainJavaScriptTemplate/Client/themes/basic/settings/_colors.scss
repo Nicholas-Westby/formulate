@@ -1,0 +1,18 @@
+// Named colors.
+$formulate-color--black: #000 !default;
+$formulate-color--black-transparent: #0000 !default;
+$formulate-color--white: #fff !default;
+$formulate-color--red: #f00 !default;
+$formulate-color--red-transparent: #f000 !default;
+$formulate-color--grey: #888 !default;
+$formulate-color--grey-light: #eee !default;
+$formulate-color--blue-super-light: #f6f6ff !default;
+
+// Theme colors.
+$formulate-color--border: $formulate-color--black !default;
+$formulate-color--border-transparent: $formulate-color--black-transparent !default;
+$formulate-color--field: $formulate-color--white !default;
+$formulate-color--error: $formulate-color--red !default;
+$formulate-color--error-transparent: $formulate-color--red-transparent !default;
+$formulate-color--shadow: $formulate-color--grey !default;
+$formulate-color--field-focused: $formulate-color--grey-light !default;

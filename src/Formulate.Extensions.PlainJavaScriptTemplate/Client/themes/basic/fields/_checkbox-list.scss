@@ -1,0 +1,88 @@
+@use '../settings' as *;
+
+// Checkbox list fields.
+.formulate__field {
+    &--checkbox-list {
+        .formulate__field__label-text {
+
+            // The checkbox label. Add a gap to the left for the checkbox, and a gap to the right
+            // so adjacent checkboxes/labels aren't too close to each other.
+            position: relative;
+            display: inline-block;
+            margin-left: $formulate-size--checkbox + $formulate-checkbox-label-gap;
+            margin-right: $formulate-checkbox-spacing--horizontal;
+
+            // Use the "before" pseudo selector to create a checkbox (a rounded square).
+            &:before {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                content: '';
+                display: inline-block;
+                border-radius: $formulate-size--checkbox-radius;
+                left: -$formulate-size--checkbox - $formulate-checkbox-label-gap;
+                width: $formulate-size--checkbox;
+                height: $formulate-size--checkbox;
+                border: $formulate-border--default;
+                background: $formulate-color--field;
+            }
+
+        }
+
+        input {
+
+            // Hide the checkbox input (we don't want the default checkbox styles).
+            position: absolute;
+            left: -9999px;
+
+            // Style the checkbox when it is checked.
+            &:checked {
+                + .formulate__field__label-text {
+
+                    // Use the "after" pseudo selector to add a checkmark.
+                    &:after {
+                        position: absolute;
+                        top: 50%;
+                        transform: translateY(-50%) rotate(-45deg);
+                        content: '';
+                        display: inline-block;
+                        left: -16px;
+                        width: 8px;
+                        height: 5px;
+                        border-bottom: $formulate-border--checkmark;
+                        border-left: $formulate-border--checkmark;
+                    }
+
+                }
+            }
+
+            // Style the checkbox when it is focused.
+            &:focus {
+                + .formulate__field__label-text {
+                    &:before {
+                        box-shadow: $formulate-shadow--box-medium;
+                    }
+                }
+            }
+
+        }
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--checkbox-list {
+            label {
+                color: $formulate-color--error;
+            }
+            .formulate__field__label-text {
+                &:before {
+                    border-color: $formulate-color--error;
+                }
+            }
+            input:checked + .formulate__field__label-text:after {
+                border-color: $formulate-color--error;
+            }
+        }
+    }
+
+}

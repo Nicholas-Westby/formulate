@@ -1,0 +1,75 @@
+@use '../settings' as *;
+@use 'fields-shared' as *;
+
+// Text area fields.
+.formulate__field {
+    textarea {
+
+        // Basic field styles.
+        border-radius: $formulate-size--field-radius;
+        border: $formulate-border--default;
+        width: 100%;
+        height: 200px;
+        padding: 20px $formulate-text-padding--horizontal 10px $formulate-text-padding--horizontal;
+        background: $formulate-color--field;
+
+        // Hide the placeholder text (we'll use the label as a placeholder).
+        @include hide-text-placeholder();
+
+        // Style the label as a placeholder (position it on top of the field).
+        + label {
+            position: absolute;
+            background: transparent;
+            transition:
+                all $formulate-transition-duration,
+                background-color 0s;
+            left: $formulate-text-padding--horizontal;
+            top: 20px;
+            line-height: 1;
+        }
+
+        // Focused state.
+        &:focus {
+            background: $formulate-color--field-focused;
+            outline: 0;
+        }
+        &:focus + label {
+            background-color: $formulate-color--field-focused;
+        }
+
+        // When the field is focused or text is entered, convert the placeholder
+        // to a label.
+        &:focus + label,
+        &:not(:placeholder-shown) + label {
+            line-height: 12px;
+            top: 2px;
+            left: 2px;
+            padding: 4px 10px 4px 10px;
+            font-size: $formulate-size--label-focused-font-size;
+            transform: initial;
+        }
+        &:focus + label,
+        &:not(:-ms-input-placeholder) + label {
+            line-height: 12px;
+            top: 2px;
+            left: 2px;
+            padding: 4px 10px 4px 10px;
+            font-size: $formulate-size--label-focused-font-size;
+            transform: initial;
+        }
+
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--textarea {
+            textarea {
+                border-color: $formulate-color--error;
+                + label {
+                    color: $formulate-color--error;
+                }
+            }
+        }
+    }
+
+}

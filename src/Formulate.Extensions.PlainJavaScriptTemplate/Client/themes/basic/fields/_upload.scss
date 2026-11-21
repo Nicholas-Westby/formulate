@@ -1,0 +1,120 @@
+@use '../settings' as *;
+
+// Upload fields.
+.formulate__field {
+    &--upload {
+
+        // Place all elements (button, filename, deselect button) on one line
+        // and vertically center them.
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+
+        // Hide the native input field (we'll be making a custom one).
+        input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        // The deselect button.
+        &__deselect {
+
+            // Hide the text (we'll display an "X" instead).
+            color: transparent;
+            user-select: none;
+
+            // Remove the native button styles.
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            margin: 0 0 0 10px;
+            border: 0;
+            background: none;
+            cursor: pointer;
+            position: relative;
+            &:active,
+            &:focus {
+                outline: 0;
+            }
+
+            // Style the button as an "X" using the "before" and "after" pseudo selectors
+            // to create lines that are rotated.
+            &:before,
+            &:after {
+                top: 8px;
+                border-radius: 2px;
+                content: '';
+                display: inline-block;
+                width: 20px;
+                height: 4px;
+                background: #000;
+                position: absolute;
+                left: 0;
+            }
+            &:before {
+                transform: rotate(-45deg);
+            }
+            &:after {
+                transform: rotate(45deg);
+            }
+
+            // Add a shadow when the deselect button is focused.
+            &:focus {
+                &:before {
+                    box-shadow: 0 3px 2px $formulate-color--shadow;
+                }
+                &:after {
+                    box-shadow: 3px 0 2px $formulate-color--shadow;
+                }
+            }
+
+        }
+
+        // Put a gap to the left of the filename.
+        &__filename {
+            margin-left: 10px;
+        }
+
+        // Style the label text as if it were a button.
+        .formulate__field__label-text {
+            border-radius: $formulate-size--field-radius;
+            border: $formulate-border--default;
+            box-shadow: $formulate-shadow--box-deep;
+            height: $formulate-size--field-height;
+            line-height: $formulate-size--field-height;
+            padding: 0 $formulate-button-padding--horizontal;
+            min-width: $formulate-size--min-button-width;
+            font-weight: $formulate-font-weight--button;
+            font-family: $formulate-font-family--button;
+            font-size: $formulate-size--button-font-size;
+            background: $formulate-color--field;
+            text-align: center;
+            display: inline-block;
+        }
+
+        // When the input is focused/active, give it a text shadow.
+        input:focus + .formulate__field__label-text,
+        input:active + .formulate__field__label-text {
+            text-shadow: $formulate-shadow--text-default;
+        }
+
+        // When the input is active, give it a box shadow.
+        .formulate__field__label:active {
+            .formulate__field__label-text {
+                box-shadow: $formulate-shadow--box-shallow;
+            }
+        }
+
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--upload {
+            .formulate__field__label-text {
+                border-color: $formulate-color--error;
+                color: $formulate-color--error;
+            }
+        }
+    }
+
+}

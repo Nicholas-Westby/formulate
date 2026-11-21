@@ -1,0 +1,81 @@
+@use '../settings' as *;
+
+// Radio button list fields.
+.formulate__field {
+    &--radio-list {
+
+        // The label.
+        .formulate__field__label-text {
+
+            // Position relative so the radio button element will be based on the text position
+            // rather than another ancestor.
+            position: relative;
+
+            // Give room for the radio button, and space from adjacent elements.
+            margin-left: $formulate-size--radio + $formulate-radio-label-gap;
+            margin-right: $formulate-radio-spacing--horizontal;
+
+            // Style the "before" pseudo selector as a radio button (a circle).
+            &:before {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                content: '';
+                display: inline-block;
+                left: -$formulate-size--radio - 4px;
+                width: $formulate-size--radio;
+                height: $formulate-size--radio;
+                border: $formulate-border--default;
+                border-radius: $formulate-size--radio-radius;
+                background: $formulate-color--field;
+            }
+        }
+
+        input {
+
+            // Hide the native radio button (we don't want the native styles).
+            position: absolute;
+            left: -9999px;
+
+            // The checked state.
+            &:checked {
+                + .formulate__field__label-text {
+                    &:before {
+
+                        // Create a dot at the center of the circle.
+                        background: $formulate-gradient--dot;
+
+                    }
+                }
+            }
+
+            // The focused state.
+            &:focus {
+                + .formulate__field__label-text {
+                    &:before {
+                        box-shadow: $formulate-shadow--box-medium;
+                    }
+                }
+            }
+
+        }
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--radio-list {
+            label {
+                color: $formulate-color--error;
+            }
+            .formulate__field__label-text {
+                &:before {
+                    border-color: $formulate-color--error;
+                }
+            }
+            input:checked + .formulate__field__label-text:before {
+                background: $formulate-gradient--dot-error;
+            }
+        }
+    }
+
+}

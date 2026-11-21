@@ -10,13 +10,16 @@
     "npm": ">=11"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run build:script && npm run build:theme",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:script": "tsc --noEmit && vite build",
+    "build:theme": "sass --no-source-map --style=expanded themes/basic/app.scss ../wwwroot/App_Plugins/Formulate/PlainJavaScript/themes/basic.css && sass --no-source-map --style=compressed themes/basic/app.scss ../wwwroot/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css"
   },
   "devDependencies": {
     "jsdom": "31.0.1",
+    "sass": "1.108.2",
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.1.1"

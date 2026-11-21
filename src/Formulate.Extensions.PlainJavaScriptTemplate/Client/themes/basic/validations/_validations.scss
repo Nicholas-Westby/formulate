@@ -1,0 +1,22 @@
+@use '../settings' as *;
+
+// The list of validation errors shown below each field with validation errors.
+.formulate__inline-validation-summary {
+
+    // Display as rows of text rather than lists of items.
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+
+    // Each error message within the list.
+    &__error {
+
+        // Give each error message a color, a font weight, and some vertical spacing.
+        color: $formulate-color--error;
+        margin-top: 5px;
+        font-weight: bold;
+
+    }
+
+}

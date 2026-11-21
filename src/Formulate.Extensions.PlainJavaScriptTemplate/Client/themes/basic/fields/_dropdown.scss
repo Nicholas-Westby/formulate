@@ -1,0 +1,48 @@
+@use '../settings' as *;
+
+// Select (aka drop down) fields.
+.formulate__field {
+    &--select {
+
+        // Hide the label (the first option in the drop down also serves as a label).
+        label {
+            position: absolute;
+            left: -9999px;
+        }
+
+        // Style the initial selection as if it were a label.
+        &--initial {
+            select {
+                font-weight: $formulate-font-weight--field-caption;
+            }
+        }
+
+        // Style the drop down.
+        select {
+            border-radius: $formulate-size--field-radius;
+            border: $formulate-border--default;
+            height: $formulate-size--field-height;
+            line-height: $formulate-size--field-height;
+            background: $formulate-color--field;
+
+            // Set the background on focus.
+            &:focus {
+                background: $formulate-color--grey-light;
+                outline: 0;
+            }
+
+        }
+
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--select {
+            select {
+                border-color: $formulate-color--error;
+                color: $formulate-color--error;
+            }
+        }
+    }
+
+}

@@ -1,0 +1,79 @@
+@use '../settings' as *;
+
+.formulate__field {
+
+    // Allow field elements to be positioned relative to the field container.
+    position: relative;
+
+    // Spacing between fields.
+    margin: 20px 0 0 0;
+
+    // Set the font size of fields that contain text.
+    input,
+    textarea,
+    select,
+    button {
+        font-size: 14px;
+    }
+
+    // The text-style fields should be 100% of the width of the cell.
+    input[type=text],
+    input[type=date],
+    textarea,
+    select {
+        width: 100%;
+        padding-left: 10px;
+    }
+
+    // Set the height of the text fields.
+    input[type=text] {
+        height: 50px;
+        line-height: 40px;
+        padding-top: 10px;
+    }
+
+    // Make all field labels bold.
+    label {
+        font-weight: bold;
+    }
+
+    // Style fieldsets (e.g., for checkbox list and radio button list).
+    @at-root fieldset#{&} {
+        border: $formulate-border--default;
+        legend {
+            font-weight: bold;
+        }
+
+        // Style the fieldset when a validation error is present.
+        &.formulate__field--validation-error {
+            border-color: $formulate-color--error;
+
+            legend {
+                color: $formulate-color--error;
+            }
+        }
+    }
+}
+
+// Hides the placeholder text (so the label can act as a placeholder).
+@mixin hide-text-placeholder() {
+    &::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+        color: transparent;
+        opacity: 1;
+    }
+
+    &::-moz-placeholder { /* Firefox 19+ */
+        color: transparent;
+        opacity: 1;
+    }
+
+    &:-ms-input-placeholder { /* IE 10+ */
+        color: transparent;
+        opacity: 1;
+    }
+
+    &:-moz-placeholder { /* Firefox 18- */
+        color: transparent;
+        opacity: 1;
+    }
+}

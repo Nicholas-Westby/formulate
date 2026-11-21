@@ -1,0 +1,68 @@
+@use '../settings' as *;
+@use 'fields-shared' as *;
+
+// Plain text fields.
+.formulate__field {
+    &--text {
+        input[type=text] {
+
+            // Basic field styles.
+            border-radius: $formulate-size--field-radius;
+            border: $formulate-border--default;
+            background: $formulate-color--field;
+
+            // Hide the placeholder text (we'll use the label as a placeholder).
+            @include hide-text-placeholder();
+
+            // Style the label as a placeholder (position it on top of the field).
+            + label {
+                position: absolute;
+                background: transparent;
+                transition: all $formulate-transition-duration;
+                left: $formulate-text-padding--horizontal;
+                top: 18px;
+            }
+
+            // Focused state.
+            &:focus {
+                background: $formulate-color--field-focused;
+                outline: 0;
+            }
+
+            // When the field is focused or text is entered, convert the placeholder
+            // to a label.
+            &:focus + label,
+            &:not(:placeholder-shown) + label {
+                line-height: 12px;
+                top: 4px;
+                font-size: $formulate-size--label-focused-font-size;
+                transform: initial;
+            }
+            &:focus + label,
+            &:not(:-ms-input-placeholder) + label {
+                line-height: 12px;
+                top: 4px;
+                font-size: $formulate-size--label-focused-font-size;
+                transform: initial;
+            }
+
+        }
+    }
+
+    // Style the field when there is a validation error.
+    &--validation-error {
+        &.formulate__field--text {
+            input[type=text] {
+                &,
+                &:active,
+                &:focus {
+                    border-color: $formulate-color--error;
+                }
+                + label {
+                    color: $formulate-color--error;
+                }
+            }
+        }
+    }
+
+}

@@ -1,0 +1,26 @@
+
+// Animation to show a step in a multi-step form.
+@keyframes show-formulate-step {
+    from {
+        position: absolute;
+        left: 100vw;
+    }
+    to {
+        position: absolute;
+        left: 0;
+    }
+}
+
+// Animation to hide a step in a multi-step form.
+@keyframes hide-formulate-step {
+    from {
+        position: absolute;
+        left: 0;
+        opacity: 1;
+    }
+    to {
+        position: absolute;
+        left: -100vw;
+        opacity: 0;
+    }
+}

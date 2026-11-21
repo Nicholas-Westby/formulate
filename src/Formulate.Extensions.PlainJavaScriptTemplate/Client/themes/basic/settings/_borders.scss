@@ -1,0 +1,5 @@
+@use 'colors';
+
+// Borders.
+$formulate-border--default: 2px solid colors.$formulate-color--border !default;
+$formulate-border--checkmark: 3px solid colors.$formulate-color--border !default;

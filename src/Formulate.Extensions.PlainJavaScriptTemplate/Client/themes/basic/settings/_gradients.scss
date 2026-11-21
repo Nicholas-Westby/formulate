@@ -1,0 +1,11 @@
+@use 'colors';
+
+// Gradients.
+$formulate-gradient--dot: radial-gradient(
+        colors.$formulate-color--border,
+        colors.$formulate-color--border 35%,
+        colors.$formulate-color--field 40%) !default;
+$formulate-gradient--dot-error: radial-gradient(
+        colors.$formulate-color--error,
+        colors.$formulate-color--error 35%,
+        colors.$formulate-color--field 40%) !default;
