@@ -8,6 +8,7 @@
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Extensions.Logging;
     using Umbraco.Cms.Core.Scoping;
 
     internal sealed class SubmitFormSubmissionRequest : ISubmitFormSubmissionRequest
@@ -22,8 +23,15 @@
         /// </summary>
         private readonly IFormHandlerFactory _formHandlerFactory;
 
-        public SubmitFormSubmissionRequest(ICoreScopeProvider coreScopeProvider, IFormHandlerFactory formHandlerFactory)
+        /// <summary>
+        /// The logger.
+        /// </summary>
+        private readonly ILogger<SubmitFormSubmissionRequest> _logger;
+
+        public SubmitFormSubmissionRequest(ICoreScopeProvider coreScopeProvider, IFormHandlerFactory formHandlerFactory,
+            ILogger<SubmitFormSubmissionRequest> logger)
         {
+            _logger = logger;
             _coreScopeProvider = coreScopeProvider;
             _formHandlerFactory = formHandlerFactory;
         }
@@ -38,22 +46,52 @@
         private async Task<bool> PerformSubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken)
         {
             var form = input.Form;
-            var formHandlers = CreateFormHandlers(form.Handlers);
+            var succeeded = true;
 
-            foreach (var item in formHandlers)
+            // Each handler is isolated, so one failing does not stop the others.
+            foreach (var settings in GetEnabledHandlers(form.Handlers))
             {
-                if (item is FormHandler formHandler)
+                try
                 {
-                    formHandler.Handle(input);
-                }
+                    IFormHandler item;
 
-                if (item is AsyncFormHandler asyncFormHandler)
+                    try
+                    {
+                        item = _formHandlerFactory.Create(settings);
+                    }
+                    catch (NotSupportedException)
+                    {
+                        // The handler's kind is no longer installed, so there is nothing to run.
+                        _logger.LogWarning(
+                            "Skipping form handler {HandlerId} on form {FormId} because its kind {HandlerKindId} is not installed.",
+                            settings.Id, form.Id, settings.KindId);
+                        continue;
+                    }
+
+                    if (item is FormHandler formHandler)
+                    {
+                        formHandler.Handle(input);
+                    }
+
+                    if (item is AsyncFormHandler asyncFormHandler)
+                    {
+                        await asyncFormHandler.HandleAsync(input, cancellationToken);
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    await asyncFormHandler.HandleAsync(input, cancellationToken);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    succeeded = false;
+                    _logger.LogError(ex,
+                        "Form handler {HandlerName} ({HandlerId}) failed on form {FormId}.",
+                        settings.Name, settings.Id, form.Id);
                 }
             }
 
-            return true;
+            return succeeded;
         }
 
         /// <summary>
@@ -73,27 +111,14 @@
             }
         }
 
-        private IReadOnlyCollection<IFormHandler> CreateFormHandlers(PersistedFormHandler[] items)
+        private static IReadOnlyCollection<PersistedFormHandler> GetEnabledHandlers(PersistedFormHandler[] items)
         {
             if (items == null)
             {
-                return Array.Empty<IFormHandler>();
+                return Array.Empty<PersistedFormHandler>();
             }
 
-            var enabledItems = items.Where(x => x.Enabled).ToArray();
-            var createdFormHandlers = new List<IFormHandler>();
-
-            foreach(var item in enabledItems)
-            {
-                var createdFormHandler = _formHandlerFactory.Create(item);
-
-                if (createdFormHandler is not null)
-                {
-                    createdFormHandlers.Add(createdFormHandler);
-                }
-            }
-
-            return createdFormHandlers.ToArray();
+            return items.Where(x => x.Enabled).ToArray();
         }
     }
 }
