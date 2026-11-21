@@ -92,5 +92,50 @@ namespace Formulate.Web.Tests.PersistenceTests
             var entry = Assert.Single(site.FactoryLogger.Entries, x => x.Level == Microsoft.Extensions.Logging.LogLevel.Information);
             Assert.Contains(Path.Combine(site.ContentRoot, "App_Data", "Formulate", "Json"), entry.Message);
         }
+
+        [Fact]
+        public void Leftover_tmp_files_are_ignored_by_listings()
+        {
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            var form = PersistenceFixture.NewForm("Contact");
+            repository.Save(form);
+            var leftover = Path.Combine(site.FormsFolder, form.Id.ToString("N") + ".form.tmp");
+            File.WriteAllText(leftover, "{ \"Id\": \"half written");
+
+            var items = repository.GetRootItems();
+
+            Assert.Single(items);
+            Assert.Empty(site.CacheLogger.Entries);
+        }
+
+        [Fact]
+        public void Save_leaves_no_tmp_file_behind_and_overwrites_existing_content()
+        {
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            var form = PersistenceFixture.NewForm("First");
+            repository.Save(form);
+            form.Name = "Second";
+
+            repository.Save(form);
+
+            Assert.Equal("Second", repository.Get(form.Id).Name);
+            Assert.Empty(Directory.GetFiles(site.FormsFolder, "*.tmp"));
+        }
+
+        [Fact]
+        public void Failed_save_removes_its_temp_file()
+        {
+            using var site = new PersistenceFixture();
+            var repository = site.Forms();
+            var form = PersistenceFixture.NewForm("Blocked");
+
+            // A folder where the entity file should go makes the final move fail.
+            Directory.CreateDirectory(Path.Combine(site.FormsFolder, form.Id.ToString("N") + ".form"));
+
+            Assert.ThrowsAny<IOException>(() => repository.Save(form));
+            Assert.Empty(Directory.GetFiles(site.FormsFolder, "*.tmp"));
+        }
     }
 }

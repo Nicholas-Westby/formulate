@@ -168,8 +168,38 @@ namespace Formulate.Web.Persistence
                 EnsurePathExists(folderPath);
             }
 
-            // Write file contents.
-            File.WriteAllText(path, contents);
+            // Write to a temp file first so a reader never sees a half-written entity. The ".tmp"
+            // suffix keeps it out of the listings, which only match the entity extension. The
+            // unique name stops two simultaneous saves of the same entity from sharing a file.
+            var tempPath = $"{path}.{Guid.NewGuid():N}.tmp";
+            try
+            {
+                File.WriteAllText(tempPath, contents);
+                File.Move(tempPath, path, overwrite: true);
+            }
+            catch
+            {
+                TryDeleteFile(tempPath);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Deletes a file if it exists, ignoring any error (used to clean up temp files).
+        /// </summary>
+        /// <param name="path">The path of the file to delete.</param>
+        private static void TryDeleteFile(string path)
+        {
+            try
+            {
+                File.Delete(path);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
 
         /// <summary>
