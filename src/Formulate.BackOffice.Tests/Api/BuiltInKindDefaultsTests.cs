@@ -145,6 +145,7 @@ public class BuiltInKindDefaultsTests
             new FormHandlerDefinitionCollection(() => Array.Empty<IFormHandlerDefinition>()),
             ConfigurationJson,
             new DefaultShortStringHelper(new DefaultShortStringHelperConfig()),
+            _tree.Repositories.DefaultTemplateId,
             new ApiWriteLock());
 
         Assert.Equal(11, kinds.Count);

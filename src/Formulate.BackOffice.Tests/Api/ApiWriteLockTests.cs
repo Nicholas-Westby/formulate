@@ -50,6 +50,7 @@ public class ApiWriteLockTests
         new FormHandlerDefinitionCollection(() => Array.Empty<IFormHandlerDefinition>()),
         ConfigurationJson,
         new DefaultShortStringHelper(new DefaultShortStringHelperConfig()),
+        _tree.Repositories.DefaultTemplateId,
         _writeLock);
 
     private LayoutApiService Layouts()

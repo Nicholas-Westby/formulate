@@ -62,6 +62,7 @@ public class FormApiServiceTests
             new FormHandlerDefinitionCollection(() => new[] { handler.Object }.Concat(_extraHandlers)),
             new ConfigurationJson(_harness.JsonUtility, _logger),
             new DefaultShortStringHelper(new DefaultShortStringHelperConfig()),
+            _harness.DefaultTemplateId,
             new ApiWriteLock());
     }
 
@@ -631,6 +632,22 @@ public class FormApiServiceTests
         Assert.Equal((ServiceStatus.Invalid, "handlers[0].kindId"), (handlerOnUpdate.Status, handlerOnUpdate.Field));
         Assert.Equal(UnknownKind, Assert.Single(Ok(unknownKept).Fields).KindId);
         Assert.Single(_harness.FormStore.GetAll());
+    }
+
+    [Fact]
+    public void A_duplicated_layout_without_a_template_gets_the_default_template()
+    {
+        // A layout is never stored without a template through the API, and duplicate stores layouts too.
+        var service = CreateService();
+        var source = CreateRequest();
+        Ok(service.Create(source));
+        var layoutId = Guid.NewGuid();
+        _harness.Layouts.Save(new PersistedLayout { Id = layoutId, Name = "From v4", KindId = Guid.Parse(BasicLayoutDefinition.Constants.KindId), TemplateId = null, Path = new[] { RepositoryHarness.FormsRoot, source.Id, layoutId } });
+
+        var copy = Ok(service.Duplicate(source.Id, new DuplicateFormRequestModel()));
+
+        Assert.Equal(Guid.Parse("00000000-0000-0000-0000-0000000000aa"), Assert.Single(_harness.Layouts.GetChildren(copy.Id)).TemplateId);
+        Assert.Null(_harness.Layouts.Get(layoutId).TemplateId);
     }
 
     [Fact]

@@ -121,6 +121,7 @@ internal sealed class RepositoryHarness
 
         var templateId = new Mock<IGetDefaultTemplateId>();
         templateId.Setup(x => x.GetValue()).Returns(Guid.Parse("00000000-0000-0000-0000-0000000000aa"));
+        DefaultTemplateId = templateId.Object;
         JsonUtility = new JsonUtility(new NewtonsoftJsonSerializer());
         FormDefinitions = new FormDefinitionCollection(() => new IFormDefinition[] { new FormWithBasicLayoutDefinition(), new DefaultFormLayoutDefinition() });
         Handler = new FormSavedWithBasicLayoutNotificationHandler(
@@ -154,6 +155,9 @@ internal sealed class RepositoryHarness
     public IJsonUtility JsonUtility { get; }
 
     public FormDefinitionCollection FormDefinitions { get; }
+
+    /// <summary>Gets the default template, 00000000-0000-0000-0000-0000000000aa.</summary>
+    public IGetDefaultTemplateId DefaultTemplateId { get; }
 
     public FormSavedWithBasicLayoutNotificationHandler Handler { get; }
 

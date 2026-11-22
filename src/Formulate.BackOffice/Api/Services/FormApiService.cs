@@ -8,6 +8,7 @@ namespace Formulate.BackOffice.Api.Services
     using Formulate.BackOffice.Api.Models.Shared;
     using Formulate.BackOffice.Definitions.Forms;
     using Formulate.BackOffice.Persistence;
+    using Formulate.BackOffice.Utilities;
     using Formulate.Core.FormFields;
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Forms;
@@ -43,6 +44,8 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly IShortStringHelper _shortStringHelper;
 
+        private readonly IGetDefaultTemplateId _defaultTemplateId;
+
         private readonly ApiWriteLock _writeLock;
 
         /// <inheritdoc cref="FormApiService"/>
@@ -55,6 +58,7 @@ namespace Formulate.BackOffice.Api.Services
             FormHandlerDefinitionCollection handlerDefinitions,
             ConfigurationJson configurationJson,
             IShortStringHelper shortStringHelper,
+            IGetDefaultTemplateId defaultTemplateId,
             ApiWriteLock writeLock)
         {
             _formRepository = formRepository;
@@ -65,6 +69,7 @@ namespace Formulate.BackOffice.Api.Services
             _handlerDefinitions = handlerDefinitions;
             _configurationJson = configurationJson;
             _shortStringHelper = shortStringHelper;
+            _defaultTemplateId = defaultTemplateId;
             _writeLock = writeLock;
         }
 
@@ -306,7 +311,9 @@ namespace Formulate.BackOffice.Api.Services
                     Name = layout.Name,
                     Alias = layout.Alias,
                     KindId = layout.KindId,
-                    TemplateId = layout.TemplateId,
+
+                    // A layout from before templates were required gets the default, as on create and update.
+                    TemplateId = layout.TemplateId ?? _defaultTemplateId.GetValue(),
                     Data = GuidRemapper.Remap(layout.Data, map),
                 });
             }
