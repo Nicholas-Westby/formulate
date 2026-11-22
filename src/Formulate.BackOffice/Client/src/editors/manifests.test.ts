@@ -17,6 +17,15 @@ describe('Formulate built-in kind editors', () => {
 			['formulateDataValuesEditor', 'formulate-data-value-pair-list', 'Formulate.DataValuesEditor.PairList'],
 			['formulateDataValuesEditor', 'formulate-dynamic-data-values', 'Formulate.DataValuesEditor.Dynamic'],
 			['formulateDataValuesEditor', 'formulate-legacy-data-value', 'Formulate.DataValuesEditor.Legacy'],
+			['formulateFieldEditor', 'formulate-button-field', 'Formulate.FieldEditor.Button'],
+			['formulateFieldEditor', 'formulate-checkbox-list-field', 'Formulate.FieldEditor.CheckboxList'],
+			['formulateFieldEditor', 'formulate-drop-down-field', 'Formulate.FieldEditor.DropDown'],
+			['formulateFieldEditor', 'formulate-radio-button-list-field', 'Formulate.FieldEditor.RadioButtonList'],
+			['formulateFieldEditor', 'formulate-header-field', 'Formulate.FieldEditor.Header'],
+			['formulateFieldEditor', 'formulate-hidden-field', 'Formulate.FieldEditor.Hidden'],
+			['formulateFieldEditor', 'formulate-rich-text-field', 'Formulate.FieldEditor.RichText'],
+			['formulateFieldEditor', 'formulate-text-constant-field', 'Formulate.FieldEditor.TextConstant'],
+			['formulateHandlerEditor', 'formulate-store-data-handler', 'Formulate.HandlerEditor.StoreData'],
 		]);
 	});
 

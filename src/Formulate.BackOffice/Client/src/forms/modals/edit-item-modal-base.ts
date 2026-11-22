@@ -8,6 +8,7 @@ import '../../core/kind-editor-slot.element.js';
 import type { FormulateKindEditorSlotElement } from '../../core/kind-editor-slot.element.js';
 import type { FormulateKindEditorContext, FormulateKindEditorType } from '../../core/kind-editor.js';
 import { FORMULATE_ANY_ALIAS_PATTERN } from '../../core/kind-item/kind-item-workspace-header.element.js';
+import { FORMULATE_SETTINGS_STYLES } from '../../core/settings-styles.js';
 import type { FormulateFormFieldModel } from '../types.js';
 
 /** What a field or handler has that its dialog edits for every kind. */
@@ -165,23 +166,12 @@ export abstract class FormulateEditItemModalBaseElement<
 	// As Umbraco's property settings.
 	static override styles = [
 		UmbTextStyles,
+		FORMULATE_SETTINGS_STYLES,
 		css`
 			#main {
 				display: flex;
 				flex-direction: column;
 				gap: var(--uui-size-layout-1);
-			}
-
-			umb-property-layout[orientation='vertical'] {
-				padding: var(--uui-size-space-2) 0;
-			}
-
-			umb-property-layout:first-of-type {
-				padding-top: 0;
-			}
-
-			umb-property-layout:last-of-type {
-				padding-bottom: 0;
 			}
 
 			uui-input,

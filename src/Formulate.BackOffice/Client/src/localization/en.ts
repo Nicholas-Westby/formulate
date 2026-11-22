@@ -94,5 +94,23 @@ export default {
 			'The kind of this handler is not installed, so only its name, alias and whether it is enabled can be changed here. Its settings are kept as they are.',
 		enabled: 'Enabled',
 		enabledDescription: 'Whether the handler runs when the form is submitted.',
+		buttonKind: 'Button kind',
+		buttonKindDescription:
+			"What the button does, such as Submit, which sends the form. The kinds are set up in Formulate's configuration.",
+		noButtonKind: 'No button kind',
+		dataValuesDescription: 'The data values that hold the choices visitors pick from.',
+		orientation: 'Orientation',
+		orientationDescription: 'Whether the choices are laid out across or down.',
+		defaultOrientation: 'As the template lays them out',
+		horizontal: 'Horizontal',
+		vertical: 'Vertical',
+		text: 'Text',
+		headerTextDescription: 'The heading the form shows.',
+		hiddenTextDescription: 'The value sent with each submission of the form. Visitors do not see it.',
+		textConstantDescription:
+			'The value the server adds to each submission of the form. Visitors do not see it, and their browsers do not send it.',
+		richTextDescription: 'The formatted text the form shows.',
+		storeDataDescription:
+			'Stores each submission of this form in the Umbraco database: the values of its fields, the page it was sent from and the files sent with it. There is nothing to set here.',
 	},
 } satisfies UmbLocalizationDictionary;
