@@ -282,7 +282,7 @@ npm run install-browser
 npm test
 ```
 
-The site runs over HTTPS on `https://localhost:44331`, so trust the .NET development certificate first with `dotnet dev-certs https --trust`.
+The site runs over HTTPS on `https://localhost:44331`, so trust the .NET development certificate first with `dotnet dev-certs https --trust`. It also listens on plain http on the port 1000 above (`http://localhost:45331`), where the tests' Send Data handlers send to its echo. The tests read the emails and the echoed requests from the run's own folders.
 
 Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco version, `FORMULATE_E2E_PORT` to use another port (so two runs can go at once), and `DOTNET_EXE` to point at a different `dotnet` (Umbraco 19 needs the .NET 11 SDK).
 

@@ -8,18 +8,71 @@ import { E2E_USER } from '../fixtures/user.ts';
  */
 export const SHELL_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
+/** The port the site listens on when FORMULATE_E2E_PORT is not set. */
+const DEFAULT_PORT = 44331;
+
+/** How far the plain http port is from the E2E port: 45331 for the default 44331. */
+export const PLAIN_HTTP_PORT_OFFSET = 1000;
+
+/** Where a run's site can be reached. */
+export interface SiteAddresses {
+	/** The site's address, over HTTPS on the E2E port, such as https://localhost:44331. */
+	origin: string;
+	/**
+	 * The site's address over plain http, such as http://localhost:45331: the specs point Send Data handlers at the
+	 * dev site's echo (/dev/echo) there. On Linux, where CI runs, the .NET development certificate is not trusted, so
+	 * the handler could not call the HTTPS address; a real handler's HTTPS is left as it is.
+	 */
+	plainOrigin: string;
+}
+
+/**
+ * The addresses of a run's site: HTTPS on the E2E port, and plain http on the E2E port plus 1000, so two runs on two
+ * E2E ports (such as in two worktrees) never share a port.
+ * @param e2ePort FORMULATE_E2E_PORT, or undefined for the default, 44331.
+ */
+export function siteAddresses(e2ePort: string | undefined): SiteAddresses {
+	const port = e2ePort ? Number(e2ePort) : DEFAULT_PORT;
+
+	if (!Number.isInteger(port) || port < 1) {
+		throw new Error(`FORMULATE_E2E_PORT is "${e2ePort}", which is not a port number.`);
+	}
+
+	const plainPort = port + PLAIN_HTTP_PORT_OFFSET;
+
+	if (plainPort > 65535) {
+		throw new Error(
+			`FORMULATE_E2E_PORT is ${port}, but the site's plain http port is that plus ${PLAIN_HTTP_PORT_OFFSET}, which must be 65535 or less.`,
+		);
+	}
+
+	return { origin: `https://localhost:${port}`, plainOrigin: `http://localhost:${plainPort}` };
+}
+
+/**
+ * The folders in a run's folder that the site writes to for the specs to read: the emails it sends (as .eml files,
+ * through Umbraco's pickup folder) and what the dev site's echo receives (src/Website/Composers/DevEchoComposer.cs).
+ * @param runFolder The run's folder (see playwright.config.ts).
+ */
+export function runFolderPaths(runFolder: string) {
+	return { email: join(runFolder, 'Email'), echo: join(runFolder, 'Echo') };
+}
+
 /**
  * The environment the dev site starts with for a run: Development, on a new database and Formulate folder in
- * the run's folder, with the run's own log, installing itself with the E2E user. Every name matches SHELL_NAME.
+ * the run's folder, with the run's own log, installing itself with the E2E user. It listens on both of the run's
+ * addresses, and writes its email and its echo's records in the run's folder. Every name matches SHELL_NAME.
  * @param options.origin The site's address, such as https://localhost:44331.
+ * @param options.plainOrigin The site's plain http address, such as http://localhost:45331.
  * @param options.runFolder The run's folder (see playwright.config.ts).
  */
-export function siteEnvironment(options: { origin: string; runFolder: string }): Record<string, string> {
-	const { origin, runFolder } = options;
+export function siteEnvironment(options: SiteAddresses & { runFolder: string }): Record<string, string> {
+	const { origin, plainOrigin, runFolder } = options;
+	const folders = runFolderPaths(runFolder);
 
 	return {
 		ASPNETCORE_ENVIRONMENT: 'Development',
-		ASPNETCORE_URLS: origin,
+		ASPNETCORE_URLS: `${origin};${plainOrigin}`,
 		// Only warnings and errors, apart from the lines about the Formulate the site loaded, which
 		// specs/loaded-formulate.spec.ts reads (appsettings.Development.json keeps them at Information).
 		Serilog__MinimumLevel__Default: 'Warning',
@@ -33,6 +86,11 @@ export function siteEnvironment(options: { origin: string; runFolder: string }):
 		Umbraco__CMS__Unattended__UnattendedUserEmail: E2E_USER.email,
 		Umbraco__CMS__Unattended__UnattendedUserPassword: E2E_USER.password,
 		Formulate__Website__Persistence__DataFolderPath: join(runFolder, 'Formulate'),
+		// The site's email goes to the run's own folder: Umbraco writes to a pickup folder before it tries a mail
+		// server, even one that appsettings.Local.json sets (see src/Website/Composers/DevEmailComposer.cs).
+		Umbraco__CMS__Global__Smtp__PickupDirectoryLocation: folders.email,
+		// What the dev site's echo receives, for the Send Data specs to read.
+		DevEcho__Folder: folders.echo,
 		// Leave no MSBuild or compiler server running after the build that "dotnet run" does.
 		MSBUILDDISABLENODEREUSE: '1',
 		UseSharedCompilation: 'false',

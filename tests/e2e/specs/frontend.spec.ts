@@ -3,10 +3,22 @@ import type { Locator, Page } from '@playwright/test';
 import { KINDS, createKindItem } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { SEEDED_PAGE_ID, expect, test } from '../fixtures/seeded-page.ts';
+import {
+	cleanUp,
+	createForm,
+	createPage,
+	fieldKind,
+	findKinds,
+	formField,
+	openBackOffice,
+	waitForPage,
+	watchPage,
+	type FormField,
+	type LayoutRow,
+	type SiteKinds,
+} from '../fixtures/site-forms.ts';
 import { screenshotPath } from '../support/screenshots.ts';
 
-/** The seed's document type (src/Website/Seed), which shows the form its "form" property picks. */
-const DOCUMENT_TYPE_ID = '5d3a0b0e-6a43-4a4f-9a3c-1f6f7b0f2a02';
 /** The Store Data handler's kind. */
 const STORE_DATA_KIND_ID = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
 const THANK_YOU = 'Thank you, your message was sent.';
@@ -20,179 +32,20 @@ const BLUE_PNG =
 /** A label that would end the script block holding the form's data, if it were not escaped. */
 const TRICKY_LABEL = 'Note </script><script>window.formulateScriptBroke = true</script>';
 
-interface KindDefinition {
-	kindId: string;
-	name: string;
-	isHidden?: boolean;
-	isServerSideOnly?: boolean;
-	isLegacy?: boolean;
-	defaultConfiguration?: unknown;
-}
-
-interface SeedKinds {
-	text: KindDefinition;
-	button: KindDefinition;
-	richText: KindDefinition;
-	basicLayoutKindId: string;
-	formKindId: string;
-	templateId: string;
-}
-
 interface Submission {
 	url: string | null;
 	pageId: number | null;
 	values: Array<{ fieldName: string; value: string }>;
 }
 
-async function findKinds(page: Page): Promise<SeedKinds> {
-	const [fieldKinds, layoutKinds, templates, formOptions] = await Promise.all([
-		callManagementApi<Array<KindDefinition>>(page, 'GET', '/formulate/definition/form-field'),
-		callManagementApi<Array<KindDefinition>>(page, 'GET', '/formulate/definition/layout'),
-		callManagementApi<Array<{ id: string; isDefault: boolean }>>(page, 'GET', '/formulate/definition/template'),
-		callManagementApi<Array<{ entityType: string; kindId?: string; name: string }>>(
-			page,
-			'GET',
-			'/formulate/tree/forms/create-options',
-		),
-	]);
-	const text = fieldKinds.find((kind) => kind.name.toLowerCase() === 'text');
-	const button = fieldKinds.find((kind) => kind.name.toLowerCase() === 'button');
-	const richText = fieldKinds.find((kind) => kind.name.toLowerCase() === 'rich text');
-	const layout = layoutKinds.find((kind) => !kind.isLegacy && /basic/i.test(kind.name));
-	const form = formOptions.find((option) => option.entityType === 'formulate-form' && option.name === 'Form');
-	const template = templates.find((candidate) => candidate.isDefault) ?? templates[0];
-	expect(text, 'a Text field kind exists').toBeTruthy();
-	expect(button, 'a Button field kind exists').toBeTruthy();
-	expect(richText, 'a Rich Text field kind exists').toBeTruthy();
-	expect(layout, 'the Basic layout kind exists').toBeTruthy();
-	expect(form?.kindId, 'the Forms root offers the plain Form kind').toBeTruthy();
-	expect(template, 'a template exists').toBeTruthy();
-
-	return {
-		text: text!,
-		button: button!,
-		richText: richText!,
-		basicLayoutKindId: layout!.kindId,
-		formKindId: form!.kindId!,
-		templateId: template!.id,
-	};
-}
-
-function field(kind: KindDefinition, name: string, alias: string, options: { validations?: string[]; configuration?: unknown } = {}) {
-	return {
-		id: randomUUID(),
-		kindId: kind.kindId,
-		name,
-		alias,
-		label: name,
-		validations: options.validations ?? [],
-		...(options.configuration ?? kind.defaultConfiguration
-			? { configuration: options.configuration ?? kind.defaultConfiguration }
-			: {}),
-	};
-}
-
 /** Makes a form that stores its submissions, with a Basic layout. Returns their IDs. */
-async function createForm(
-	page: Page,
-	kinds: SeedKinds,
-	name: string,
-	fields: Array<ReturnType<typeof field>>,
-	rows: Array<{ isStep: boolean; cells: Array<{ columnSpan: number; fields: Array<{ id: string }> }> }> | undefined,
-) {
-	const formId = randomUUID();
-	const layoutId = randomUUID();
-	await callManagementApi(page, 'POST', '/formulate/form', {
-		id: formId,
-		kindId: kinds.formKindId,
+function createStoredForm(page: Page, kinds: SiteKinds, name: string, fields: Array<FormField>, rows: Array<LayoutRow> | undefined) {
+	return createForm(page, kinds, {
 		name,
 		fields,
-		handlers: [{ id: randomUUID(), kindId: STORE_DATA_KIND_ID, name: 'Store Data', alias: 'storeData', enabled: true }],
+		handlers: [{ kindId: STORE_DATA_KIND_ID, name: 'Store Data', alias: 'storeData', enabled: true }],
+		rows,
 	});
-	await callManagementApi(page, 'POST', '/formulate/layout', {
-		id: layoutId,
-		formId,
-		kindId: kinds.basicLayoutKindId,
-		name: `${name} layout`,
-		templateId: kinds.templateId,
-		configuration: { autoPopulate: rows === undefined, rows: rows ?? [] },
-	});
-
-	return { formId, layoutId };
-}
-
-/** Makes a published page of the seeded document type that shows the layout, and returns its ID and path. */
-async function createPage(page: Page, name: string, layoutId: string) {
-	const documentType = await callManagementApi<{ defaultTemplate?: { id: string } | null }>(
-		page,
-		'GET',
-		`/document-type/${DOCUMENT_TYPE_ID}`,
-	);
-	expect(documentType.defaultTemplate?.id, 'the seeded document type has a template').toBeTruthy();
-	const id = randomUUID();
-	await callManagementApi(page, 'POST', '/document', {
-		id,
-		parent: null,
-		documentType: { id: DOCUMENT_TYPE_ID },
-		template: { id: documentType.defaultTemplate!.id },
-		values: [{ alias: 'form', value: { id: layoutId }, culture: null, segment: null }],
-		variants: [{ culture: null, segment: null, name }],
-	});
-	await callManagementApi(page, 'PUT', `/document/${id}/publish`, { publishSchedules: [{ culture: null }] });
-
-	return { id, path: `/${name.toLowerCase().replaceAll(' ', '-')}/` };
-}
-
-/** Moves the page and media to the recycle bin and deletes the form's items, ignoring what is already gone. */
-async function cleanUp(page: Page, items: { documentIds: string[]; formIds: string[]; validationIds: string[]; mediaIds?: string[] }) {
-	await page.goto('/umbraco/section/formulate');
-	await expect(page.locator('umb-backoffice-header')).toBeVisible();
-	for (const id of items.documentIds) {
-		await callManagementApi(page, 'PUT', `/document/${id}/move-to-recycle-bin`).catch(() => undefined);
-	}
-	for (const id of items.mediaIds ?? []) {
-		await callManagementApi(page, 'PUT', `/media/${id}/move-to-recycle-bin`).catch(() => undefined);
-	}
-	for (const id of items.formIds) {
-		await callManagementApi(page, 'DELETE', `/formulate/form/${id}`).catch(() => undefined);
-	}
-	for (const id of items.validationIds) {
-		await callManagementApi(page, 'DELETE', `/formulate/validation/${id}`).catch(() => undefined);
-	}
-}
-
-/** Records the page's console errors and uncaught errors, and the form's events. */
-async function watchPage(site: Page) {
-	const problems: string[] = [];
-	site.on('console', (message) => {
-		if (message.type() === 'error') {
-			problems.push(`console: ${message.text()}`);
-		}
-	});
-	site.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
-	await site.addInitScript(() => {
-		const events: Record<string, number> = {};
-		(window as unknown as { formulateEvents: Record<string, number> }).formulateEvents = events;
-		for (const name of ['formulate form: submit: success', 'formulate form: submit: failure']) {
-			document.addEventListener(name, () => {
-				events[name] = (events[name] ?? 0) + 1;
-			});
-		}
-	});
-
-	return problems;
-}
-
-async function waitForPage(site: Page, path: string) {
-	await expect
-		.poll(async () => (await site.request.get(path)).text(), { message: `${path} is published` })
-		.toContain('formulate-plain-js-forms');
-}
-
-/** Opens the back office, so the Management API can be called from the page. */
-async function openBackOffice(page: Page) {
-	await page.goto('/umbraco/section/formulate');
-	await expect(page.locator('umb-backoffice-header')).toBeVisible();
 }
 
 async function readSubmissions(page: Page, formId: string): Promise<Submission[]> {
@@ -289,10 +142,10 @@ test('a form renders with the theme, validates in the browser, and its submissio
 		kindId: KINDS.regex,
 		configuration: { regex: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$', message: EMAIL_INVALID },
 	});
-	const email = field(kinds.text, 'Your email', 'yourEmail', { validations: [required, regex] });
-	const note = field(kinds.text, TRICKY_LABEL, 'note');
-	const send = field(kinds.button, 'Send', 'send', { configuration: { buttonKind: 'Submit' } });
-	const { formId, layoutId } = await createForm(page, kinds, 'Frontend simple form', [email, note, send], undefined);
+	const email = formField(fieldKind(kinds, 'Text'), 'Your email', 'yourEmail', { validations: [required, regex] });
+	const note = formField(fieldKind(kinds, 'Text'), TRICKY_LABEL, 'note');
+	const send = formField(fieldKind(kinds, 'Button'), 'Send', 'send', { configuration: { buttonKind: 'Submit' } });
+	const { formId, layoutId } = await createStoredForm(page, kinds, 'Frontend simple form', [email, note, send], undefined);
 	const created = await createPage(page, 'Frontend simple', layoutId);
 	const site = await context.newPage();
 	const problems = await watchPage(site);
@@ -376,13 +229,13 @@ test('a multi-step form moves between its steps and is stored when it is sent', 
 		kindId: KINDS.mandatory,
 		configuration: { message: 'Enter your first name.' },
 	});
-	const first = field(kinds.text, 'First name', 'firstName', { validations: [required] });
-	const last = field(kinds.text, 'Last name', 'lastName');
-	const next = field(kinds.button, 'Go on', 'next', { configuration: { buttonKind: 'Next' } });
-	const previous = field(kinds.button, 'Go back', 'previous', { configuration: { buttonKind: 'Previous' } });
-	const send = field(kinds.button, 'Send', 'send', { configuration: { buttonKind: 'Submit' } });
+	const first = formField(fieldKind(kinds, 'Text'), 'First name', 'firstName', { validations: [required] });
+	const last = formField(fieldKind(kinds, 'Text'), 'Last name', 'lastName');
+	const next = formField(fieldKind(kinds, 'Button'), 'Go on', 'next', { configuration: { buttonKind: 'Next' } });
+	const previous = formField(fieldKind(kinds, 'Button'), 'Go back', 'previous', { configuration: { buttonKind: 'Previous' } });
+	const send = formField(fieldKind(kinds, 'Button'), 'Send', 'send', { configuration: { buttonKind: 'Submit' } });
 	const row = (...ids: string[]) => ({ isStep: false, cells: [{ columnSpan: 12, fields: ids.map((id) => ({ id })) }] });
-	const { formId, layoutId } = await createForm(
+	const { formId, layoutId } = await createStoredForm(
 		page,
 		kinds,
 		'Frontend steps form',
@@ -457,8 +310,8 @@ test("a Rich Text field's text edited in its dialog is stored as the editor writ
 	test.setTimeout(180_000);
 	await openBackOffice(page);
 	const kinds = await findKinds(page);
-	const intro = field(kinds.richText, 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p>' } });
-	const { formId, layoutId } = await createForm(page, kinds, 'Frontend rich text form', [intro], undefined);
+	const intro = formField(fieldKind(kinds, 'Rich Text'), 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p>' } });
+	const { formId, layoutId } = await createStoredForm(page, kinds, 'Frontend rich text form', [intro], undefined);
 	const created = await createPage(page, 'Frontend rich text', layoutId);
 	const site = await context.newPage();
 	const problems = await watchPage(site);
@@ -476,7 +329,7 @@ test("a Rich Text field's text edited in its dialog is stored as the editor writ
 		expect(problems, 'no console errors').toEqual([]);
 	} finally {
 		await site.close();
-		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [] });
+		await cleanUp(page, { documentIds: [created.id], formIds: [formId] });
 	}
 });
 
@@ -485,8 +338,10 @@ test("a link to a content page, picked in a Rich Text field's editor, takes visi
 	test.setTimeout(180_000);
 	await openBackOffice(page);
 	const kinds = await findKinds(page);
-	const intro = field(kinds.richText, 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p><p>Contact us</p>' } });
-	const { formId, layoutId } = await createForm(page, kinds, 'Frontend rich text link form', [intro], undefined);
+	const intro = formField(fieldKind(kinds, 'Rich Text'), 'Intro', 'intro', {
+		configuration: { text: '<p>Welcome to our form.</p><p>Contact us</p>' },
+	});
+	const { formId, layoutId } = await createStoredForm(page, kinds, 'Frontend rich text link form', [intro], undefined);
 	const created = await createPage(page, 'Frontend rich text link', layoutId);
 	const site = await context.newPage();
 	const problems = await watchPage(site);
@@ -518,7 +373,7 @@ test("a link to a content page, picked in a Rich Text field's editor, takes visi
 		expect(problems, 'no console errors').toEqual([]);
 	} finally {
 		await site.close();
-		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [] });
+		await cleanUp(page, { documentIds: [created.id], formIds: [formId] });
 	}
 });
 
@@ -528,8 +383,10 @@ test("an image picked from the media library in a Rich Text field's editor shows
 	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const mediaId = await createImage(page, 'Frontend logo');
-	const intro = field(kinds.richText, 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p><p>Logo</p>' } });
-	const { formId, layoutId } = await createForm(page, kinds, 'Frontend rich text image form', [intro], undefined);
+	const intro = formField(fieldKind(kinds, 'Rich Text'), 'Intro', 'intro', {
+		configuration: { text: '<p>Welcome to our form.</p><p>Logo</p>' },
+	});
+	const { formId, layoutId } = await createStoredForm(page, kinds, 'Frontend rich text image form', [intro], undefined);
 	const created = await createPage(page, 'Frontend rich text image', layoutId);
 	const site = await context.newPage();
 	const problems = await watchPage(site);
@@ -559,6 +416,6 @@ test("an image picked from the media library in a Rich Text field's editor shows
 		expect(problems, 'no console errors').toEqual([]);
 	} finally {
 		await site.close();
-		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [], mediaIds: [mediaId] });
+		await cleanUp(page, { documentIds: [created.id], formIds: [formId], mediaIds: [mediaId] });
 	}
 });

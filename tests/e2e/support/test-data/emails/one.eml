@@ -1,0 +1,7 @@
+From: forms@example.com
+Subject: From the folder
+To: team@example.com
+Content-Type: text/plain; charset=utf-8
+
+Hello.
+....and a line that starts with dots.

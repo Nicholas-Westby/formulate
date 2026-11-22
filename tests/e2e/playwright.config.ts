@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { missingPackages, packageVersionProblem } from './support/local-packages.ts';
 import { RUN_FOLDER_PREFIX, removeOldRunFolders } from './support/run-folders.ts';
-import { siteEnvironment } from './support/site-environment.ts';
+import { siteAddresses, siteEnvironment } from './support/site-environment.ts';
 
 /**
  * Starts the dev website (src/Website) on a new, empty database and drives its back office.
@@ -16,12 +16,15 @@ import { siteEnvironment } from './support/site-environment.ts';
  *                              (-p:FormulateFromPackages=true), instead of the source projects. It needs a
  *                              prerelease label, such as 5.0.0-local.g1a2b3c4, and CI (where CI is set) must
  *                              set it. "npm run test:packages" packs a new version and sets it.
- *   FORMULATE_E2E_PORT         The port the site listens on (default: 44331).
+ *   FORMULATE_E2E_PORT         The port the site listens on over HTTPS (default: 44331). The site also listens over
+ *                              plain http on this port plus 1000 (45331 by default), where the Send Data specs reach
+ *                              the dev site's echo (see support/site-environment.ts), so two runs need two ports.
  *   DOTNET_EXE                 The dotnet executable (default: dotnet). Umbraco 19 needs the .NET 11 SDK.
  */
 
 // Two runs at once (such as in two worktrees) need two ports.
-const ORIGIN = `https://localhost:${process.env.FORMULATE_E2E_PORT || 44331}`;
+const ADDRESSES = siteAddresses(process.env.FORMULATE_E2E_PORT);
+const ORIGIN = ADDRESSES.origin;
 
 // Every run starts from nothing: a new folder holds the site's SQLite database and Formulate's JSON files.
 // (An in-memory database does not work: its tables are gone before Umbraco's install has finished.)
@@ -89,6 +92,6 @@ export default defineConfig({
 		// Ask the site to stop, so it can shut down cleanly; Playwright kills it if it is still running after 10 seconds.
 		gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
 		// Every name in it is a shell name: on Linux, the /bin/sh that starts the site drops any other.
-		env: siteEnvironment({ origin: ORIGIN, runFolder }),
+		env: siteEnvironment({ ...ADDRESSES, runFolder }),
 	},
 });
