@@ -2,6 +2,8 @@ namespace Formulate.Core.Tests.FormFieldTests
 {
     // Namespaces.
     using FormFields;
+    using FormFields.Button;
+    using Utilities.Internal;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.Abstractions;
     using Moq;
@@ -139,6 +141,58 @@ namespace Formulate.Core.Tests.FormFieldTests
             Assert.Empty(formField.Validations);
         }
 
+        [Fact]
+        public void A_field_whose_kind_cannot_read_the_configuration_is_skipped_with_a_warning()
+        {
+            // arrange
+            var logger = new CapturingLogger();
+            var button = new ButtonFieldDefinition(new JsonUtility(new NewtonsoftJsonSerializer()));
+            var factory = CreateFactory(logger: logger, definitions: button);
+            var settings = new TestFormFieldSettings()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Send",
+                KindId = button.KindId,
+                Data = "\"Submit\"",
+                Validations = Array.Empty<Guid>()
+            };
+
+            // act
+            var formField = factory.Create(settings);
+
+            // assert
+            Assert.Null(formField);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(LogLevel.Warning, entry.Level);
+            Assert.Contains("Send", entry.Message);
+            Assert.Contains(settings.Id.ToString(), entry.Message);
+            Assert.Contains(ButtonFieldDefinition.Constants.Name, entry.Message);
+        }
+
+        [Fact]
+        public void A_field_whose_back_office_configuration_cannot_be_read_is_skipped_with_a_warning()
+        {
+            // arrange
+            var logger = new CapturingLogger();
+            var factory = CreateFactory(logger: logger, definitions: new UnreadableFormFieldDefinition());
+            var settings = new TestFormFieldSettings()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Odd",
+                KindId = Guid.Parse(Constants.UnreadableFormFieldKindId),
+                Validations = Array.Empty<Guid>()
+            };
+
+            // act
+            var formField = factory.Create(settings);
+
+            // assert
+            Assert.Null(formField);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(LogLevel.Warning, entry.Level);
+            Assert.Contains(settings.Id.ToString(), entry.Message);
+        }
+
         private sealed class CapturingLogger : ILogger<FormFieldFactory>
         {
             public List<(LogLevel Level, string Message)> Entries { get; } = new List<(LogLevel, string)>();
@@ -157,12 +211,15 @@ namespace Formulate.Core.Tests.FormFieldTests
         private static IFormFieldFactory CreateFactory(
             IValidationFactory validationFactory = null,
             IValidationEntityRepository repository = null,
-            ILogger<FormFieldFactory> logger = null)
+            ILogger<FormFieldFactory> logger = null,
+            params IFormFieldDefinition[] definitions)
         {
             var items = new List<IFormFieldDefinition>()
             {
                 new TestFormFieldDefinition()
             };
+
+            items.AddRange(definitions);
 
             var collection = new FormFieldDefinitionCollection(() => items);
 

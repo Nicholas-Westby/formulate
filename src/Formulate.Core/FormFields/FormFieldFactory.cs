@@ -54,6 +54,11 @@
         }
 
         /// <inheritdoc />
+        /// <remarks>
+        /// Gives null when the field's kind is not installed, or when the kind can not read the field's
+        /// configuration (such as a file that was edited by hand). The second is logged as a warning, so
+        /// one broken field never stops a form from rendering.
+        /// </remarks>
         /// <exception cref="ArgumentNullException">
         /// The provided settings are null.
         /// </exception>
@@ -71,18 +76,35 @@
                 return default;
             }
 
-            // Create an instance of the form field.
-            var field = foundFormFieldDefinition.CreateField(settings);
+            FormField field;
 
-            // Set the attributes on the form field that can be obtained from
-            // the form field definition.
-            field.Icon = foundFormFieldDefinition.Icon;
-            field.EditorAlias = foundFormFieldDefinition.EditorAlias;
-            field.BackOfficeConfiguration = foundFormFieldDefinition
-                .GetBackOfficeConfiguration(settings);
+            try
+            {
+                // Create an instance of the form field.
+                field = foundFormFieldDefinition.CreateField(settings);
+
+                // Set the attributes on the form field that can be obtained from
+                // the form field definition.
+                field.Icon = foundFormFieldDefinition.Icon;
+                field.EditorAlias = foundFormFieldDefinition.EditorAlias;
+                field.BackOfficeConfiguration = foundFormFieldDefinition
+                    .GetBackOfficeConfiguration(settings);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Skipping form field {FieldName} ({FieldId}) because its kind, {KindName} ({KindId}), could not read its configuration.",
+                    settings.Name,
+                    settings.Id,
+                    foundFormFieldDefinition.Name,
+                    settings.KindId);
+
+                return default;
+            }
 
             // Set the validations.
-            // Validations that were deleted (or have an unknown kind) are skipped.
+            // Validations that were deleted, have an unknown kind or can not be read are skipped.
             var validations = new List<IValidation>();
 
             foreach (var validationId in settings.Validations ?? Array.Empty<Guid>())
@@ -103,7 +125,7 @@
                 if (validation is null)
                 {
                     _logger.LogWarning(
-                        "Form field {FieldId} references validation {ValidationId}, which has an unknown kind. Skipping it.",
+                        "Form field {FieldId} references validation {ValidationId}, which has an unknown kind or a configuration its kind can not read. Skipping it.",
                         settings.Id,
                         validationId);
                     continue;

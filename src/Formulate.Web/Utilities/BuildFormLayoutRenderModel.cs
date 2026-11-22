@@ -71,9 +71,10 @@
 
                 if (createdField is null)
                 {
+                    // The factory logs why when the kind is installed but could not read the field.
                     _logger.LogWarning(
-                        "Skipping field {FieldId} on form {FormId} because its kind {FieldKindId} is not installed.",
-                        field.Id, form.Id, field.KindId);
+                        "Skipping field {FieldName} ({FieldId}) on form {FormName} ({FormId}) because its kind {FieldKindId} is not installed or could not read the field's configuration.",
+                        field.Name, field.Id, form.Name, form.Id, field.KindId);
                     continue;
                 }
 

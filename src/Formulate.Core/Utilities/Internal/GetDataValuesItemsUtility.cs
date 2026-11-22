@@ -73,7 +73,7 @@
             if (definition is null)
             {
                 _logger.LogWarning(
-                    "Form field {FieldId} references data values {DataValuesId}, which have an unknown kind. It will have no items.",
+                    "Form field {FieldId} references data values {DataValuesId}, which have an unknown kind or a configuration their kind can not read. It will have no items.",
                     fieldId,
                     id);
                 return Array.Empty<KeyValuePair<string, string>>();

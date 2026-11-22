@@ -3,6 +3,7 @@ namespace Formulate.Core.Tests.UtilityTests
     using System;
     using System.Collections.Generic;
     using DataValues;
+    using DataValues.List;
     using Microsoft.Extensions.Logging;
     using Moq;
     using Utilities.Internal;
@@ -69,6 +70,34 @@ namespace Formulate.Core.Tests.UtilityTests
 
             Assert.Equal(new[] { new KeyValuePair<string, string>("Red", "red") }, items);
             Assert.Empty(harness.Logger.Entries);
+        }
+
+        [Fact]
+        public void Data_values_their_kind_cannot_read_give_no_items_instead_of_failing()
+        {
+            // A drop down that uses list data values whose file was broken on disk.
+            var settings = new PersistedDataValues
+            {
+                Id = DataValuesId,
+                Name = "Colors",
+                KindId = Guid.Parse(ListDataValuesDefinition.Constants.KindId),
+                Data = """{"items":["red","green"]}""",
+            };
+            var repository = new Mock<IDataValuesEntityRepository>();
+            repository.Setup(x => x.Get(DataValuesId)).Returns(settings);
+            var definitions = new DataValuesDefinitionCollection(() => new IDataValuesDefinition[] { new ListDataValuesDefinition(new JsonUtility(new NewtonsoftJsonSerializer())) });
+            var factoryLogger = new CapturingLogger<DataValuesFactory>();
+            var logger = new CapturingLogger();
+            var utility = new GetDataValuesItemsUtility(new DataValuesFactory(definitions, factoryLogger), repository.Object, logger);
+
+            var items = utility.GetValues(DataValuesId, FieldId);
+
+            Assert.Empty(items);
+            Assert.Contains("Colors", Assert.Single(factoryLogger.Entries).Message);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(LogLevel.Warning, entry.Level);
+            Assert.Contains(FieldId.ToString(), entry.Message);
+            Assert.Contains(DataValuesId.ToString(), entry.Message);
         }
 
         private sealed class Harness

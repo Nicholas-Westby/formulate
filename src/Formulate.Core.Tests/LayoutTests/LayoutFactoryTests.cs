@@ -1,6 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Formulate.Core.Forms;
 using Formulate.Core.Layouts;
+using Formulate.Core.Layouts.Basic;
+using Formulate.Core.Utilities.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using Xunit;
 
 namespace Formulate.Core.Tests.LayoutTests
@@ -53,16 +59,43 @@ namespace Formulate.Core.Tests.LayoutTests
             Assert.NotEqual(default, createdLayout);
         }
 
-        private static ILayoutFactory CreateFactory()
+        [Fact]
+        public void A_layout_whose_kind_cannot_read_the_configuration_is_skipped_with_a_warning()
+        {
+            var logger = new CapturingLogger<LayoutFactory>();
+            var definition = new BasicLayoutDefinition(Mock.Of<IFormEntityRepository>(), new JsonUtility(new NewtonsoftJsonSerializer()));
+            var factory = CreateFactory(logger, definition);
+            var layout = new PersistedLayout()
+            {
+                Id = Guid.NewGuid(),
+                Name = "Two columns",
+                KindId = Guid.Parse(BasicLayoutDefinition.Constants.KindId),
+                Data = "[1]",
+            };
+
+            var createdLayout = factory.Create(layout);
+
+            Assert.Null(createdLayout);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(LogLevel.Warning, entry.Level);
+            Assert.Contains("Two columns", entry.Message);
+            Assert.Contains(layout.Id.ToString(), entry.Message);
+            Assert.Contains(BasicLayoutDefinition.Constants.Name, entry.Message);
+            Assert.NotNull(entry.Exception);
+        }
+
+        private static ILayoutFactory CreateFactory(ILogger<LayoutFactory> logger = null, params ILayoutDefinition[] definitions)
         {
             var items = new List<ILayoutDefinition>()
             {
                 new TestLayoutDefinition()
             };
 
+            items.AddRange(definitions);
+
             var collection = new LayoutDefinitionCollection(() => items);
-            
-            return new LayoutFactory(collection);
+
+            return new LayoutFactory(collection, logger ?? NullLogger<LayoutFactory>.Instance);
         }
     }
 }

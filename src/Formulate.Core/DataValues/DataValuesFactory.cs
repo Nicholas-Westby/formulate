@@ -2,6 +2,7 @@
 {
     // Namespaces.
     using System;
+    using Microsoft.Extensions.Logging;
     using Types;
 
     /// <summary>
@@ -15,15 +16,27 @@
         private readonly DataValuesDefinitionCollection _dataValuesDefinitions;
 
         /// <summary>
-        /// 
+        /// The logger.
+        /// </summary>
+        private readonly ILogger<DataValuesFactory> _logger;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataValuesFactory"/> class.
         /// </summary>
         /// <param name="dataValuesDefinitions">The data values.</param>
-        public DataValuesFactory(DataValuesDefinitionCollection dataValuesDefinitions)
+        /// <param name="logger">The logger.</param>
+        public DataValuesFactory(DataValuesDefinitionCollection dataValuesDefinitions, ILogger<DataValuesFactory> logger)
         {
             _dataValuesDefinitions = dataValuesDefinitions;
+            _logger = logger;
         }
 
         /// <inheritdoc />
+        /// <remarks>
+        /// Gives null when the kind is not installed, or when the kind can not read the configuration
+        /// (such as a file that was edited by hand). The second is logged as a warning, so the fields
+        /// that use the data values get no items rather than failing.
+        /// </remarks>
         public IDataValues Create(PersistedDataValues entity)
         {
             if (entity is null)
@@ -38,7 +51,22 @@
                 return default;
             }
 
-            return foundDataValuesDefinition.CreateDataValues(entity);
+            try
+            {
+                return foundDataValuesDefinition.CreateDataValues(entity);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Skipping data values {DataValuesName} ({DataValuesId}) because their kind, {KindName} ({KindId}), could not read their configuration.",
+                    entity.Name,
+                    entity.Id,
+                    foundDataValuesDefinition.Name,
+                    entity.KindId);
+
+                return default;
+            }
         }
     }
 }
