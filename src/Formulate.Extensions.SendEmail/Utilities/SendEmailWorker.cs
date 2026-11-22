@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.SendEmail.Utilities
 {
+    using Formulate.Core.Utilities.Submissions;
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Extensions.SendEmail.FormHandlers;

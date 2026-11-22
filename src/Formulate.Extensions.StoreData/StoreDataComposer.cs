@@ -20,7 +20,6 @@ namespace Formulate.Extensions.StoreData
 
             builder.Services.AddScoped<ISubmissionDatabase, ScopedSubmissionDatabase>();
             builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
-            builder.Services.AddScoped<IPageUrlResolver, PageUrlResolver>();
 
             builder.Services.AddScoped<ISubmissionQueryService, SubmissionQueryService>();
 

@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.StoreData.Utilities
 {
+    using Formulate.Core.Utilities.Submissions;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Utilities;
     using Formulate.Extensions.StoreData.Models;
@@ -8,20 +9,20 @@ namespace Formulate.Extensions.StoreData.Utilities
     internal sealed class StoreData : IStoreData
     {
         private readonly ISubmissionRepository _repository;
-        private readonly IPageUrlResolver _pageUrls;
+        private readonly ISubmissionPageResolver _pages;
         private readonly IJsonUtility _jsonHelper;
         private readonly IStoreFiles _storeFiles;
         private readonly IStoreFields _storeFields;
         private readonly UploadFolders _folders;
         private readonly ILogger<StoreData> _logger;
 
-        public StoreData(IStoreFields storeFields, IStoreFiles storeFiles, IJsonUtility jsonHelper, ISubmissionRepository repository, IPageUrlResolver pageUrls, UploadFolders folders, ILogger<StoreData> logger)
+        public StoreData(IStoreFields storeFields, IStoreFiles storeFiles, IJsonUtility jsonHelper, ISubmissionRepository repository, ISubmissionPageResolver pages, UploadFolders folders, ILogger<StoreData> logger)
         {
             _storeFields = storeFields;
             _storeFiles = storeFiles;
             _jsonHelper = jsonHelper;
             _repository = repository;
-            _pageUrls = pageUrls;
+            _pages = pages;
             _folders = folders;
             _logger = logger;
         }
@@ -46,7 +47,7 @@ namespace Formulate.Extensions.StoreData.Utilities
                 SubmissionId = submission.Id,
                 FormId = form.Id,
                 PageId = submission.PageId,
-                Url = Truncate(_pageUrls.GetUrl(submission.PageId)),
+                Url = Truncate(_pages.Resolve(submission.PageId).Url),
                 DataValues = serializedValues,
                 FileValues = serializedFiles,
             };

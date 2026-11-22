@@ -4,6 +4,7 @@
     using Formulate.Core.Configuration;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.DependencyInjection.Extensions;
     using Umbraco.Cms.Core.DependencyInjection;
     using Utilities;
     using Utilities.Internal;
@@ -26,6 +27,9 @@
 
             builder.Services.AddScoped<IValidateFormSubmissionRequest, ValidateFormSubmissionRequest>();
             builder.Services.AddScoped<ISubmitFormSubmissionRequest, SubmitFormSubmissionRequest>();
+
+            // One page lookup for the handlers that need the page a form was on (Email, Send Data, Store Data).
+            builder.Services.TryAddScoped<ISubmissionPageResolver, SubmissionPageResolver>();
 
             return builder;
         }

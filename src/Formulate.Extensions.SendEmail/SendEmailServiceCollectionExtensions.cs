@@ -41,7 +41,6 @@ namespace Formulate.Extensions.SendEmail
 
         public static IServiceCollection AddFormulateSendEmail(this IServiceCollection services)
         {
-            services.AddScoped<ISubmissionPageResolver, SubmissionPageResolver>();
             services.AddScoped<EmailRecipientResolver>();
             services.AddScoped<EmailDispatcher>();
             services.AddScoped<SendEmailContentBuilder>();

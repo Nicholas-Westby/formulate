@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.SendEmail.DesignedEmail
 {
+    using Formulate.Core.Utilities.Submissions;
     using System.Net;
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Submissions.Requests;

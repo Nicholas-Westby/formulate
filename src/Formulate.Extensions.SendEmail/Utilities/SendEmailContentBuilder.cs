@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.SendEmail.Utilities
 {
+    using Formulate.Core.Utilities.Submissions;
     using System.Globalization;
     using System.Net;
     using System.Text.RegularExpressions;

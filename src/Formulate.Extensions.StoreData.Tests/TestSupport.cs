@@ -1,3 +1,4 @@
+using Formulate.Core.Utilities.Submissions;
 using System.Text.Json;
 using Formulate.Core.Utilities;
 using Formulate.Extensions.StoreData.Utilities;
@@ -64,11 +65,11 @@ internal sealed class TestJsonUtility : IJsonUtility
     public string Serialize(object value) => JsonSerializer.Serialize(value);
 }
 
-internal sealed class FixedPageUrls : IPageUrlResolver
+internal sealed class FixedPageUrls : ISubmissionPageResolver
 {
     public string? Url { get; set; }
 
-    public string? GetUrl(int? pageId) => pageId is null ? null : Url;
+    public SubmissionPage Resolve(int? pageId) => pageId is null ? SubmissionPage.None : new SubmissionPage(Url, null);
 }
 
 /// <summary>

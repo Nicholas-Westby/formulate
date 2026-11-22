@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.SendData.Utilities
 {
+    using Formulate.Core.Utilities.Submissions;
     using System.Net;
     using System.Text;
     using System.Text.Encodings.Web;

@@ -1,3 +1,4 @@
+using Formulate.Core.Utilities.Submissions;
 using System.Net.Mail;
 using Formulate.Core.Submissions.Requests;
 using Formulate.Extensions.SendEmail.DesignedEmail;

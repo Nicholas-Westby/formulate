@@ -1,5 +1,6 @@
-namespace Formulate.Extensions.SendEmail.Utilities
+namespace Formulate.Core.Utilities.Submissions
 {
+    using System;
     using Microsoft.Extensions.Logging;
     using Umbraco.Cms.Core.Models;
     using Umbraco.Cms.Core.Models.PublishedContent;
@@ -39,7 +40,7 @@ namespace Formulate.Extensions.SendEmail.Utilities
             return new SubmissionPage(GetUrl(pageId.Value), GetName(pageId.Value));
         }
 
-        private string? GetUrl(int pageId)
+        private string GetUrl(int pageId)
         {
             try
             {
@@ -63,7 +64,7 @@ namespace Formulate.Extensions.SendEmail.Utilities
             }
         }
 
-        private string? GetName(int pageId)
+        private string GetName(int pageId)
         {
             try
             {
