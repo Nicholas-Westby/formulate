@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, type Page } from '@playwright/test';
+import { expect, type ConsoleMessage, type Page } from '@playwright/test';
 import { callManagementApi } from './management-api.ts';
 
 // Forms on pages of the dev site, made through the Management API: the kinds they are made of, a form with a
@@ -185,15 +185,33 @@ export async function cleanUp(
 	}
 }
 
-/** Records the page's console errors and uncaught errors, and the form's events. */
-export async function watchPage(site: Page) {
+/**
+ * Records a page's console errors and uncaught errors from now on.
+ * @returns The errors so far, and a function that stops recording them.
+ */
+export function recordErrors(page: Page) {
 	const problems: string[] = [];
-	site.on('console', (message) => {
+	const onConsole = (message: ConsoleMessage) => {
 		if (message.type() === 'error') {
 			problems.push(`console: ${message.text()}`);
 		}
-	});
-	site.on('pageerror', (error) => problems.push(`page error: ${error.message}`));
+	};
+	const onPageError = (error: Error) => problems.push(`page error: ${error.message}`);
+	page.on('console', onConsole);
+	page.on('pageerror', onPageError);
+
+	return {
+		problems,
+		stop: () => {
+			page.off('console', onConsole);
+			page.off('pageerror', onPageError);
+		},
+	};
+}
+
+/** Records the page's console errors and uncaught errors, and the form's events. */
+export async function watchPage(site: Page) {
+	const { problems } = recordErrors(site);
 	await site.addInitScript(() => {
 		const events: Record<string, number> = {};
 		(window as unknown as { formulateEvents: Record<string, number> }).formulateEvents = events;
