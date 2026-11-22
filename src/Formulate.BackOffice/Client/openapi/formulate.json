@@ -3700,6 +3700,7 @@
           "isHidden",
           "isServerSideOnly",
           "isStored",
+          "isTransitory",
           "kindId",
           "name",
           "supportsCategory",
@@ -3741,6 +3742,9 @@
             "type": "boolean"
           },
           "isHidden": {
+            "type": "boolean"
+          },
+          "isTransitory": {
             "type": "boolean"
           },
           "defaultConfiguration": {

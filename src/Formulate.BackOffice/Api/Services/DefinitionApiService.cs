@@ -78,6 +78,7 @@ namespace Formulate.BackOffice.Api.Services
                     IsServerSideOnly = definition.IsServerSideOnly,
                     IsStored = definition.IsStored,
                     IsHidden = definition.IsHidden,
+                    IsTransitory = definition.IsTransitory,
                     DefaultConfiguration = _configurationJson.DefaultFromDefinition(
                         () => definition.GetBackOfficeConfiguration(new PersistedFormField { KindId = definition.KindId }),
                         definition.Name),

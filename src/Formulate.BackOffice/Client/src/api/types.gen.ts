@@ -99,6 +99,7 @@ export type FormFieldDefinitionModel = {
     isServerSideOnly: boolean;
     isStored: boolean;
     isHidden: boolean;
+    isTransitory: boolean;
     defaultConfiguration?: unknown;
 };
 

@@ -41,6 +41,7 @@ function fieldKind(definition: Partial<FormFieldDefinitionModel> & Pick<FormFiel
 		isServerSideOnly: false,
 		isStored: true,
 		isHidden: false,
+		isTransitory: false,
 		defaultConfiguration: null,
 		...definition,
 	} satisfies FormFieldDefinitionModel;
@@ -65,6 +66,7 @@ export const FIELD_KINDS: Array<FormFieldDefinitionModel> = [
 		supportsValidation: false,
 		supportsCategory: false,
 		isStored: false,
+		isTransitory: true,
 		defaultConfiguration: { text: null },
 	}),
 	fieldKind({
@@ -73,6 +75,7 @@ export const FIELD_KINDS: Array<FormFieldDefinitionModel> = [
 		icon: 'icon-formulate-button',
 		category: 'Actions',
 		editorAlias: 'formulate-button-field',
+		isTransitory: true,
 		defaultConfiguration: { buttonKind: null },
 	}),
 ];

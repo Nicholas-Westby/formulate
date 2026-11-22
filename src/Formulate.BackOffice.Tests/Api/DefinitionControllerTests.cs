@@ -18,7 +18,7 @@ public class DefinitionControllerTests
     public void Each_definition_endpoint_returns_what_the_service_gives()
     {
         var service = new Mock<IDefinitionApiService>();
-        var fields = new[] { new FormFieldDefinitionModel { KindId = Guid.NewGuid(), Name = "n", Icon = "i", Category = "c", SupportsLabel = true, SupportsValidation = true, SupportsCategory = true, IsServerSideOnly = false, IsStored = true, IsHidden = false } };
+        var fields = new[] { new FormFieldDefinitionModel { KindId = Guid.NewGuid(), Name = "n", Icon = "i", Category = "c", SupportsLabel = true, SupportsValidation = true, SupportsCategory = true, IsServerSideOnly = false, IsStored = true, IsHidden = false, IsTransitory = false } };
         var kinds = new[] { new KindDefinitionModel { KindId = Guid.NewGuid(), Name = "n", Icon = "i", EditorAlias = "e", IsLegacy = false } };
         service.Setup(x => x.GetFormFields()).Returns(fields);
         service.Setup(x => x.GetValidations()).Returns(kinds);

@@ -26,6 +26,7 @@ const FORM_FIELDS: Array<FormFieldDefinitionModel> = [
 		isServerSideOnly: false,
 		isStored: true,
 		isHidden: false,
+		isTransitory: false,
 	},
 ];
 

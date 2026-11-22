@@ -64,6 +64,12 @@ namespace Formulate.BackOffice.Api.Models.Definition
         public required bool IsHidden { get; init; }
 
         /// <summary>
+        /// Gets a value indicating whether the field takes no input from visitors, such as a Header, a Button or a
+        /// Text Constant (whose value comes from its configuration): a submission keeps no posted value for it.
+        /// </summary>
+        public required bool IsTransitory { get; init; }
+
+        /// <summary>
         /// Gets the configuration a new field of this kind starts with; null when the definition has none.
         /// </summary>
         public JsonElement? DefaultConfiguration { get; init; }

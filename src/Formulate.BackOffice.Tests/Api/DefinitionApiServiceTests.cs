@@ -88,6 +88,7 @@ public class DefinitionApiServiceTests
     [InlineData(nameof(FormFieldDefinitionModel.IsServerSideOnly))]
     [InlineData(nameof(FormFieldDefinitionModel.IsStored))]
     [InlineData(nameof(FormFieldDefinitionModel.IsHidden))]
+    [InlineData(nameof(FormFieldDefinitionModel.IsTransitory))]
     public void Each_form_field_flag_is_copied_from_its_own_property(string flag)
     {
         var definition = new Mock<IFormFieldDefinition>();
@@ -102,6 +103,7 @@ public class DefinitionApiServiceTests
         definition.SetupGet(x => x.IsServerSideOnly).Returns(flag == nameof(FormFieldDefinitionModel.IsServerSideOnly));
         definition.SetupGet(x => x.IsStored).Returns(flag == nameof(FormFieldDefinitionModel.IsStored));
         definition.SetupGet(x => x.IsHidden).Returns(flag == nameof(FormFieldDefinitionModel.IsHidden));
+        definition.SetupGet(x => x.IsTransitory).Returns(flag == nameof(FormFieldDefinitionModel.IsTransitory));
         _fields.Add(definition.Object);
 
         var model = Assert.Single(CreateService().GetFormFields());
