@@ -2,6 +2,8 @@ using Formulate.BackOffice.Api.Filters;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Routing;
@@ -16,6 +18,19 @@ namespace Formulate.BackOffice.Tests.Api;
 
 public sealed class RequireFormulateSectionFilterTests
 {
+    [Fact]
+    public void The_attribute_describes_its_403_to_the_api_explorer()
+    {
+        // Swashbuckle (Umbraco 17) and Microsoft.AspNetCore.OpenApi (18 and later) both read this, so the document lists the 403.
+        var metadata = Assert.IsAssignableFrom<IApiResponseMetadataProvider>(new RequireFormulateSectionAttribute());
+        var contentTypes = new MediaTypeCollection();
+
+        metadata.SetContentTypes(contentTypes);
+
+        Assert.Equal((StatusCodes.Status403Forbidden, typeof(ProblemDetails)), (metadata.StatusCode, metadata.Type));
+        Assert.Equal(new[] { "application/problem+json" }, contentTypes);
+    }
+
     [Fact]
     public async Task Filter_returns_401_when_no_user()
     {
