@@ -1,18 +1,18 @@
 import type {
-  FieldDataTarget,
   FieldRendererRegistration,
   FieldValidatorMap,
+  FieldValidatorMethod,
   FormulateField,
-  SetDataOptions,
 } from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkFileValidity } from "../utils/validation.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 /**
  * Renders a file upload. Once a file is chosen, its name and a "Deselect File"
  * button appear after the label.
  */
 export class RenderUpload extends FieldRendererBase<HTMLInputElement> {
+  static override validatorMethod: FieldValidatorMethod = "validateFile";
+
   private filenameElement: HTMLElement | null = null;
   private deselectElement: HTMLButtonElement | null = null;
 
@@ -33,12 +33,9 @@ export class RenderUpload extends FieldRendererBase<HTMLInputElement> {
     return this.element.files?.[0] ?? null;
   }
 
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    setData(data, this.getFile(), options, this.alias, this.id);
-  }
-
-  override checkValidity() {
-    return checkFileValidity(this, this.validators, this.getFile(), this.getElement());
+  /** The chosen file, or null. */
+  override getValue(): File | null {
+    return this.getFile();
   }
 
   private handleFileChange(): void {

@@ -161,10 +161,14 @@ export function fillContactForm(form: HTMLFormElement, file = new File(["%PDF-1.
   chooseFile(controlByLabel(form, "Attach Your CV"), file);
 }
 
-/** Removes everything the tests add to the page and the window. */
+/** Where the renderer keeps what every copy of it on the page shares (utils/page-state.ts). */
+const pageStateKey = Symbol.for("Formulate.PlainJavaScript.pageState");
+
+/** Removes everything the tests add to the page and the window, so the next test starts on a new page. */
 export function resetPage(): void {
   document.head.innerHTML = "";
   document.body.innerHTML = "";
+  delete (window as unknown as Record<symbol, unknown>)[pageStateKey];
   delete window["formulate-plain-js-forms"];
   delete window["formulate-plain-js-fields"];
   delete window["formulate-plain-js-validators"];

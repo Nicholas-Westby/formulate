@@ -1,26 +1,11 @@
-import type {
-  FieldDataTarget,
-  FieldRendererRegistration,
-  FieldValidatorMap,
-  FormulateField,
-  SetDataOptions,
-} from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkTextValidity } from "../utils/validation.js";
+import type { FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types.js";
+import { FieldRendererBase } from "../utils/field.js";
 
-/** Renders a multi-line text field. */
+/** Renders a multi-line text field. The base class posts and checks its value. */
 export class RenderTextarea extends FieldRendererBase<HTMLTextAreaElement> {
   constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
     super(fieldData, fieldValidators);
     this.initializeField({ nodeName: "textarea", cssClasses });
-  }
-
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    setData(data, this.element.value, options, this.alias, this.id);
-  }
-
-  override checkValidity() {
-    return checkTextValidity(this, this.validators, this.element.value, this.getElement());
   }
 }
 

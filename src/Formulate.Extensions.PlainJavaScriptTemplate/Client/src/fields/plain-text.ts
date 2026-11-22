@@ -1,26 +1,20 @@
-import type {
-  FieldDataTarget,
-  FieldRendererRegistration,
-  FieldValidatorMap,
-  FormulateField,
-  SetDataOptions,
-} from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkTextValidity } from "../utils/validation.js";
+import type { FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types.js";
+import { FieldRendererBase } from "../utils/field.js";
 
-/** Renders a text field. */
+/**
+ * Renders a text field. The base class posts and checks its value. A subclass
+ * can change the input's type and keep everything else, as RenderDate does:
+ *
+ *     class RenderPhone extends RenderText { static inputType = "tel"; }
+ */
 export class RenderText extends FieldRendererBase<HTMLInputElement> {
+  /** The input's type attribute, such as "text", "tel", "email", "url" or "date". */
+  static inputType = "text";
+
   constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
     super(fieldData, fieldValidators);
-    this.initializeField({ type: "text", cssClasses });
-  }
-
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    setData(data, this.element.value, options, this.alias, this.id);
-  }
-
-  override checkValidity() {
-    return checkTextValidity(this, this.validators, this.element.value, this.getElement());
+    const { inputType } = this.constructor as typeof RenderText;
+    this.initializeField({ type: inputType, cssClasses });
   }
 }
 

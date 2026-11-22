@@ -1,26 +1,23 @@
 import type {
-  FieldDataTarget,
   FieldRendererRegistration,
   FieldValidatorMap,
+  FieldValidatorMethod,
   FormulateField,
-  SetDataOptions,
 } from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkBoolValidity } from "../utils/validation.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 /** Renders a single checkbox. It posts "true" or "false". */
 export class RenderCheckbox extends FieldRendererBase<HTMLInputElement> {
+  static override validatorMethod: FieldValidatorMethod = "validateBool";
+
   constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
     super(fieldData, fieldValidators);
     this.initializeField({ type: "checkbox", cssClasses, usePlaceholder: false });
   }
 
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    setData(data, this.element.checked, options, this.alias, this.id);
-  }
-
-  override checkValidity() {
-    return checkBoolValidity(this, this.validators, this.element.checked, this.getElement());
+  /** Whether the checkbox is checked. */
+  override getValue(): boolean {
+    return this.element.checked;
   }
 }
 

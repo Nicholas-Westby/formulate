@@ -386,6 +386,62 @@ public sealed class PhoneFieldMapDefinition : FormFieldMapDefinition<PhoneField>
 
 Register it in a composer with `builder.MapDefinitions().Add<PhoneFieldMapDefinition>()`. The configuration is passed to the renderer as `fieldData.configuration`. Validations map the same way (`ValidationMapDefinition<T>` and `PlainJavaScriptValidation`).
 
+### What the renderer's API exports
+
+`api.min.js` (in `/App_Plugins/Formulate/PlainJavaScript/`) exports the renderer's API, and importing it starts nothing. `formulate.min.js` exports the same names, and `window.formulatePlainJs` holds them too, with `version`.
+
+<!-- The renderer's tests (Client/test/api.test.ts) check that these two tables list exactly what api.js exports. -->
+<!-- api-exports:start -->
+| Export | What it is |
+| --- | --- |
+| `registerFieldRenderer(key, renderer)` | Registers a renderer class for a field type, such as `phone`. It replaces the built-in renderer with that key. |
+| `registerValidator(key, validator)` | Registers a validator class for a validation type, such as `required`. |
+| `renderForm(form, placeholder)` | Renders one form's data in place of a placeholder element, and returns the form element. |
+| `FieldRendererBase` | The base class of the built-in renderers. |
+| `RenderText` | The `text` field. Its `static inputType` (`"text"`) is the input's type. |
+| `RenderTextarea` | The `textarea` field. |
+| `RenderDate` | The `date` field: `RenderText` with the `inputType` `"date"`. |
+| `RenderSelect` | The `select` field (a drop down). |
+| `RenderCheckbox` | The `checkbox` field. Its value is `true` or `false`. |
+| `RenderCheckboxList` | The `checkbox-list` field. Its value is the array of checked values. |
+| `RenderRadioList` | The `radio-list` field. |
+| `RenderExtendedRadioList` | The `extended-radio-list` field: radio buttons with descriptions. |
+| `RenderUpload` | The `upload` field. Its value is the chosen `File`. |
+| `RenderHidden` | The `hidden` field. |
+| `RenderHeader` | The `header` field. It posts nothing. |
+| `RenderRichText` | The `rich-text` field. It posts nothing. |
+| `RenderButton` | The `button` field: a submit, next or previous button. |
+| `RenderRecaptcha` | The `recaptcha` field. |
+| `RegexValidator` | The `regex` validator. |
+| `RequiredValidator` | The `required` validator. |
+| `setData(data, value, options, alias, id)` | Adds a value to the submission: to the `FormData` under the field's ID, or to the values by alias. |
+| `getInitialValues(field)` | The field's initial values (such as a value from the query string), as an array. |
+| `prepareValidators(validations, fieldValidators)` | Creates a validator for each of a field's validations. The base class does this for you. |
+| `checkValidityCommon(renderer, validators, value, container, method)` | Runs the validators' `method` (such as `validateText`) on the value and shows the messages in the container. |
+| `checkTextValidity(renderer, validators, value, container)` | `checkValidityCommon` with `validateText`. |
+| `checkTextArrayValidity(renderer, validators, value, container)` | `checkValidityCommon` with `validateTextArray`. |
+| `checkBoolValidity(renderer, validators, value, container)` | `checkValidityCommon` with `validateBool`. |
+| `checkFileValidity(renderer, validators, value, container)` | `checkValidityCommon` with `validateFile`. |
+| `showFieldValidity(renderer, container, validity)` | Shows a field's messages and error class, or removes them when it is valid. |
+| `addValidationMessages(container, messages, priorList)` | Replaces the list of messages in a container. |
+| `toFieldValidity(outcome)` | Turns what a validator or a `checkValidity` returned into `{ success, messages }`. |
+| `resolveFieldValidity(check)` | Waits for a `checkValidity` result (a promise, or an array of them) and turns it into `{ success, messages }`. |
+| `addClasses(element, cssClasses)` | Adds CSS classes to an element, skipping empty names. |
+| `generateId(prefix)` | Makes an element ID that is unique on the page. |
+| `FormulateEvents` | The names of the events below. |
+| `dispatchFormEvent(target, name, detail, cancelable)` | Dispatches a custom event that bubbles, and returns it. |
+<!-- api-exports:end -->
+
+The types (for TypeScript, from `api.d.ts`) are every type in `types.d.ts`, such as `FormulateField`, `FieldRenderer` and `FieldValidator`, plus these:
+
+<!-- api-types:start -->
+| Type | What it is |
+| --- | --- |
+| `InitializeFieldOptions` | The options of `FieldRendererBase`'s `initializeField`. |
+| `PreparedValidator` | A validator made for one of a field's validations, with that validation's data. |
+| `FieldValidity` | A field's `{ success, messages }`. |
+<!-- api-types:end -->
+
 ### Events
 
 The renderer dispatches events on the form's `.formulate-wrapper` element. They bubble, and their names are the same as in Formulate 3.

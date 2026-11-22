@@ -1,9 +1,11 @@
 /// <reference types="vite/client" />
 import { minifySync, parseSync } from "vite";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import packageJson from "../package.json" with { type: "json" };
 import { buildModules, minifyOptions, type BuiltFile, type BuiltModules } from "../scripts/build-modules.mjs";
-import { addPlaceholder, fieldByLabel, loadFixture, resetPage } from "./helpers";
+import type * as Api from "../src/api";
+import type { FormulateField } from "../src/types";
+import { addPlaceholder, controlByLabel, fieldByLabel, flush, loadFixture, resetPage } from "./helpers";
 import {
   addToRecord,
   clientFolder,
@@ -365,18 +367,105 @@ describe("the output folder", () => {
 });
 
 describe("the built modules", () => {
-  beforeAll(resetPage);
+  beforeEach(() => {
+    resetPage();
+    vi.resetModules();
+  });
+  afterEach(resetPage);
+
+  /** Imports one of the built files, as a page would by its URL. */
+  function importBuilt<T = unknown>(path: string): Promise<T> {
+    const url = `../${outDir}/${path}`;
+    return import(/* @vite-ignore */ url) as Promise<T>;
+  }
 
   it("render a form from the minified entry", async () => {
     const form = loadFixture("contact");
     const wrapper = addPlaceholder(form);
     window["formulate-plain-js-forms"] = [form];
 
-    const entry = `../${outDir}/formulate.min.js`;
-    await import(/* @vite-ignore */ entry);
+    await importBuilt("formulate.min.js");
 
     expect(window.formulatePlainJs?.version).toBe(packageJson.version);
     expect(wrapper.querySelectorAll("form.formulate__form")).toHaveLength(1);
     expect(fieldByLabel(wrapper, "Your Name").classList).toContain("formulate__field--text");
+  });
+
+  it("export the API from the entry and from api.min.js alike", async () => {
+    const entry = await importBuilt<Record<string, unknown>>("formulate.min.js");
+    const minifiedApi = await importBuilt<Record<string, unknown>>("api.min.js");
+
+    expect(Object.keys(entry).sort()).toEqual(Object.keys(minifiedApi).sort());
+    expect(entry.registerFieldRenderer).toBe(minifiedApi.registerFieldRenderer);
+  });
+
+  it("share the registry and the element IDs when a site uses the readable files with the minified renderer", async () => {
+    // A site's renderer, made from the readable files, and the renderer Formulate loads (the minified files).
+    const readable = await importBuilt<typeof Api>("api.js");
+    class RenderPhone extends readable.RenderText {
+      static override inputType = "tel";
+    }
+    readable.registerFieldRenderer("phone", RenderPhone);
+    const form = loadFixture("contact");
+    const phone: FormulateField = {
+      ...form.data.fields[0],
+      alias: "phone",
+      label: "Phone",
+      id: "0e1d2c3b4a5968778695a4b3c2d1e0f9",
+      fieldType: "phone",
+    };
+    form.data.fields.push(phone);
+    form.data.rows.splice(0, 0, { isStep: false, cells: [{ columns: 12, fields: [{ id: phone.id }] }] });
+    const wrapper = addPlaceholder(form);
+    window["formulate-plain-js-forms"] = [form];
+
+    await importBuilt("formulate.min.js");
+
+    expect(controlByLabel(wrapper, "Phone").type).toBe("tel");
+    const ids = [...wrapper.querySelectorAll("[id]")].map((x) => x.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("add Google's reCAPTCHA script once and render every reCAPTCHA when a site's one comes from the readable files", async () => {
+    // A site's reCAPTCHA renderer, made from the readable files, in a form with the minified renderer's own one.
+    const readable = await importBuilt<typeof Api>("api.js");
+    class SiteRecaptcha extends readable.RenderRecaptcha {}
+    readable.registerFieldRenderer("site-recaptcha", SiteRecaptcha);
+    const form = loadFixture("all-field-types");
+    const builtIn = form.data.fields.find((x) => x.fieldType === "recaptcha");
+    if (!builtIn) {
+      throw new Error("The fixture has no reCAPTCHA field.");
+    }
+    const site: FormulateField = {
+      ...builtIn,
+      alias: "siteCaptcha",
+      label: "Site Captcha",
+      id: "5e4d3c2b1a0f49e8d7c6b5a493827160",
+      fieldType: "site-recaptcha",
+    };
+    form.data.fields.push(site);
+    form.data.rows.splice(0, 0, { isStep: false, cells: [{ columns: 12, fields: [{ id: site.id }] }] });
+    const wrapper = addPlaceholder(form);
+    window["formulate-plain-js-forms"] = [form];
+    // Stands in for Google's API, which exists before it calls back.
+    const rendered: HTMLElement[] = [];
+    window.grecaptcha = {
+      render: vi.fn((container: HTMLElement) => rendered.push(container) - 1),
+      reset: vi.fn(),
+    };
+
+    await importBuilt("formulate.min.js");
+    await flush();
+    window.formulatePlainJsRecaptchaReady?.();
+
+    expect.soft(document.querySelectorAll('script[src^="https://www.google.com/recaptcha/api.js"]')).toHaveLength(1);
+    const widgets = [...wrapper.querySelectorAll<HTMLElement>(".g-recaptcha")];
+    expect(widgets).toHaveLength(2);
+    // Each widget once: the site's (from the readable files) and the built-in one (from the minified files).
+    expect(rendered.map((x) => x.closest("[class*='formulate__field--']")?.className)).toEqual([
+      expect.stringContaining("formulate__field--site-recaptcha"),
+      expect.stringContaining("formulate__field--recaptcha"),
+    ]);
+    expect(rendered).toEqual(widgets);
   });
 });

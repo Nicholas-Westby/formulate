@@ -1,27 +1,9 @@
-import type {
-  FieldDataTarget,
-  FieldRendererRegistration,
-  FieldValidatorMap,
-  FormulateField,
-  SetDataOptions,
-} from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkTextValidity } from "../utils/validation.js";
+import type { FieldRendererRegistration } from "../types.js";
+import { RenderText } from "./plain-text.js";
 
-/** Renders a date field. Its value is an ISO date (yyyy-MM-dd). */
-export class RenderDate extends FieldRendererBase<HTMLInputElement> {
-  constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
-    super(fieldData, fieldValidators);
-    this.initializeField({ type: "date", cssClasses });
-  }
-
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    setData(data, this.element.value, options, this.alias, this.id);
-  }
-
-  override checkValidity() {
-    return checkTextValidity(this, this.validators, this.element.value, this.getElement());
-  }
+/** Renders a date field: a text field with the input type "date". Its value is an ISO date (yyyy-MM-dd). */
+export class RenderDate extends RenderText {
+  static override inputType = "date";
 }
 
 export default { key: "date", renderer: RenderDate } satisfies FieldRendererRegistration;

@@ -8,7 +8,6 @@ import type {
 } from "../types.js";
 import { FieldRendererBase, setData } from "../utils/field.js";
 import { generateId } from "../utils/generate-id.js";
-import { checkTextValidity } from "../utils/validation.js";
 
 /** Renders a list of radio buttons in a fieldset. The chosen value is posted under the field's ID. */
 export class RenderRadioList extends FieldRendererBase<HTMLInputElement> {
@@ -36,24 +35,22 @@ export class RenderRadioList extends FieldRendererBase<HTMLInputElement> {
     }
   }
 
+  /** Posts the chosen value. When none is chosen, nothing is posted (not even by alias). */
   override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    const value = this.getCheckedValue();
+    const value = this.getValue();
     if (value !== null) {
       setData(data, value, options, this.alias, this.id);
     }
   }
 
-  override checkValidity() {
-    return checkTextValidity(this, this.validators, this.getCheckedValue(), this.getElement());
+  /** The chosen value, or null when none is chosen. */
+  override getValue(): string | null {
+    return this.elements.find((x) => x.checked)?.value ?? null;
   }
 
   /** The text shown next to an item's radio button. */
   protected getItemLabels(item: FieldItem): { label: string; label2?: string | null } {
     return { label: item.label };
-  }
-
-  private getCheckedValue(): string | null {
-    return this.elements.find((x) => x.checked)?.value ?? null;
   }
 }
 

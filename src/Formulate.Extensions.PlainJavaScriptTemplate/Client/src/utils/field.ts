@@ -4,12 +4,13 @@ import type {
   FieldDataTarget,
   FieldRenderer,
   FieldValidatorMap,
+  FieldValidatorMethod,
   FormulateField,
   SetDataOptions,
 } from "../types.js";
 import { addClasses } from "./add-classes.js";
 import { generateId } from "./generate-id.js";
-import { prepareValidators, type PreparedValidator } from "./validation.js";
+import { checkValidityCommon, prepareValidators, type PreparedValidator } from "./validation.js";
 
 /**
  * Adds a field's value to the FormData (keyed by field ID) or, when
@@ -71,12 +72,26 @@ export interface InitializeFieldOptions {
   label2?: string | null;
 }
 
+/** The elements whose value property is the field's value, unless a renderer says otherwise. */
+const valueElementSelector = "input, select, textarea";
+
 /**
  * The base class of the built-in field renderers. It keeps the properties v3
  * renderers had (id, alias, wrapper, element, label, validators) and builds the
  * markup that v3 styles and the Basic theme expect.
+ *
+ * A renderer built on it calls initializeField (or initializeGroup) in its
+ * constructor. The base class then posts and checks the field's value: the
+ * value of its input, select or textarea, or whatever getValue returns.
  */
 export abstract class FieldRendererBase<TElement extends HTMLElement = HTMLElement> implements FieldRenderer {
+  /**
+   * The validator method that checks the field's value: "validateText" (the
+   * default), "validateBool", "validateTextArray" or "validateFile". A renderer
+   * whose value is not text sets its own, as RenderCheckbox does.
+   */
+  static validatorMethod: FieldValidatorMethod = "validateText";
+
   id: string;
   alias: string | null;
   stepIndex = 0;
@@ -101,12 +116,49 @@ export abstract class FieldRendererBase<TElement extends HTMLElement = HTMLEleme
     return this.wrapper ?? this.element;
   }
 
-  /** Adds the field's value to the submission. By default, there is nothing to add. */
-  setData(_data: FieldDataTarget, _options?: SetDataOptions): void {}
+  /**
+   * Returns the field's value, which setData posts and checkValidity checks.
+   * By default, it is the value of the field's element when that is an input,
+   * select or textarea, and undefined (nothing to post or check) otherwise.
+   * Override it for any other value, such as a checkbox's checked state or a
+   * widget's own value.
+   */
+  getValue(): unknown {
+    const element = this.element as HTMLElement | undefined;
+    return element?.matches(valueElementSelector) ? (element as HTMLInputElement).value : undefined;
+  }
 
-  /** Validates the field. By default, it is always valid. */
+  /**
+   * Adds the field's value (from getValue) to the submission. An undefined
+   * value adds nothing. An array is posted one item at a time under the field's
+   * ID, and stays an array in the values by alias.
+   */
+  setData(data: FieldDataTarget, options?: SetDataOptions): void {
+    const value = this.getValue();
+    if (value === undefined) {
+      return;
+    }
+    if (Array.isArray(value) && !options?.rawDataByAlias) {
+      for (const item of value) {
+        setData(data, item, options, this.alias, this.id);
+      }
+      return;
+    }
+    setData(data, value, options, this.alias, this.id);
+  }
+
+  /**
+   * Checks the field's value (from getValue) with the field's validators,
+   * calling their validatorMethod, and shows the messages in the field. A field
+   * whose value is undefined is always valid.
+   */
   checkValidity(): Promise<AggregateValidationResult> {
-    return Promise.resolve({ success: true });
+    const value = this.getValue();
+    if (value === undefined) {
+      return Promise.resolve({ success: true });
+    }
+    const { validatorMethod } = this.constructor as typeof FieldRendererBase;
+    return checkValidityCommon(this, this.validators, value, this.getElement(), validatorMethod);
   }
 
   /** Returns the category chosen for the field in the back office. */

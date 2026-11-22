@@ -7,6 +7,7 @@ import type {
 } from "../types.js";
 import { getInitialValues } from "../utils/field.js";
 import { mapFieldsById } from "../utils/map-fields-by-id.js";
+import { noteRenderedField } from "../utils/page-state.js";
 import { renderCell } from "./render-cell.js";
 import { renderField } from "./render-field.js";
 import { renderRow } from "./render-row.js";
@@ -65,6 +66,7 @@ export function renderFormContents(
         if (!data) {
           continue;
         }
+        noteRenderedField(data);
         const renderer = renderField(data, fieldRenderers, fieldValidators, {
           formElement,
           placeholderElement,

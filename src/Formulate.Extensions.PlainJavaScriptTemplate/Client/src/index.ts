@@ -4,18 +4,26 @@
  * formulate.min.js (minified, which the Razor view loads as a module script).
  * Once DOMContentLoaded has fired, it renders the forms the view queued on
  * window["formulate-plain-js-forms"], and it renders any form pushed onto that
- * array later. Register custom fields on window["formulate-plain-js-fields"]
- * and custom validators on window["formulate-plain-js-validators"] before
- * DOMContentLoaded (a module or deferred script is early enough, even one after
- * formulate.min.js).
+ * array later.
+ *
+ * It exports the API (api.js) and puts it on window.formulatePlainJs. Register
+ * custom fields and validators before DOMContentLoaded, with
+ * registerFieldRenderer and registerValidator or on the window arrays
+ * window["formulate-plain-js-fields"] and window["formulate-plain-js-validators"]
+ * (a module or deferred script is early enough, even one after
+ * formulate.min.js). This is the only module that starts anything when it is
+ * imported.
  */
+import * as api from "./api.js";
 import { listenForForms } from "./steps/get-form-data.js";
-import { renderForm, renderForms } from "./steps/render-forms.js";
+import { renderForms } from "./steps/render-forms.js";
+
+export * from "./api.js";
 
 if (window.formulatePlainJs) {
   console.warn("Formulate: the plain JavaScript renderer was loaded more than once, so this copy does nothing.");
 } else {
-  window.formulatePlainJs = { version: __FORMULATE_VERSION__, renderForm };
+  window.formulatePlainJs = { version: __FORMULATE_VERSION__, ...api };
   whenDomContentLoaded(() => listenForForms(renderForms));
 }
 

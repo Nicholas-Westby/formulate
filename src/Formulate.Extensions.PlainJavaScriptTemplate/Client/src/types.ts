@@ -183,6 +183,9 @@ export interface FieldValidator {
   validateFile?(value: File | null | undefined): PromiseLike<boolean> | boolean;
 }
 
+/** The name of one of a validator's methods, such as "validateText". */
+export type FieldValidatorMethod = keyof FieldValidator;
+
 export type FieldValidatorConstructor = new (configuration: ValidationConfiguration) => FieldValidator;
 
 /** Validator constructors keyed by validation type. Passed to field renderers as a plain object. */
@@ -194,15 +197,12 @@ export interface FieldValidatorRegistration {
   validator: FieldValidatorConstructor;
 }
 
-/** The API on window.formulatePlainJs. */
-export interface FormulatePlainJs {
-  version: string;
-  /**
-   * Renders a form in place of its placeholder: the element passed in or, by
-   * default, the element with the ID "formulate-form-{randomId}".
-   */
-  renderForm(form: FormulateForm, placeholder?: Element | null): HTMLFormElement | null;
-}
+/**
+ * What window.formulatePlainJs holds: the renderer's version and everything
+ * api.js exports (such as renderForm and registerFieldRenderer), for scripts
+ * that are not modules.
+ */
+export type FormulatePlainJs = { version: string } & typeof import("./api.js");
 
 declare global {
   interface Window {

@@ -3,6 +3,7 @@ import type {
   FieldRenderer,
   FieldValidator,
   FieldValidatorMap,
+  FieldValidatorMethod,
   FormulateValidation,
   ValidationResult,
 } from "../types.js";
@@ -19,8 +20,6 @@ export interface FieldValidity {
   success: boolean;
   messages: string[];
 }
-
-type ValidatorMethod = keyof FieldValidator;
 
 /**
  * Creates a validator for each of the field's validations. A validation type
@@ -155,7 +154,7 @@ export async function checkValidityCommon(
   validators: readonly PreparedValidator[],
   value: unknown,
   containerElement: Element,
-  validityFnName: ValidatorMethod,
+  validityFnName: FieldValidatorMethod,
 ): Promise<AggregateValidationResult> {
   const results = await Promise.all(validators.map((x) => runValidator(x, value, validityFnName)));
   const validity = toFieldValidity(results);
@@ -203,7 +202,7 @@ export function checkFileValidity(
 async function runValidator(
   prepared: PreparedValidator,
   value: unknown,
-  validityFnName: ValidatorMethod,
+  validityFnName: FieldValidatorMethod,
 ): Promise<ValidationResult> {
   const validate = prepared.validator[validityFnName] as
     | ((value: unknown) => PromiseLike<boolean> | boolean)

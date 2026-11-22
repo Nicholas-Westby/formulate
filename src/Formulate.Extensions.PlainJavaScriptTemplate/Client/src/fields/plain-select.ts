@@ -1,13 +1,5 @@
-import type {
-  FieldDataTarget,
-  FieldItem,
-  FieldRendererRegistration,
-  FieldValidatorMap,
-  FormulateField,
-  SetDataOptions,
-} from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkTextValidity } from "../utils/validation.js";
+import type { FieldItem, FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 const optionClass = "formulate__field__select__option";
 const initialClass = "formulate__field--select--initial";
@@ -15,21 +7,13 @@ const initialClass = "formulate__field--select--initial";
 /**
  * Renders a drop down. Its first option (with an empty value) shows the label,
  * and the wrapper has the class formulate__field--select--initial until the
- * visitor chooses an option.
+ * visitor chooses an option. The base class posts and checks its value.
  */
 export class RenderSelect extends FieldRendererBase<HTMLSelectElement> {
   constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
     super(fieldData, fieldValidators);
     this.initializeField({ nodeName: "select", cssClasses });
     this.addOptions(fieldData.configuration?.items ?? []);
-  }
-
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    setData(data, this.element.value, options, this.alias, this.id);
-  }
-
-  override checkValidity() {
-    return checkTextValidity(this, this.validators, this.element.value, this.getElement());
   }
 
   private addOptions(items: readonly FieldItem[]): void {

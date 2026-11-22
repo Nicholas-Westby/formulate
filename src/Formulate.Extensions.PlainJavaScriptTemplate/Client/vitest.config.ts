@@ -4,8 +4,12 @@ import viteConfig from "./vite.config.ts";
 export default mergeConfig(
   viteConfig,
   defineConfig({
-    // The build test writes the modules into .build, so watching it would rerun the tests forever.
-    server: { watch: { ignored: ["**/.build/**"] } },
+    server: {
+      // The build test writes the modules into .build, so watching it would rerun the tests forever.
+      watch: { ignored: ["**/.build/**"] },
+      // The API test reads the list of exports in docs/extending.md. Vite serves no file outside these folders.
+      fs: { allow: [".", "../../../docs"] },
+    },
     test: {
       environment: "jsdom",
       include: ["test/**/*.test.ts"],

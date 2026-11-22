@@ -1,18 +1,18 @@
 import type {
-  FieldDataTarget,
   FieldRendererRegistration,
   FieldValidatorMap,
+  FieldValidatorMethod,
   FormulateField,
-  SetDataOptions,
 } from "../types.js";
-import { FieldRendererBase, setData } from "../utils/field.js";
-import { checkTextArrayValidity } from "../utils/validation.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 /**
  * Renders a list of checkboxes in a fieldset. Each checked value is posted
  * under the field's ID; by alias, the value is the array of checked values.
  */
 export class RenderCheckboxList extends FieldRendererBase<HTMLInputElement> {
+  static override validatorMethod: FieldValidatorMethod = "validateTextArray";
+
   readonly elements: HTMLInputElement[] = [];
 
   constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
@@ -35,22 +35,8 @@ export class RenderCheckboxList extends FieldRendererBase<HTMLInputElement> {
     }
   }
 
-  override setData(data: FieldDataTarget, options?: SetDataOptions): void {
-    const values = this.getCheckedValues();
-    if (options?.rawDataByAlias) {
-      setData(data, values, options, this.alias, this.id);
-      return;
-    }
-    for (const value of values) {
-      setData(data, value, options, this.alias, this.id);
-    }
-  }
-
-  override checkValidity() {
-    return checkTextArrayValidity(this, this.validators, this.getCheckedValues(), this.getElement());
-  }
-
-  private getCheckedValues(): string[] {
+  /** The values of the checked checkboxes. */
+  override getValue(): string[] {
     return this.elements.filter((x) => x.checked).map((x) => x.value);
   }
 }
