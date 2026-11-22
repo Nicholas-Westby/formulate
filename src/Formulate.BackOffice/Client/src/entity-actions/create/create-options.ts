@@ -1,11 +1,8 @@
-import { UMB_ACTION_EVENT_CONTEXT } from '@umbraco-cms/backoffice/action';
 import type { UmbClassInterface } from '@umbraco-cms/backoffice/class-api';
 import type { UmbEntityModel } from '@umbraco-cms/backoffice/entity';
-import { UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
-import { UmbLocalizationController } from '@umbraco-cms/backoffice/localization-api';
-import { UMB_NOTIFICATION_CONTEXT } from '@umbraco-cms/backoffice/notification';
-import { UmbApiError, tryExecute } from '@umbraco-cms/backoffice/resources';
+import { tryExecute } from '@umbraco-cms/backoffice/resources';
 import { getFormulateTreeByTreeAliasCreateOptions, type CreateOptionModel } from '../../api/index.js';
+import { isNotFoundError, reportItemGone } from '../../core/item-gone.js';
 import type { FormulateTreeDefinition } from '../../tree/types.js';
 
 /**
@@ -45,26 +42,13 @@ export async function requestCreateOptions(
 		}),
 	);
 
-	// isUmbApiError reads the error's name, so it needs an error to look at.
-	if (error && UmbApiError.isUmbApiError(error) && error.status === 404) {
-		await reportGone(host, parent);
+	if (isNotFoundError(error)) {
+		await reportItemGone(host, parent);
 		return undefined;
 	}
 
 	// A stable sort: only the folder moves.
 	return data && [...data].sort((a, b) => Number(isFolderOption(a, tree)) - Number(isFolderOption(b, tree)));
-}
-
-/** Says that an item no longer exists, and reloads its structure so the tree drops it. */
-async function reportGone(host: UmbClassInterface, item: UmbEntityModel) {
-	const [notifications, events] = await Promise.all([
-		host.getContext(UMB_NOTIFICATION_CONTEXT),
-		host.getContext(UMB_ACTION_EVENT_CONTEXT),
-	]);
-	const localize = new UmbLocalizationController(host);
-	notifications?.peek('warning', { data: { message: localize.term('formulate_itemNotFound') } });
-	localize.destroy();
-	events?.dispatchEvent(new UmbRequestReloadStructureForEntityEvent({ entityType: item.entityType, unique: item.unique }));
 }
 
 /** How a create option is shown: its name (text, or a localization key starting with #), description and icon. */

@@ -279,6 +279,31 @@ test('a kind picked in the create dialog opens the create route of its workspace
 	);
 });
 
+test('renaming a folder deleted elsewhere says it is gone, drops it from the tree and leaves its workspace', async ({
+	page,
+}) => {
+	await page.goto('/umbraco/section/formulate');
+	const folderId = await createFolder(page, 'validations', 'Old rules');
+	await page.goto(`/umbraco/section/formulate/workspace/formulate-validation-folder/edit/${folderId}`);
+	const name = page.locator('umb-folder-workspace-editor').locator('uui-input#nameInput input');
+	await expect(name).toHaveValue('Old rules');
+	const folder = treeItem(treeItem(sidebar(page), 'Validation Library'), 'Old rules');
+	await expect(folder).toBeVisible();
+	// Someone else deletes it; this workspace still shows it.
+	await callManagementApi(page, 'DELETE', `/formulate/folder/${folderId}`);
+
+	await name.fill('Older rules');
+	await page.locator('umb-workspace-action uui-button[label="Save"]').click();
+
+	await expect(
+		page.locator('uui-toast-notification').getByText('This item no longer exists. Someone may have deleted it.'),
+	).toBeVisible();
+	await expect(folder).toHaveCount(0);
+	// As after a delete, the workspace leaves, without asking to discard a name that cannot be saved.
+	await expect(page).toHaveURL('/umbraco/section/formulate');
+	await expect(page.locator('umb-discard-changes-modal')).toHaveCount(0);
+});
+
 test('creating in a folder deleted elsewhere says it is gone and drops it from the tree', async ({ page }) => {
 	await page.goto('/umbraco/section/formulate');
 	const folderId = await createFolder(page, 'forms', 'Gone');

@@ -1,5 +1,5 @@
 import { UmbActionEventContext } from '@umbraco-cms/backoffice/action';
-import { UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
+import { UmbEntityDeletedEvent, UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
 import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
 import { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -60,7 +60,7 @@ function createHost() {
 		reloads.push(`${reload.getEntityType()} ${reload.getUnique()}`);
 	});
 
-	return { host, reloads };
+	return { host, events, reloads };
 }
 
 /** Opens the workspace's edit route for the folder, as the router does when a folder is picked in the tree. */
@@ -107,6 +107,32 @@ describe('Formulate folder workspaces', () => {
 			]);
 			expect(context.getName()).toBe('Renamed');
 			expect(reloads).toStrictEqual([`${entityType} ${FOLDER_ID}`]);
+		});
+	}
+
+	for (const { tree, Context, entityType } of WORKSPACES) {
+		it(`let go of a new name for a folder of the ${tree} tree deleted elsewhere, and announce it deleted, so the workspace leaves without asking`, async () => {
+			fakeApi((request) =>
+				request.method === 'PUT'
+					? jsonResponse({ type: 'Error', title: 'Item not found', status: 404 }, 404)
+					: jsonResponse({ id: FOLDER_ID, name: 'Contact forms', parentId: null, treeAlias: tree }),
+			);
+			const { host, events } = createHost();
+			const context = new Context(host);
+			openFolder(context);
+			await expect.poll(() => context.getName()).toBe('Contact forms');
+			context.setName('Renamed');
+			// Umbraco asks whether to discard unsaved changes when the workspace leaves for the deletion.
+			const deleted: Array<string> = [];
+			events.addEventListener(UmbEntityDeletedEvent.TYPE, (event) => {
+				const entity = event as UmbEntityDeletedEvent;
+				deleted.push(`${entity.getEntityType()} ${entity.getUnique()} unsaved: ${context.getHasUnpersistedChanges()}`);
+			});
+
+			await expect(context.requestSubmit()).rejects.toBeDefined();
+
+			expect(deleted).toStrictEqual([`${entityType} ${FOLDER_ID} unsaved: false`]);
+			expect(context.getName()).toBe('Contact forms');
 		});
 	}
 

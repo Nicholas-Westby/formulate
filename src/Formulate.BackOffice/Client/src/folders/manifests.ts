@@ -49,13 +49,13 @@ const entityActions: Array<UmbExtensionManifest> = FORMULATE_TREES.flatMap((tree
 		meta: { folderRepositoryAlias: tree.folderRepositoryAlias },
 	},
 	{
-		// Umbraco's own delete action, which confirms with a localized text. Deleting a Formulate folder
-		// deletes everything in it, so the text says so.
+		// Formulate's delete action (Umbraco's, which says when the folder is gone), which confirms with a
+		// localized text. Deleting a Formulate folder deletes everything in it, so the text says so.
 		type: 'entityAction',
 		kind: 'folderDelete',
 		alias: `Formulate.EntityAction.Folder.Delete.${tree.apiAlias}`,
 		name: `Delete Formulate Folder (${tree.apiAlias}) Entity Action`,
-		api: () => import('@umbraco-cms/backoffice/entity-action').then((module) => ({ api: module.UmbDeleteEntityAction })),
+		api: () => import('../entity-actions/delete/delete.action.js'),
 		forEntityTypes: [tree.folderEntityType],
 		meta: {
 			folderRepositoryAlias: tree.folderRepositoryAlias,

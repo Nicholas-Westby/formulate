@@ -10,12 +10,14 @@ import {
 	putFormulateFolderById,
 	type FolderResponseModel,
 } from '../api/index.js';
+import { isNotFoundError, reportItemGone } from '../core/item-gone.js';
 import { FORMULATE_DATA_VALUES_TREE, FORMULATE_FORMS_TREE, FORMULATE_VALIDATIONS_TREE } from '../tree/trees.js';
 import type { FormulateTreeDefinition } from '../tree/types.js';
 
 /**
  * Reads, creates, renames and deletes the folders of one Formulate tree through the Management API.
- * Deleting a folder deletes everything in it.
+ * Deleting a folder deletes everything in it. A 404 when reading, renaming or deleting means the folder
+ * was deleted elsewhere: this says so and drops it from the tree, as Umbraco would show nothing.
  */
 export class FormulateFolderServerDataSource implements UmbDetailDataSource<UmbFolderModel> {
 	#host: UmbControllerHost;
@@ -33,7 +35,12 @@ export class FormulateFolderServerDataSource implements UmbDetailDataSource<UmbF
 	async read(unique: string): Promise<UmbDataSourceResponse<UmbFolderModel>> {
 		const { data, error } = await tryExecute(this.#host, getFormulateFolderById({ path: { id: unique } }));
 
-		return data ? { data: this.#toModel(data) } : { error };
+		if (data) {
+			return { data: this.#toModel(data) };
+		}
+
+		await this.#reportIfGone(error, unique);
+		return { error };
 	}
 
 	async create(model: UmbFolderModel, parentUnique: string | null): Promise<UmbDataSourceResponse<UmbFolderModel>> {
@@ -63,13 +70,29 @@ export class FormulateFolderServerDataSource implements UmbDetailDataSource<UmbF
 			putFormulateFolderById({ path: { id: model.unique }, body: { name: model.name } }),
 		);
 
-		return data ? { data: this.#toModel(data) } : { error };
+		if (data) {
+			return { data: this.#toModel(data) };
+		}
+
+		await this.#reportIfGone(error, model.unique);
+		return { error };
 	}
 
 	async delete(unique: string): Promise<UmbDataSourceResponse<unknown>> {
 		const { error } = await tryExecute(this.#host, deleteFormulateFolderById({ path: { id: unique } }));
 
+		await this.#reportIfGone(error, unique);
 		return { error };
+	}
+
+	/**
+	 * Says that a folder deleted elsewhere is gone, as Umbraco shows nothing for a 404, and announces it as
+	 * deleted, so its workspace leaves.
+	 */
+	async #reportIfGone(error: unknown, unique: string) {
+		if (isNotFoundError(error)) {
+			await reportItemGone(this.#host, { entityType: this.#tree.folderEntityType, unique }, { deleted: true });
+		}
 	}
 
 	#toModel(folder: FolderResponseModel): UmbFolderModel {

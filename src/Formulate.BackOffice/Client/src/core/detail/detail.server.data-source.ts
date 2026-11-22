@@ -2,6 +2,7 @@ import type { UmbControllerHost } from '@umbraco-cms/backoffice/controller-api';
 import { UmbId } from '@umbraco-cms/backoffice/id';
 import type { UmbDataSourceResponse, UmbDetailDataSource } from '@umbraco-cms/backoffice/repository';
 import { tryExecute } from '@umbraco-cms/backoffice/resources';
+import { isNotFoundError, reportItemGone } from '../item-gone.js';
 
 /** A Formulate entity as a workspace edits it. */
 export interface FormulateDetailModel {
@@ -32,8 +33,10 @@ export interface FormulateDetailRequests<Model extends FormulateDetailModel, Res
 
 /**
  * Reads, creates, saves and deletes one kind of Formulate entity through the Management API. Problems
- * the API reports are given back as the error. tryExecute shows them to the user, except 401, 403 and 404:
- * a 404 (the entity was deleted elsewhere) shows nothing, so a caller that can get one must say so itself.
+ * the API reports are given back as the error. tryExecute shows them to the user, except 401, 403 and 404.
+ * A 404 when reading, saving or deleting means the entity was deleted elsewhere: this says so and drops
+ * the entity from the tree, as Umbraco would show nothing. (The API answers a create in a parent that no
+ * longer exists with a 400, which tryExecute shows.)
  */
 export class FormulateDetailServerDataSource<Model extends FormulateDetailModel, Response>
 	implements UmbDetailDataSource<Model>
@@ -60,7 +63,12 @@ export class FormulateDetailServerDataSource<Model extends FormulateDetailModel,
 	async read(unique: string): Promise<UmbDataSourceResponse<Model>> {
 		const { data, error } = await tryExecute(this.#host, this.#requests.read(unique));
 
-		return data ? { data: this.#requests.toModel(data) } : { error };
+		if (data) {
+			return { data: this.#requests.toModel(data) };
+		}
+
+		await this.#reportIfGone(error, unique);
+		return { error };
 	}
 
 	async create(model: Model, parentUnique: string | null): Promise<UmbDataSourceResponse<Model>> {
@@ -72,13 +80,26 @@ export class FormulateDetailServerDataSource<Model extends FormulateDetailModel,
 	async update(model: Model): Promise<UmbDataSourceResponse<Model>> {
 		const { data, error } = await tryExecute(this.#host, this.#requests.update(model));
 
-		return data ? { data: this.#requests.toModel(data) } : { error };
+		if (data) {
+			return { data: this.#requests.toModel(data) };
+		}
+
+		await this.#reportIfGone(error, model.unique);
+		return { error };
 	}
 
 	async delete(unique: string): Promise<UmbDataSourceResponse<unknown>> {
 		const { error } = await tryExecute(this.#host, this.#requests.delete(unique));
 
+		await this.#reportIfGone(error, unique);
 		return { error };
+	}
+
+	/** Says that an item asked for no longer exists, and announces it as deleted, so its workspace leaves. */
+	async #reportIfGone(error: unknown, unique: string) {
+		if (isNotFoundError(error)) {
+			await reportItemGone(this.#host, { entityType: this.#requests.entityType, unique }, { deleted: true });
+		}
 	}
 }
 

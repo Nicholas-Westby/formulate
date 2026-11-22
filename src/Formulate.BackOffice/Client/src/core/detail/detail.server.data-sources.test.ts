@@ -1,5 +1,9 @@
+import { UmbActionEventContext } from '@umbraco-cms/backoffice/action';
+import { UmbEntityDeletedEvent, UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
+import { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
 import type { UmbDetailRepository } from '@umbraco-cms/backoffice/repository';
-import { afterEach, describe, expect, it } from 'vitest';
+import { UmbApiError } from '@umbraco-cms/backoffice/resources';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FormulateDataValuesDetailRepository } from '../../data-values/repository/data-values-detail.repository.js';
 import { FormulateDataValuesDetailServerDataSource } from '../../data-values/repository/data-values-detail.server.data-source.js';
 import { FormulateDataValuesDetailStore } from '../../data-values/repository/data-values-detail.store.js';
@@ -379,5 +383,97 @@ describe('Formulate detail data sources', () => {
 			`${API}/validation/${ID}`,
 			`${API}/data-values/${ID}`,
 		]);
+	});
+});
+
+/**
+ * A back office host that records the notifications it shows, the tree reloads it is asked for and the items
+ * announced as deleted.
+ */
+function createNotifyingHost() {
+	const host = createTestHost();
+	const peek = vi.spyOn(new UmbNotificationContext(host), 'peek');
+	const events = new UmbActionEventContext(host);
+	const reloads: Array<string> = [];
+	events.addEventListener(UmbRequestReloadStructureForEntityEvent.TYPE, (event) => {
+		const reload = event as UmbRequestReloadStructureForEntityEvent;
+		reloads.push(`${reload.getEntityType()} ${reload.getUnique()}`);
+	});
+	const deleted: Array<string> = [];
+	events.addEventListener(UmbEntityDeletedEvent.TYPE, (event) => {
+		const entity = event as UmbEntityDeletedEvent;
+		deleted.push(`${entity.getEntityType()} ${entity.getUnique()}`);
+	});
+
+	return { host, peek, reloads, deleted };
+}
+
+/** Each kind of item, with a model the data source can save. */
+const ITEMS = [
+	{
+		entityType: 'formulate-form',
+		DataSource: FormulateFormDetailServerDataSource,
+		model: { entityType: 'formulate-form', unique: ID, name: 'Contact', alias: null, kindId: null, fields: [], handlers: [] },
+	},
+	{
+		entityType: 'formulate-layout',
+		DataSource: FormulateLayoutDetailServerDataSource,
+		model: { entityType: 'formulate-layout', unique: ID, name: 'Contact layout', alias: null, formUnique: FORM_ID, kindId: KIND_ID, templateId: null, configuration: {} },
+	},
+	{
+		entityType: 'formulate-validation',
+		DataSource: FormulateValidationDetailServerDataSource,
+		model: { entityType: 'formulate-validation', unique: ID, name: 'Required', alias: null, kindId: KIND_ID, configuration: {} },
+	},
+	{
+		entityType: 'formulate-data-values',
+		DataSource: FormulateDataValuesDetailServerDataSource,
+		model: { entityType: 'formulate-data-values', unique: ID, name: 'Countries', alias: null, kindId: KIND_ID, isLegacy: false, configuration: {} },
+	},
+] as const;
+
+describe('Formulate detail data sources, when an item was deleted elsewhere', () => {
+	for (const { entityType, DataSource, model } of ITEMS) {
+		it(`say that a ${entityType} item read, saved or deleted no longer exists, drop it from the tree, and announce it deleted`, async () => {
+			fakeApi(() => jsonResponse({ type: 'Error', title: 'Item not found', status: 404, detail: `The item ${ID} does not exist.` }, 404));
+			const { host, peek, reloads, deleted } = createNotifyingHost();
+			// The data sources share their code; each is given the model of its own kind.
+			const dataSource = new DataSource(host) as unknown as {
+				read: (unique: string) => Promise<{ error?: unknown }>;
+				update: (model: unknown) => Promise<{ error?: unknown }>;
+				delete: (unique: string) => Promise<{ error?: unknown }>;
+			};
+
+			const results = [await dataSource.read(ID), await dataSource.update(model), await dataSource.delete(ID)];
+
+			// The caller still gets the error, so a save or delete is not taken for a success.
+			expect(results.map(({ error }) => error && UmbApiError.isUmbApiError(error) && error.status)).toStrictEqual([404, 404, 404]);
+			// Umbraco shows nothing for a 404 (tryExecute leaves out 401, 403 and 404), so the data source says it.
+			expect(peek.mock.calls).toStrictEqual([
+				['warning', { data: { message: 'formulate_itemNotFound' } }],
+				['warning', { data: { message: 'formulate_itemNotFound' } }],
+				['warning', { data: { message: 'formulate_itemNotFound' } }],
+			]);
+			// Reloading its structure drops the stale item from the tree.
+			expect(reloads).toStrictEqual([`${entityType} ${ID}`, `${entityType} ${ID}`, `${entityType} ${ID}`]);
+			// It is gone for good, so a workspace that shows it leaves, as after a delete.
+			expect(deleted).toStrictEqual([`${entityType} ${ID}`, `${entityType} ${ID}`, `${entityType} ${ID}`]);
+		});
+	}
+
+	it("leave any other problem to Umbraco's own error notification, and reload nothing", async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => undefined);
+		fakeApi(() => jsonResponse({ type: 'Error', title: 'Invalid request', status: 400, detail: 'name: The name is required.', field: 'name' }, 400));
+		const { host, peek, reloads, deleted } = createNotifyingHost();
+
+		const { error } = await new FormulateValidationDetailServerDataSource(host).update(ITEMS[2].model);
+
+		expect(error && UmbApiError.isUmbApiError(error) && error.status).toBe(400);
+		await expect.poll(() => peek.mock.calls.length).toBe(1);
+		expect(peek.mock.calls.map(([color, args]) => [color, JSON.stringify(args)])).toStrictEqual([
+			['danger', expect.stringContaining('Invalid request')],
+		]);
+		expect(reloads).toStrictEqual([]);
+		expect(deleted).toStrictEqual([]);
 	});
 });

@@ -1,4 +1,7 @@
+import { UmbActionEventContext } from '@umbraco-cms/backoffice/action';
+import { UmbEntityDeletedEvent, UmbRequestReloadStructureForEntityEvent } from '@umbraco-cms/backoffice/entity-action';
 import { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
+import { UmbApiError } from '@umbraco-cms/backoffice/resources';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeApi, jsonResponse, pathAndQuery } from '../test/fake-api.js';
 import { createTestHost } from '../test/test-host.js';
@@ -143,5 +146,37 @@ describe('Formulate folder data source', () => {
 				}),
 			),
 		);
+	});
+
+	it('says that a folder read, renamed or deleted no longer exists, drops it from the tree, and announces it deleted', async () => {
+		fakeApi(() => jsonResponse({ type: 'Error', title: 'Item not found', status: 404, detail: `The folder ${FOLDER_ID} does not exist.` }, 404));
+		const host = createTestHost();
+		const peek = vi.spyOn(new UmbNotificationContext(host), 'peek');
+		const events = new UmbActionEventContext(host);
+		const reloads: Array<string> = [];
+		events.addEventListener(UmbRequestReloadStructureForEntityEvent.TYPE, (event) => {
+			const reload = event as UmbRequestReloadStructureForEntityEvent;
+			reloads.push(`${reload.getEntityType()} ${reload.getUnique()}`);
+		});
+		const deleted: Array<string> = [];
+		events.addEventListener(UmbEntityDeletedEvent.TYPE, (event) => {
+			const entity = event as UmbEntityDeletedEvent;
+			deleted.push(`${entity.getEntityType()} ${entity.getUnique()}`);
+		});
+		const dataSource = new FormulateDataValuesFolderServerDataSource(host);
+
+		const results = [
+			await dataSource.read(FOLDER_ID),
+			await dataSource.update({ entityType: 'formulate-data-values-folder', unique: FOLDER_ID, name: 'Renamed' }),
+			await dataSource.delete(FOLDER_ID),
+		];
+
+		// The caller still gets the error, so a rename or delete is not taken for a success.
+		expect(results.map(({ error }) => error && UmbApiError.isUmbApiError(error) && error.status)).toStrictEqual([404, 404, 404]);
+		// Umbraco shows nothing for a 404 (tryExecute leaves out 401, 403 and 404), so the data source says it.
+		expect(peek.mock.calls).toStrictEqual(Array(3).fill(['warning', { data: { message: 'formulate_itemNotFound' } }]));
+		expect(reloads).toStrictEqual(Array(3).fill(`formulate-data-values-folder ${FOLDER_ID}`));
+		// So a workspace that shows it leaves, as after a delete.
+		expect(deleted).toStrictEqual(Array(3).fill(`formulate-data-values-folder ${FOLDER_ID}`));
 	});
 });
