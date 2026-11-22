@@ -123,7 +123,12 @@ namespace Formulate.Extensions.SendData.Utilities
             switch (format)
             {
                 case Constants.TransmissionFormats.QueryString:
-                    request.RequestUri = new Uri(AppendQuery(uri, data));
+                    var query = MergeQuery(uri, data);
+
+                    if (query.Length > 0)
+                    {
+                        request.RequestUri = new Uri($"{uri.GetLeftPart(UriPartial.Path)}?{query}");
+                    }
 
                     // A GET has no body; any other method sends an empty one, with the data in the query.
                     if (httpMethod != HttpMethod.Get && httpMethod != HttpMethod.Head)
@@ -134,7 +139,9 @@ namespace Formulate.Extensions.SendData.Utilities
                     break;
 
                 case Constants.TransmissionFormats.FormBody:
-                    request.Content = new FormUrlEncodedContent(data);
+                    // The URL is left as it was, and the body has its own query values too, as in Formulate 3.
+                    request.Content = new ByteArrayContent(Encoding.UTF8.GetBytes(MergeQuery(uri, data)));
+                    request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-www-form-urlencoded");
                     break;
 
                 case Constants.TransmissionFormats.Json:
@@ -160,15 +167,40 @@ namespace Formulate.Extensions.SendData.Utilities
         }
 
         /// <summary>
-        /// Adds the data to the URL's own query string.
+        /// Merges the data into the URL's own query values, as Formulate 3 did (it called
+        /// <c>NameValueCollection.Set</c> for each pair): a pair replaces an earlier one with the same name,
+        /// ignoring case, which keeps its spelling and place. The result is url encoded.
         /// </summary>
-        private static string AppendQuery(Uri uri, IEnumerable<KeyValuePair<string, string>> data)
+        private static string MergeQuery(Uri uri, IEnumerable<KeyValuePair<string, string>> data)
         {
-            var pairs = data.Select(x => $"{WebUtility.UrlEncode(x.Key)}={WebUtility.UrlEncode(x.Value)}");
-            var query = string.Join("&", new[] { uri.Query.TrimStart('?') }.Concat(pairs).Where(x => x.Length > 0));
-            var bare = uri.GetLeftPart(UriPartial.Path);
+            var pairs = new List<KeyValuePair<string, string>>();
 
-            return query.Length == 0 ? bare : $"{bare}?{query}";
+            foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var separator = part.IndexOf('=');
+                pairs.Add(separator < 0
+                    ? new KeyValuePair<string, string>(WebUtility.UrlDecode(part), string.Empty)
+                    : new KeyValuePair<string, string>(WebUtility.UrlDecode(part[..separator]), WebUtility.UrlDecode(part[(separator + 1)..])));
+            }
+
+            foreach (var pair in data)
+            {
+                var first = pairs.FindIndex(x => string.Equals(x.Key, pair.Key, StringComparison.OrdinalIgnoreCase));
+
+                if (first < 0)
+                {
+                    pairs.Add(pair);
+                    continue;
+                }
+
+                // Set replaces every value the name had with the one.
+                var key = pairs[first].Key;
+                var kept = pairs.Where((x, i) => i < first || (i > first && string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase) == false)).ToList();
+                kept.Insert(first, new KeyValuePair<string, string>(key, pair.Value));
+                pairs = kept;
+            }
+
+            return string.Join("&", pairs.Select(x => $"{WebUtility.UrlEncode(x.Key)}={WebUtility.UrlEncode(x.Value)}"));
         }
 
         /// <summary>

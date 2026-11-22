@@ -56,7 +56,7 @@ public sealed class SendDataFormatTests
     }
 
     [Fact]
-    public async Task Form_body_sends_url_encoded_pairs()
+    public async Task Form_body_sends_the_urls_own_query_values_and_the_data_leaving_the_url_as_it_was()
     {
         await using var services = SendDataTestServices.Create();
 
@@ -65,7 +65,64 @@ public sealed class SendDataFormatTests
         var request = services.Network.Single;
         Assert.Equal("POST /in?x=1", request.RequestLine);
         Assert.Equal(FormUrlEncoded, request.ContentType);
-        Assert.Equal("Name=Ann+Lee&Tags=a%2C+b", request.Body);
+        Assert.Equal("x=1&Name=Ann+Lee&Tags=a%2C+b", request.Body);
+    }
+
+    [Fact]
+    public async Task Form_body_without_a_query_in_the_url_sends_just_the_data()
+    {
+        await using var services = SendDataTestServices.Create();
+
+        await services.SendAsync(Config("http://hook.test/in", "POST", "Form Body"), Submission(Form()));
+
+        Assert.Equal("Name=Ann+Lee&Tags=a%2C+b", services.Network.Single.Body);
+    }
+
+    [Fact]
+    public async Task A_repeated_key_in_the_url_is_replaced_by_one_value_in_place()
+    {
+        await using var services = SendDataTestServices.Create();
+
+        await services.SendAsync(Config("http://hook.test/in?a=1&Name=x&b=2&name=y", "GET", "Query String"), Submission(Form()));
+
+        Assert.Equal("GET /in?a=1&Name=Ann+Lee&b=2&Tags=a%2C+b", services.Network.Single.RequestLine);
+    }
+
+    [Theory]
+    [InlineData("Query String", "GET /in?name=Ann+Lee&x=1&Tags=a%2C+b", null)]
+    [InlineData("Form Body", "POST /in?name=old&x=1", "name=Ann+Lee&x=1&Tags=a%2C+b")]
+    public async Task A_mapping_replaces_a_urls_own_value_with_the_same_name_ignoring_case(string format, string requestLine, string? body)
+    {
+        await using var services = SendDataTestServices.Create();
+        var method = format == "Query String" ? "GET" : "POST";
+
+        await services.SendAsync(Config("http://hook.test/in?name=old&x=1", method, format), Submission(Form()));
+
+        // The mapped "Name" takes the place of the URL's "name", which keeps its spelling and position, as NameValueCollection.Set did.
+        var request = services.Network.Single;
+        Assert.Equal(requestLine, request.RequestLine);
+        Assert.Equal(body, request.Body);
+    }
+
+    [Theory]
+    [InlineData("Query String", "GET", "GET /in?who=a%2C+b", null)]
+    [InlineData("Form Body", "POST", "POST /in", "who=a%2C+b")]
+    public async Task Two_mappings_with_the_same_name_keep_the_last_value_in_the_query_and_form_body(string format, string method, string requestLine, string? body)
+    {
+        await using var services = SendDataTestServices.Create();
+        var config = new
+        {
+            url = "http://hook.test/in",
+            method,
+            transmissionFormat = format,
+            fields = new[] { new { id = _name.Id.ToString("N"), name = "who" }, new { id = _tags.Id.ToString("N"), name = "WHO" } },
+        };
+
+        await services.SendAsync(config, Submission(Form()));
+
+        var request = services.Network.Single;
+        Assert.Equal(requestLine, request.RequestLine);
+        Assert.Equal(body, request.Body);
     }
 
     [Fact]
