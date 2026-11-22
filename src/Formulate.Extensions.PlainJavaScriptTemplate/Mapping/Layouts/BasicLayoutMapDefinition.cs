@@ -13,6 +13,7 @@
 
             var rows = layoutConfig.Rows.Select(r => new PlainJavaScriptLayoutRow()
             {
+                IsStep = r.IsStep,
                 Cells = r.Cells.Select(c => new PlainJavaScriptLayoutCell()
                 {
                     ColumnSpan = c.ColumnSpan,

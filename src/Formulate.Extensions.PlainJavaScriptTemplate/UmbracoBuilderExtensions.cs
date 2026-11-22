@@ -16,6 +16,7 @@
             umbracoBuilder.MapDefinitions().Add<CheckboxListFieldMapDefinition>();
             umbracoBuilder.MapDefinitions().Add<RichTextFieldMapDefinition>();
             umbracoBuilder.MapDefinitions().Add<RadioButtonListFieldMapDefinition>();
+            umbracoBuilder.MapDefinitions().Add<ButtonFieldMapDefinition>();
 
             umbracoBuilder.MapDefinitions().Add<DefaultValidationMapDefinition>();
             umbracoBuilder.MapDefinitions().Add<MandatoryValidationMapDefinition>();
