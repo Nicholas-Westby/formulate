@@ -1,11 +1,10 @@
 import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { css, customElement, html, nothing, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
-import { umbOpenModal } from '@umbraco-cms/backoffice/modal';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { isSameGuid } from '../guid.js';
-import { findField, FormulateFormFieldKinds, type FormulatePickableField } from './form-field-kinds.js';
-import { FORMULATE_PICK_FIELDS_MODAL, type FormulatePickFieldsModalData } from './pick-fields-modal.token.js';
+import { findField, FormulateFormFieldKinds, pickFormFields, type FormulatePickableField } from './form-field-kinds.js';
+import type { FormulatePickFieldsModalData } from './pick-fields-modal.token.js';
 
 /**
  * Picks fields of the form being edited, such as the fields an email includes: the value is the picked
@@ -40,10 +39,8 @@ export class FormulateFormFieldPickerElement extends UmbLitElement {
 	 * @param selection The IDs of the fields picked now.
 	 * @returns The dialog's whole selection, or undefined when it was closed without one.
 	 */
-	protected async pickIds(data: FormulatePickFieldsModalData, selection: Array<string>): Promise<Array<string> | undefined> {
-		const picked = await umbOpenModal(this, FORMULATE_PICK_FIELDS_MODAL, { data, value: { selection } }).catch(() => undefined);
-
-		return picked?.selection;
+	protected pickIds(data: FormulatePickFieldsModalData, selection: Array<string>): Promise<Array<string> | undefined> {
+		return pickFormFields(this, data, selection);
 	}
 
 	#store(ids: Array<string>) {
@@ -51,26 +48,11 @@ export class FormulateFormFieldPickerElement extends UmbLitElement {
 		this.dispatchEvent(new UmbChangeEvent());
 	}
 
-	#nameOf(field: FormulatePickableField) {
-		return field.name || this.localize.term('formulate_unnamed');
-	}
-
 	async #choose() {
 		const current = this.value ?? [];
 		// The dialog knows the fields by the form's own IDs, which may be written another way than the stored ones.
 		const selection = current.map((id) => findField(this.fields, id)?.id).filter((id): id is string => id !== undefined);
-		const picked = await this.pickIds(
-			{
-				headline: this.headline,
-				fields: this.fields.map((field) => ({
-					id: field.id,
-					name: this.#nameOf(field),
-					alias: field.alias ?? '',
-					icon: this.#kinds.iconOf(field),
-				})),
-			},
-			selection,
-		);
+		const picked = await this.pickIds({ headline: this.headline, fields: this.#kinds.pickOptions(this.fields) }, selection);
 
 		if (!picked) {
 			return;
@@ -106,7 +88,7 @@ export class FormulateFormFieldPickerElement extends UmbLitElement {
 
 	#renderField(id: string, position: number) {
 		const field = findField(this.fields, id);
-		const name = field ? this.#nameOf(field) : this.localize.term('formulate_fieldNotFound');
+		const name = field ? this.#kinds.nameOf(field) : this.localize.term('formulate_fieldNotFound');
 		const icon = this.#kinds.iconOf(field);
 
 		return html`

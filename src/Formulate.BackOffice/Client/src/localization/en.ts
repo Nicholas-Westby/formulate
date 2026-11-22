@@ -117,12 +117,13 @@ export default {
 		fieldAndAlias: (name: string, alias: string) => (alias ? `${name} (${alias})` : name),
 		senderEmail: 'Sender email',
 		senderEmailDescription:
-			"The address the email is sent from, such as forms@example.com. Leave it blank to send from the site's address (Umbraco:CMS:Global:Smtp:From).",
+			"The address the email is sent from, such as `forms@example.com`. Leave it blank to send from the site's address (`Umbraco:CMS:Global:Smtp:From`).",
 		recipients: 'Recipients',
 		recipientsDescription:
-			'The addresses the email is sent to. Each can have a name, such as Sales <sales@example.com>, or list several addresses separated by commas.',
+			'The addresses the email is sent to. Each can have a name, such as `Sales <sales@example.com>`, or list several addresses separated by commas.',
 		recipientFields: 'Recipient fields',
-		recipientFieldsDescription: "Fields whose values are addresses to send the email to too, such as the visitor's own email.",
+		recipientFieldsDescription:
+			"Fields whose values are addresses to send the email to too, such as the visitor's own email. When the site sets `Formulate:Email:Whitelist`, only the addresses it allows are sent to, and none when it is empty.",
 		deliveryType: 'Delivery',
 		deliveryTypeDescription: "How the recipients get the email. With Bcc, they do not see each other's addresses.",
 		deliveryTo: 'To',
@@ -152,6 +153,21 @@ export default {
 		textView: 'Text view',
 		textViewDescription: (path: string) =>
 			'The view that writes a plain text email, such as `' + path + '`. It is used only when there is no HTML view.',
+		sendDataUrl: 'URL',
+		sendDataUrlDescription:
+			'The address the data is sent to, such as `https://crm.example.com/forms`. Its own query values are sent too.',
+		httpMethod: 'Method',
+		httpMethodDescription: 'The HTTP method of the request.',
+		transmissionFormat: 'Transmission format',
+		transmissionFormatDescription:
+			"How the data is sent: in the URL's query string, as a form body, as JSON, or as JSON for a HubSpot form, with the page the form was sent from.",
+		unknownTransmissionFormat: (format: string) => `${format} (not a format Formulate knows, so nothing is sent)`,
+		fieldsToSend: 'Fields to send',
+		fieldsToSendDescription:
+			"The fields whose values are sent, in this order, and the name each is sent with. A blank name sends the field's alias, or its name when it has none.",
+		noFieldsSent: "No fields are sent, so the request has none of the form's values. Choose the fields to send, or add all of them.",
+		addAllFields: 'Add all fields',
+		fieldNameSent: (name: string, position: number) => (name ? `Name sent for ${name}` : `Name sent for item ${position}`),
 		storeDataDescription:
 			'Stores each submission of this form in the Umbraco database: the values of its fields, the page it was sent from and the files sent with it. There is nothing to set here.',
 	},

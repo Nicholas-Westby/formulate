@@ -106,17 +106,19 @@ export abstract class FormulateSortableRowsInputElement extends UmbLitElement {
 
 	/** Stores new items after the others. */
 	protected addItems(items: ReadonlyArray<FormulateListItem>) {
-		if (items.length) {
-			this.#store([...this._rows, ...items.map((item) => ({ key: UmbId.new(), item }))]);
-		}
+		this.updateItems(() => true, items);
 	}
 
-	/** Stores the list with the items that pass, in their order. */
-	protected keepItems(keep: (item: FormulateListItem) => boolean) {
+	/**
+	 * Keeps the items that pass, in their order, adds new ones after them, and stores the list if that changed it.
+	 * @param keep Whether an item stays.
+	 * @param add The items to add.
+	 */
+	protected updateItems(keep: (item: FormulateListItem) => boolean, add: ReadonlyArray<FormulateListItem>) {
 		const rows = this._rows.filter((row) => keep(row.item));
 
-		if (rows.length !== this._rows.length) {
-			this.#store(rows);
+		if (rows.length !== this._rows.length || add.length) {
+			this.#store([...rows, ...add.map((item) => ({ key: UmbId.new(), item }))]);
 		}
 	}
 

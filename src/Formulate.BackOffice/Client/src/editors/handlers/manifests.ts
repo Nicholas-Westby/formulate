@@ -22,4 +22,11 @@ export const manifests: Array<UmbExtensionManifest> = [
 		element: () => import('./email/designed-email-handler-editor.element.js'),
 		meta: { editorAlias: 'formulate-designed-email-handler' },
 	},
+	{
+		type: FORMULATE_HANDLER_EDITOR_TYPE,
+		alias: 'Formulate.HandlerEditor.SendData',
+		name: 'Formulate Send Data Handler Editor',
+		element: () => import('./send-data/send-data-handler-editor.element.js'),
+		meta: { editorAlias: 'formulate-send-data-handler' },
+	},
 ];

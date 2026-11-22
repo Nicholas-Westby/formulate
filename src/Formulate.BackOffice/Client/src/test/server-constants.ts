@@ -1,5 +1,8 @@
+import textConstantField from '../../../../Formulate.Core/FormFields/TextConstant/TextConstantFieldDefinition.cs?raw';
+import uploadField from '../../../../Formulate.Core/FormFields/Upload/UploadFieldDefinition.cs?raw';
 import sendDataConstants from '../../../../Formulate.Extensions.SendData/Constants.cs?raw';
 import emailViewPaths from '../../../../Formulate.Extensions.SendEmail/DesignedEmail/EmailViewPaths.cs?raw';
+import emailSettings from '../../../../Formulate.Extensions.SendEmail/EmailSettings.cs?raw';
 
 /**
  * The string constants of a C# class, by their names, from its source: each `public const string Name = "value";`
@@ -32,4 +35,10 @@ export const SERVER_CONSTANTS = {
 	transmissionFormats: readStringConstants(sendDataConstants, 'TransmissionFormats'),
 	/** src/Formulate.Extensions.SendEmail/DesignedEmail/EmailViewPaths.cs. */
 	emailViewPaths: readStringConstants(emailViewPaths, 'EmailViewPaths'),
+	/** src/Formulate.Extensions.SendEmail/EmailSettings.cs: SectionName, the section of its settings, such as Whitelist. */
+	emailSettings: readStringConstants(emailSettings, 'EmailSettings'),
+	/** src/Formulate.Core/FormFields/TextConstant/TextConstantFieldDefinition.cs, its Constants. */
+	textConstantField: readStringConstants(textConstantField, 'Constants'),
+	/** src/Formulate.Core/FormFields/Upload/UploadFieldDefinition.cs, its Constants. */
+	uploadField: readStringConstants(uploadField, 'Constants'),
 };
