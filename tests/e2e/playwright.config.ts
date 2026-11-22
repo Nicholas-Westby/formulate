@@ -72,6 +72,9 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
 	timeout: 60_000,
+	// A site that stops answering fails every test after it, each one slowly, so the run stops after three
+	// failures. Pass --max-failures=0 to run every test anyway.
+	maxFailures: 3,
 	expect: { timeout: 15_000 },
 	use: {
 		baseURL: ORIGIN,

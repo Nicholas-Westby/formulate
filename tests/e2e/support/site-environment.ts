@@ -78,7 +78,8 @@ export function siteEnvironment(options: SiteAddresses & { runFolder: string }):
 		Serilog__MinimumLevel__Default: 'Warning',
 		// Each run's log is its own, in the run folder.
 		Umbraco__CMS__Logging__Directory: join(runFolder, 'Logs'),
-		ConnectionStrings__umbracoDbDSN: `Data Source=${join(runFolder, 'Umbraco.sqlite.db')};Cache=Shared;Foreign Keys=True;Pooling=True`,
+		// The dev site's own connection string (appsettings.Development.json), with the run's database.
+		ConnectionStrings__umbracoDbDSN: `Data Source=${join(runFolder, 'Umbraco.sqlite.db')};Foreign Keys=True;Pooling=True`,
 		ConnectionStrings__umbracoDbDSN_ProviderName: 'Microsoft.Data.Sqlite',
 		Umbraco__CMS__Global__InstallMissingDatabase: 'true',
 		Umbraco__CMS__Unattended__InstallUnattended: 'true',

@@ -53,6 +53,19 @@ test('an E2E port that is not a port, or whose plain http port would not be one,
 	assert.throws(() => siteAddresses('65000'), /65535/);
 });
 
+test("the site opens the run's database as the dev site opens its own, without a shared cache", () => {
+	// A shared cache locks tables between its connections: one run on 17.6.2 stuck on such a lock (SQLite
+	// Error 6, "database table is locked"), query after query. Microsoft.Data.Sqlite advises against it.
+	const own = developmentSettings().ConnectionStrings;
+
+	assert.equal(
+		ENVIRONMENT.ConnectionStrings__umbracoDbDSN,
+		own.umbracoDbDSN.replace('|DataDirectory|/Umbraco.sqlite.db', join('/tmp/formulate-e2e-1', 'Umbraco.sqlite.db')),
+	);
+	assert.doesNotMatch(ENVIRONMENT.ConnectionStrings__umbracoDbDSN, /cache\s*=/i);
+	assert.equal(ENVIRONMENT.ConnectionStrings__umbracoDbDSN_ProviderName, own.umbracoDbDSN_ProviderName);
+});
+
 test("the site writes its email and the echo's records in the run's folder", () => {
 	assert.deepEqual(runFolderPaths('/tmp/formulate-e2e-1'), {
 		email: join('/tmp/formulate-e2e-1', 'Email'),
