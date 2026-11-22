@@ -29,4 +29,18 @@ describe('Formulate English terms', () => {
 		expect(setting).toBe('Formulate:Email:Whitelist');
 		expect(en.formulate.recipientFieldsDescription).toContain(`\`${setting}\``);
 	});
+
+	it('name the settings that hold the reCAPTCHA keys by the names the server reads them by', () => {
+		// FormulateRecaptchaOptions binds the Formulate:Recaptcha section, and a reCAPTCHA field reads its SiteKey and
+		// SecretKey (RecaptchaFieldDefinition).
+		const {
+			constants: { SectionName },
+			properties,
+		} = SERVER_CONSTANTS.recaptchaOptions;
+
+		expect([SectionName, properties]).toStrictEqual(['Formulate:Recaptcha', ['SiteKey', 'SecretKey']]);
+		for (const property of properties) {
+			expect(en.formulate.recaptchaKeysDescription).toContain(`\`${SectionName}:${property}\``);
+		}
+	});
 });

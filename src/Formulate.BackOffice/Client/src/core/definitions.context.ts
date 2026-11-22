@@ -115,7 +115,10 @@ export class FormulateDefinitionsContext extends UmbContextBase {
 	/** The templates a layout can be rendered with. */
 	readonly templateDefinitions = this.#templates.value;
 
-	/** Formulate's configuration (button kinds and field categories), or undefined until it has been read. */
+	/**
+	 * Formulate's configuration (button kinds, field categories and whether the reCAPTCHA keys are set), or
+	 * undefined until it has been read.
+	 */
 	readonly config = this.#config.value;
 
 	constructor(host: UmbControllerHost) {

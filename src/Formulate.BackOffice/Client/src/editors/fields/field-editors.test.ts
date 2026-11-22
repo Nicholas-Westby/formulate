@@ -1,14 +1,20 @@
 import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
+import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
 import { afterEach, describe, expect, it } from 'vitest';
 import { FormulateDefinitionsContext } from '../../core/definitions.context.js';
-import type { FormulateKindEditorElementBase } from '../../core/kind-editor.js';
+import { FORMULATE_FIELD_EDITOR_TYPE, type FormulateKindEditorElementBase } from '../../core/kind-editor.js';
+import { FormulateKindEditorSlotElement } from '../../core/kind-editor-slot.element.js';
 import { serveForms } from '../../test/forms.js';
+import { SERVER_CONSTANTS } from '../../test/server-constants.js';
 import { createTestHost } from '../../test/test-host.js';
 import { typeInto } from '../../test/ui.js';
+import { manifests as editorManifests } from '../manifests.js';
 import { FormulateButtonFieldEditorElement } from './button/button-field-editor.element.js';
 import { FormulateDataValueListFieldEditorElement } from './data-value-list/data-value-list-field-editor.element.js';
+import { FormulateExtendedRadioButtonListFieldEditorElement } from './extended-radio-button-list/extended-radio-button-list-field-editor.element.js';
 import { FormulateHeaderFieldEditorElement } from './header/header-field-editor.element.js';
 import { FormulateHiddenFieldEditorElement } from './hidden/hidden-field-editor.element.js';
+import { manifests as fieldEditorManifests } from './manifests.js';
 import { FormulateRadioButtonListFieldEditorElement } from './radio-button-list/radio-button-list-field-editor.element.js';
 import { FormulateTextConstantFieldEditorElement } from './text-constant/text-constant-field-editor.element.js';
 
@@ -163,6 +169,91 @@ describe('Formulate Radio Button List field editor', () => {
 	});
 });
 
+// The server reads ExtendedRadioButtonListFieldPreValues: { dataValue } (a Guid) and { orientation } (a string). Each
+// item's primary text is the choice, and its secondary text its description (ExtendedRadioButtonListFieldDefinition).
+describe('Formulate Extended Radio Button List field editor', () => {
+	it("is the editor of the server's Extended Radio Button List, by the editor alias its definition gives", () => {
+		const manifest = fieldEditorManifests.find(({ alias }) => alias === 'Formulate.FieldEditor.ExtendedRadioButtonList') as
+			| { meta: { editorAlias: string } }
+			| undefined;
+
+		expect(manifest?.meta.editorAlias).toBe(SERVER_CONSTANTS.extendedRadioButtonListField.EditorAlias);
+	});
+
+	it("shows the picked data values, says that each item's secondary text becomes its description, and shows the orientation", async () => {
+		const { shadow, changes } = await render(new FormulateExtendedRadioButtonListFieldEditorElement(), {
+			dataValue: COLORS_ID,
+			orientation: 'Horizontal',
+		});
+		const [dataValues, orientation] = shadow.querySelectorAll('umb-property-layout');
+
+		expect((shadow.querySelector('formulate-data-values-picker#data-value') as HTMLInputElement).value).toBe(COLORS_ID);
+		expect([dataValues?.getAttribute('label'), dataValues?.getAttribute('description')]).toStrictEqual([
+			'formulate_dataValues',
+			'formulate_extendedRadioButtonListDataValuesDescription',
+		]);
+		// The Radio Button List's orientation setting.
+		expect([orientation?.getAttribute('label'), orientation?.getAttribute('description')]).toStrictEqual([
+			'formulate_orientation',
+			'formulate_orientationDescription',
+		]);
+		expect(optionsOf(shadow.querySelector('uui-select#orientation'))).toStrictEqual([
+			['formulate_defaultOrientation', '', false],
+			['formulate_horizontal', 'Horizontal', true],
+			['formulate_vertical', 'Vertical', false],
+		]);
+		expect(changes).toStrictEqual([]);
+	});
+
+	it('shows nothing picked and no orientation for the configuration the API gives a new field', async () => {
+		// GetBackOfficeConfiguration gives the empty GUID and a null orientation for a field that has neither.
+		const { shadow, changes } = await render(new FormulateExtendedRadioButtonListFieldEditorElement(), {
+			dataValue: NO_ID,
+			orientation: null,
+		});
+
+		expect(shadow.querySelector('formulate-data-values-picker')!.shadowRoot!.querySelector('#btn-add')).not.toBeNull();
+		expect(optionsOf(shadow.querySelector('uui-select#orientation'))[0]).toStrictEqual(['formulate_defaultOrientation', '', true]);
+		expect(changes).toStrictEqual([]);
+	});
+
+	it('stores the picked data values and orientation, keeping the settings it does not edit', async () => {
+		const { element, shadow, changes } = await render(new FormulateExtendedRadioButtonListFieldEditorElement(), {
+			dataValue: NO_ID,
+			orientation: null,
+			extra: 1,
+		});
+
+		choose(shadow.querySelector('uui-select#orientation')!, 'Vertical');
+		await settle(element);
+		pickDataValues(shadow.querySelector('formulate-data-values-picker#data-value')!, SIZES_ID);
+		await settle(element);
+		choose(shadow.querySelector('uui-select#orientation')!, '');
+		await settle(element);
+		pickDataValues(shadow.querySelector('formulate-data-values-picker#data-value')!, undefined);
+
+		expect(changes).toStrictEqual([
+			{ dataValue: NO_ID, orientation: 'Vertical', extra: 1 },
+			{ dataValue: SIZES_ID, orientation: 'Vertical', extra: 1 },
+			{ dataValue: SIZES_ID, orientation: null, extra: 1 },
+			{ orientation: null, extra: 1 },
+		]);
+	});
+
+	it('changes nothing while read-only', async () => {
+		const { shadow, changes } = await render(
+			new FormulateExtendedRadioButtonListFieldEditorElement(),
+			{ dataValue: COLORS_ID, orientation: 'Vertical' },
+			true,
+		);
+		const select = shadow.querySelector('uui-select#orientation') as HTMLElement & { disabled: boolean; readonly: boolean };
+		const picker = shadow.querySelector('formulate-data-values-picker#data-value') as HTMLElement & { readonly: boolean };
+
+		expect([select.disabled, select.readonly, picker.readonly]).toStrictEqual([true, true, true]);
+		expect(changes).toStrictEqual([]);
+	});
+});
+
 // The server reads HeaderFieldConfiguration, HiddenFieldConfiguration and TextConstantFieldConfiguration:
 // { text } (a string).
 describe('Formulate Header, Hidden and Text Constant field editors', () => {
@@ -198,6 +289,39 @@ describe('Formulate Header, Hidden and Text Constant field editors', () => {
 
 			expect([input.value, input.readonly]).toStrictEqual(['', true]);
 			expect(changes).toStrictEqual([]);
+		});
+	}
+});
+
+// CheckboxFieldDefinition and DateFieldDefinition store no configuration, so Formulate has no editor for them: the
+// field's dialog shows its kind's editor slot, which says that the kind has no settings.
+describe('Formulate Checkbox and Date fields', () => {
+	const registered: Array<string> = [];
+
+	afterEach(() => {
+		umbExtensionsRegistry.unregisterMany(registered.splice(0));
+	});
+
+	const kinds = [
+		{ name: 'Checkbox', editorAlias: SERVER_CONSTANTS.checkboxField.EditorAlias },
+		{ name: 'Date', editorAlias: SERVER_CONSTANTS.dateField.EditorAlias },
+	];
+
+	for (const kind of kinds) {
+		it(`${kind.name}: has no editor among Formulate's, so its dialog says that the kind has no settings`, async () => {
+			// Every editor of Formulate's own kinds, as the back office registers them.
+			const editors = editorManifests.filter(({ alias }) => !umbExtensionsRegistry.isRegistered(alias));
+			umbExtensionsRegistry.registerMany(editors);
+			registered.push(...editors.map(({ alias }) => alias));
+			const slot = new FormulateKindEditorSlotElement();
+			Object.assign(slot, { type: FORMULATE_FIELD_EDITOR_TYPE, editorAlias: kind.editorAlias, value: null });
+			createTestHost().append(slot);
+
+			expect(kind.editorAlias).toMatch(/^formulate-[a-z-]+-field$/);
+			// Without the back office's translations loaded, a term shows as its key.
+			await expect.poll(() => slot.shadowRoot?.querySelector('#no-settings')?.textContent?.trim()).toBe('formulate_noSettings');
+			expect(slot.shadowRoot!.querySelector('#not-available')).toBeNull();
+			expect(slot.value).toBeNull();
 		});
 	}
 });

@@ -24,19 +24,21 @@ export function withDataValue(settings: Readonly<Record<string, unknown>>, id: s
  * @param value The editor's value.
  * @param readonly Whether nothing may be changed.
  * @param onChange Told of the settings with the new pick.
+ * @param descriptionKey The term that describes the setting, for a kind that shows the data values its own way.
  */
 export function renderDataValuesSetting(
 	host: UmbLitElement,
 	value: unknown,
 	readonly: boolean,
 	onChange: (settings: Record<string, unknown>) => void,
+	descriptionKey = 'formulate_dataValuesDescription',
 ) {
 	const settings = readSettings(value);
 
 	return html`
 		<umb-property-layout
 			label=${host.localize.term('formulate_dataValues')}
-			description=${host.localize.term('formulate_dataValuesDescription')}
+			description=${host.localize.term(descriptionKey)}
 			orientation="vertical">
 			<formulate-data-values-picker
 				slot="editor"

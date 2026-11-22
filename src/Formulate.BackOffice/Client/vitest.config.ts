@@ -8,7 +8,13 @@ export default mergeConfig(
 			// The tests read some of the server's C# constants as text (src/test/server-constants.ts), so the back
 			// office spells them as the server does. Vite serves no file outside these folders.
 			fs: {
-				allow: ['.', '../../Formulate.Core/FormFields', '../../Formulate.Extensions.SendData', '../../Formulate.Extensions.SendEmail'],
+				allow: [
+					'.',
+					'../../Formulate.Core/Configuration',
+					'../../Formulate.Core/FormFields',
+					'../../Formulate.Extensions.SendData',
+					'../../Formulate.Extensions.SendEmail',
+				],
 			},
 		},
 		test: {

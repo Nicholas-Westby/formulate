@@ -145,6 +145,8 @@ export default {
 			"What the button does, such as Submit, which sends the form. The kinds are set up in Formulate's configuration.",
 		noButtonKind: 'No button kind',
 		dataValuesDescription: 'The data values that hold the choices visitors pick from.',
+		extendedRadioButtonListDataValuesDescription:
+			'The data values that hold the choices visitors pick from. Each choice shows its value, and its secondary text, such as the label of a Pair List item, becomes its description.',
 		orientation: 'Orientation',
 		orientationDescription: 'Whether the choices are laid out across or down.',
 		defaultOrientation: 'As the template lays them out',
@@ -156,6 +158,11 @@ export default {
 		textConstantDescription:
 			'The value the server adds to each submission of the form. Visitors do not see it, and their browsers do not send it.',
 		richTextDescription: 'The formatted text the form shows.',
+		recaptchaKeys: 'reCAPTCHA keys',
+		recaptchaKeysDescription:
+			"A reCAPTCHA field rejects every submission until both keys are set in the site's settings: `Formulate:Recaptcha:SiteKey` and `Formulate:Recaptcha:SecretKey`. There is nothing to set here.",
+		recaptchaKeysSet: 'Both reCAPTCHA keys are set on this site.',
+		recaptchaKeysNotSet: 'This site does not have both reCAPTCHA keys set, so this field rejects every submission.',
 		fieldNotFound: 'Field not found',
 		recipientPosition: (position: number) => `Email address ${position}`,
 		addRecipient: 'Add recipient',
