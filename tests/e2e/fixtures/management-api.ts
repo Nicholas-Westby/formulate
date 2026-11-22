@@ -12,7 +12,7 @@ import type { Page } from '@playwright/test';
  */
 export async function callManagementApi<T = unknown>(
 	page: Page,
-	method: 'GET' | 'POST' | 'DELETE',
+	method: 'GET' | 'POST' | 'PUT' | 'DELETE',
 	path: string,
 	body?: unknown,
 ): Promise<T> {
