@@ -25,8 +25,13 @@
 
   <ItemGroup>
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <!-- The version Umbraco 17.6 depends on (later Umbraco versions bring newer ones). -->
-    <PackageVersion Include="NPoco.Abstractions" Version="6.2.0" />
+    <!--
+      The version the range's floor depends on through NPoco: 6.2.0 for Umbraco 17.6 (later versions bring newer
+      ones to sites). A build against Umbraco 17.8 or later, such as CI's compile checks, needs 6.4.0: a lower
+      direct reference than the one Umbraco brings fails restore as a downgrade (NU1605).
+    -->
+    <PackageVersion Include="NPoco.Abstractions" Version="6.2.0" Condition="!$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoFloorVersion)', '17.8.0'))" />
+    <PackageVersion Include="NPoco.Abstractions" Version="6.4.0" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoFloorVersion)', '17.8.0'))" />
   </ItemGroup>
 
   <!--

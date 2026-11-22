@@ -17,6 +17,17 @@
   <PropertyGroup>
     <!-- Every library depends on this range: compiled against the floor, allowed on later majors. -->
     <UmbracoVersionRange Condition="'$(UmbracoVersionRange)' == ''">[17.6.0, 20.0.0)</UmbracoVersionRange>
+    <!--
+      The range's floor without a prerelease label, such as 17.6.0. CI's compile checks build the libraries
+      against a later Umbraco with an exact range, such as -p:UmbracoVersionRange=[19.0.0-rc1], and the
+      settings below follow it (Directory.Packages.props uses it too).
+    -->
+    <UmbracoFloorVersion>$([System.Text.RegularExpressions.Regex]::Match('$(UmbracoVersionRange)', '\d+\.\d+\.\d+').Value)</UmbracoFloorVersion>
+    <!--
+      Umbraco 19 targets .NET 11 only, so a build against it does too. The packages stay one net10.0 build.
+      Set here rather than only by -p:TargetFramework, which neither restore nor project references pass on.
+    -->
+    <TargetFramework Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoFloorVersion)', '19.0.0'))">net11.0</TargetFramework>
     <!-- The exact version the dev site runs. -->
     <UmbracoSiteVersion Condition="'$(UmbracoSiteVersion)' == ''">17.8.2</UmbracoSiteVersion>
     <!-- First segment of the site version. Split as a string, since "19.0.0-rc1" is not a System.Version. -->
