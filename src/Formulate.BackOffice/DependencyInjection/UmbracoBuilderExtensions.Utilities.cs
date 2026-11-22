@@ -1,6 +1,7 @@
 namespace Formulate.BackOffice.DependencyInjection
 {
     // Namespaces.
+    using Formulate.BackOffice.Api.Json;
     using Formulate.BackOffice.Api.Services;
     using Formulate.BackOffice.Persistence;
     using Formulate.BackOffice.Utilities;
@@ -39,6 +40,10 @@ namespace Formulate.BackOffice.DependencyInjection
 
             builder.Services.AddScoped<ITreeEntityRepository, TreeEntityRepository>();
             builder.Services.AddScoped<IFormulateTreeService, FormulateTreeService>();
+            builder.Services.AddScoped<IFormApiService, FormApiService>();
+            builder.Services.AddScoped<ILayoutApiService, LayoutApiService>();
+            builder.Services.AddScoped<IMoveService, MoveService>();
+            builder.Services.AddScoped<ConfigurationJson>();
 
             builder.Services.AddScoped<ICreateFormsScaffoldingEntity, CreateFormsScaffoldingEntity>();
             builder.Services.AddScoped<IGetFormsChildEntityOptions, GetFormsChildEntityOptions>();

@@ -1,6 +1,11 @@
 namespace Formulate.BackOffice.Api
 {
+    using System;
+    using Formulate.BackOffice.Api.Services;
+    using Microsoft.AspNetCore.Http;
+    using Microsoft.AspNetCore.Mvc;
     using Umbraco.Cms.Api.Common.Attributes;
+    using Umbraco.Cms.Api.Common.Builders;
     using Umbraco.Cms.Api.Management.Controllers;
 
     /// <summary>
@@ -23,5 +28,35 @@ namespace Formulate.BackOffice.Api
     [MapToApi(Constants.ApiName)]
     public abstract class FormulateApiControllerBase : ManagementApiControllerBase
     {
+        /// <summary>
+        /// Creates the problem response for a service result that did not succeed: 404 for an unknown item,
+        /// 400 for an invalid request (naming the field) and 409 for a clash.
+        /// </summary>
+        /// <param name="result">The result.</param>
+        /// <typeparam name="T">The type of the result's value.</typeparam>
+        protected IActionResult ProblemFor<T>(ServiceResult<T> result)
+        {
+            var (status, title) = result.Status switch
+            {
+                ServiceStatus.NotFound => (StatusCodes.Status404NotFound, "Item not found"),
+                ServiceStatus.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
+                ServiceStatus.Invalid => (StatusCodes.Status400BadRequest, "Invalid request"),
+                _ => throw new InvalidOperationException("A successful result is not a problem."),
+            };
+
+            var detail = result.Field is null ? result.Message : $"{result.Field}: {result.Message}";
+            var problem = new ProblemDetailsBuilder()
+                .WithTitle(title)
+                .WithDetail(detail ?? title)
+                .Build();
+            problem.Status = status;
+
+            if (result.Field is not null)
+            {
+                problem.Extensions["field"] = result.Field;
+            }
+
+            return new ObjectResult(problem) { StatusCode = status };
+        }
     }
 }

@@ -9,6 +9,7 @@ using Formulate.Core.Forms;
 using Formulate.Core.Layouts;
 using Formulate.Core.Persistence;
 using Formulate.Core.Validations;
+using Formulate.BackOffice.Tests.TestSupport;
 using Moq;
 
 namespace Formulate.BackOffice.Tests.Api;
@@ -395,54 +396,5 @@ public class FormulateTreeServiceTests
         definition.SetupGet(x => x.IsLegacy).Returns(isLegacy);
         definition.SetupGet(x => x.Icon).Returns(icon);
         return definition.Object;
-    }
-
-    /// <summary>An in-memory stand-in for the repository, with the same tree rules as the real one.</summary>
-    private sealed class FakeTreeEntityRepository : ITreeEntityRepository
-    {
-        private readonly List<IPersistedEntity> _entities = new();
-
-        public void Add(IPersistedEntity entity) => _entities.Add(entity);
-
-        public IPersistedEntity? Get(Guid? id) => _entities.FirstOrDefault(x => x.Id == id);
-
-        /// <summary>Gets how many times a child lookup (which reads every repository) ran.</summary>
-        public int ChildLookups { get; private set; }
-
-        /// <summary>Gets how many times the parent IDs were listed.</summary>
-        public int ParentListings { get; private set; }
-
-        public IReadOnlyCollection<IPersistedEntity> GetChildren(Guid parentId)
-        {
-            ChildLookups++;
-            return _entities.Where(x => x.Path.Length > 1 && x.Path[^2] == parentId).ToArray();
-        }
-
-        public bool HasChildren(Guid parentId, Func<IPersistedEntity, bool>? filter = null) =>
-            filter is null ? GetChildren(parentId).Any() : GetChildren(parentId).Any(filter);
-
-        public IReadOnlyCollection<Guid> GetParentIds(TreeTypes treeType, bool foldersOnly)
-        {
-            ParentListings++;
-            return _entities
-                .Where(x => x.Path.Length > 2 && (!foldersOnly || x is PersistedFolder))
-                .Select(x => x.Path[^2])
-                .ToHashSet();
-        }
-
-        public IReadOnlyCollection<IPersistedEntity> GetRootItems(TreeTypes treeRootType) =>
-            _entities.Where(x => x.Path.Length == 2 && x.Path[0] == GetRootId(treeRootType)).ToArray();
-
-        public Guid GetRootId(TreeTypes treeRootType) => treeRootType switch
-        {
-            TreeTypes.Forms => FormsRoot,
-            TreeTypes.DataValues => DataValuesRoot,
-            TreeTypes.Validations => ValidationsRoot,
-            _ => Guid.Empty,
-        };
-
-        public IReadOnlyCollection<Guid> Delete(IPersistedEntity entity) => throw new NotSupportedException();
-
-        public Guid[] Move(IPersistedEntity entity, Guid[] parentPath) => throw new NotSupportedException();
     }
 }

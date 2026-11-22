@@ -61,5 +61,19 @@
         IReadOnlyCollection<Guid> GetParentIds(TreeTypes treeType, bool foldersOnly);
 
         Guid[] Move(IPersistedEntity entity, Guid[] parentPath);
+
+        /// <summary>
+        /// Gets everything under an entity, at any depth, without the entity itself.
+        /// </summary>
+        /// <param name="id">The entity's ID.</param>
+        /// <returns>The descendants. Each repository is read once, however many there are.</returns>
+        IReadOnlyCollection<IPersistedEntity> GetDescendants(Guid id);
+
+        /// <summary>
+        /// Gives an entity a new path and saves it, leaving the entities under it alone.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <param name="path">The new path, ending with the entity's own ID.</param>
+        void UpdatePath(IPersistedEntity entity, Guid[] path);
     }
 }

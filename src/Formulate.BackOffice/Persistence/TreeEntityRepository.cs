@@ -233,6 +233,36 @@
                 Move(child, updatedPath);
             }
 
+            return Persist(entity, updatedPath);
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyCollection<IPersistedEntity> GetDescendants(Guid id)
+        {
+            var descendants = new List<IPersistedEntity>();
+
+            void Add(IEnumerable<IPersistedEntity> entities)
+            {
+                descendants.AddRange(entities.Where(x => x.Id != id && x.Path.Contains(id)));
+            }
+
+            Add(_dataValuesEntityRepository.GetAll());
+            Add(_folderEntityRepository.GetAll());
+            Add(_formEntityRepository.GetAll());
+            Add(_layoutEntityRepository.GetAll());
+            Add(_validationEntityRepository.GetAll());
+
+            return descendants;
+        }
+
+        /// <inheritdoc />
+        public void UpdatePath(IPersistedEntity entity, Guid[] path)
+        {
+            Persist(entity, path);
+        }
+
+        private Guid[] Persist(IPersistedEntity entity, Guid[] updatedPath)
+        {
             if (entity is not PersistedEntity persistedEntity)
             {
                 throw new NotSupportedException($"{entity.GetType()} does not support being moved.");

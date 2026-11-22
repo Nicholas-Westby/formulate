@@ -60,7 +60,7 @@ namespace Formulate.BackOffice.Api.Services
 
             var parent = _treeEntityRepository.Get(parentId);
 
-            if (parent is null || GetTree(parent) != tree)
+            if (parent is null || TreeEntities.GetTree(parent) != tree)
             {
                 return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.NotFound);
             }
@@ -80,7 +80,7 @@ namespace Formulate.BackOffice.Api.Services
 
             var descendant = _treeEntityRepository.Get(descendantId);
 
-            if (descendant is null || GetTree(descendant) != tree)
+            if (descendant is null || TreeEntities.GetTree(descendant) != tree)
             {
                 return FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.NotFound);
             }
@@ -135,43 +135,6 @@ namespace Formulate.BackOffice.Api.Services
             return tree != TreeTypes.Unknown;
         }
 
-        /// <summary>
-        /// Gets the tree an entity lives in. Folders carry their tree's root ID at the start of their path.
-        /// </summary>
-        private static TreeTypes GetTree(IPersistedEntity entity)
-        {
-            return entity switch
-            {
-                PersistedForm or PersistedLayout => TreeTypes.Forms,
-                PersistedDataValues => TreeTypes.DataValues,
-                PersistedValidation => TreeTypes.Validations,
-                PersistedFolder => GetFolderTree(entity),
-                _ => TreeTypes.Unknown,
-            };
-        }
-
-        private static TreeTypes GetFolderTree(IPersistedEntity folder)
-        {
-            if (folder.Path.Length == 0)
-            {
-                return TreeTypes.Unknown;
-            }
-
-            var root = folder.Path[0];
-
-            if (root == Guid.Parse(FormConstants.RootId))
-            {
-                return TreeTypes.Forms;
-            }
-
-            if (root == Guid.Parse(DataValuesConstants.RootId))
-            {
-                return TreeTypes.DataValues;
-            }
-
-            return root == Guid.Parse(ValidationConstants.RootId) ? TreeTypes.Validations : TreeTypes.Unknown;
-        }
-
         private static string GetEntityType(IPersistedEntity entity)
         {
             return entity switch
@@ -180,7 +143,7 @@ namespace Formulate.BackOffice.Api.Services
                 PersistedLayout => EntityTypes.Layout,
                 PersistedDataValues => EntityTypes.DataValues,
                 PersistedValidation => EntityTypes.Validation,
-                PersistedFolder => GetFolderTree(entity) switch
+                PersistedFolder => TreeEntities.GetTree(entity) switch
                 {
                     TreeTypes.DataValues => EntityTypes.DataValuesFolder,
                     TreeTypes.Validations => EntityTypes.ValidationFolder,
@@ -188,12 +151,6 @@ namespace Formulate.BackOffice.Api.Services
                 },
                 _ => throw new NotSupportedException($"{entity.GetType()} is not a tree item."),
             };
-        }
-
-        private static Guid? GetParentId(IPersistedEntity entity)
-        {
-            // The first path ID is the tree's root, which is not an item.
-            return entity.Path.Length > 2 ? entity.Path[^2] : null;
         }
 
         private static Guid? GetKindId(IPersistedEntity entity)
@@ -254,7 +211,7 @@ namespace Formulate.BackOffice.Api.Services
         private FormulateTreeItemResponseModel CreateTreeItem(IPersistedEntity entity, Func<IPersistedEntity, bool> hasChildren)
         {
             var entityType = GetEntityType(entity);
-            var parentId = GetParentId(entity);
+            var parentId = TreeEntities.GetParentId(entity);
             var definition = GetDefinition(entity);
 
             return new FormulateTreeItemResponseModel
@@ -274,7 +231,7 @@ namespace Formulate.BackOffice.Api.Services
         private FormulateItemResponseModel CreateItem(IPersistedEntity entity)
         {
             var entityType = GetEntityType(entity);
-            var parentId = GetParentId(entity);
+            var parentId = TreeEntities.GetParentId(entity);
             var parent = parentId is null ? null : _treeEntityRepository.Get(parentId);
             var definition = GetDefinition(entity);
 
