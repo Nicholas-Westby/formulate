@@ -1,6 +1,9 @@
 using System.Text.Json;
 using Formulate.BackOffice.Api.Models.Form;
+using Formulate.BackOffice.Api.Models.DataValues;
+using Formulate.BackOffice.Api.Models.Folder;
 using Formulate.BackOffice.Api.Models.Layout;
+using Formulate.BackOffice.Api.Models.Validation;
 using Formulate.BackOffice.Api.Models.Shared;
 using Xunit;
 
@@ -30,6 +33,22 @@ public class RequestModelJsonTests
         Assert.Equal((id, id, kind, id), (layout.Id, layout.FormId, layout.KindId, layout.TemplateId));
         Assert.Equal(id, move.TargetId);
         Assert.Null(emptyMove.TargetId);
+    }
+
+    [Fact]
+    public void Validation_data_values_and_folder_request_models_accept_guids_in_any_format()
+    {
+        var id = Guid.NewGuid();
+        var kind = Guid.NewGuid();
+
+        var validation = JsonSerializer.Deserialize<CreateValidationRequestModel>($$"""{"id":"{{id:N}}","parentId":"{{id:B}}","kindId":"{{kind.ToString("N").ToUpperInvariant()}}","name":"n","configuration":[1]}""", Options)!;
+        var dataValues = JsonSerializer.Deserialize<CreateDataValuesRequestModel>($$"""{"id":"{{id:N}}","parentId":null,"kindId":"{{kind:N}}","name":"n"}""", Options)!;
+        var folder = JsonSerializer.Deserialize<CreateFolderRequestModel>($$"""{"id":"{{id:N}}","parentId":"{{id:P}}","treeAlias":"forms","name":"n"}""", Options)!;
+
+        Assert.Equal((id, id, kind), (validation.Id, validation.ParentId, validation.KindId));
+        Assert.Equal(JsonValueKind.Array, validation.Configuration!.Value.ValueKind);
+        Assert.Equal((id, null, kind), (dataValues.Id, dataValues.ParentId, dataValues.KindId));
+        Assert.Equal((id, id, "forms"), (folder.Id, folder.ParentId, folder.TreeAlias));
     }
 
     [Fact]

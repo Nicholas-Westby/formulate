@@ -161,4 +161,27 @@ public class MoveServiceTests
         Assert.Equal(ServiceStatus.NotFound, service.Move<PersistedForm>(folder.Id, null).Status);
         Assert.Equal(ServiceStatus.NotFound, service.Move<PersistedFolder>(form.Id, null).Status);
     }
+
+    [Fact]
+    public void Moving_a_validation_or_data_values_into_a_folder_of_another_tree_changes_nothing()
+    {
+        var tree = new TestSupport.TreeHarness();
+        var formsFolder = tree.AddFolder(FormsRoot);
+        var dataValuesFolder = tree.AddFolder(FormConstantsRoot.DataValues);
+        var validationsFolder = tree.AddFolder(FormConstantsRoot.Validations);
+        var validation = tree.AddValidation(validationsFolder.Id);
+        var dataValues = tree.AddDataValues(dataValuesFolder.Id);
+        var service = new MoveService(tree.Tree);
+
+        var validationIntoForms = service.Move<PersistedValidation>(validation.Id, formsFolder.Id);
+        var validationIntoDataValues = service.Move<PersistedValidation>(validation.Id, dataValuesFolder.Id);
+        var dataValuesIntoForms = service.Move<PersistedDataValues>(dataValues.Id, formsFolder.Id);
+        var dataValuesIntoValidations = service.Move<PersistedDataValues>(dataValues.Id, validationsFolder.Id);
+
+        Assert.All(
+            new[] { validationIntoForms, validationIntoDataValues, dataValuesIntoForms, dataValuesIntoValidations },
+            x => Assert.Equal((ServiceStatus.Invalid, "targetId"), (x.Status, x.Field)));
+        Assert.Equal(new[] { FormConstantsRoot.Validations, validationsFolder.Id, validation.Id }, tree.Repositories.Validations.Get(validation.Id).Path);
+        Assert.Equal(new[] { FormConstantsRoot.DataValues, dataValuesFolder.Id, dataValues.Id }, tree.Repositories.DataValues.Get(dataValues.Id).Path);
+    }
 }

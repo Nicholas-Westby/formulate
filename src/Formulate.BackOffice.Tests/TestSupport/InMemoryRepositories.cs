@@ -1,6 +1,7 @@
 using Formulate.BackOffice.Definitions.Forms;
 using Formulate.BackOffice.NotificationHandlers;
 using Formulate.BackOffice.Utilities;
+using Formulate.Core.DataValues;
 using Formulate.Core.Folders;
 using Formulate.Core.Forms;
 using Formulate.Core.Layouts;
@@ -8,6 +9,7 @@ using Formulate.Core.Notifications;
 using Formulate.Core.Persistence;
 using Formulate.Core.Utilities;
 using Formulate.Core.Utilities.Internal;
+using Formulate.Core.Validations;
 using Moq;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
@@ -77,6 +79,16 @@ internal sealed class TestFolderRepository : EntityRepository<PersistedFolder>, 
     public TestFolderRepository(IRepositoryUtilityFactory factory, ICoreScopeProvider scopeProvider) : base(factory, scopeProvider) { }
 }
 
+internal sealed class TestDataValuesRepository : EntityRepository<PersistedDataValues>, IDataValuesEntityRepository
+{
+    public TestDataValuesRepository(IRepositoryUtilityFactory factory, ICoreScopeProvider scopeProvider) : base(factory, scopeProvider) { }
+}
+
+internal sealed class TestValidationRepository : EntityRepository<PersistedValidation>, IValidationEntityRepository
+{
+    public TestValidationRepository(IRepositoryUtilityFactory factory, ICoreScopeProvider scopeProvider) : base(factory, scopeProvider) { }
+}
+
 /// <summary>
 /// Real entity repositories over in-memory stores, with Formulate's real "basic layout" handler
 /// listening to the form notifications, as it does in a site.
@@ -96,6 +108,8 @@ internal sealed class RepositoryHarness
         Forms = new TestFormRepository(FormStore, provider.Object);
         Layouts = new TestLayoutRepository(LayoutStore, provider.Object);
         Folders = new TestFolderRepository(FolderStore, provider.Object);
+        DataValues = new TestDataValuesRepository(DataValuesStore, provider.Object);
+        Validations = new TestValidationRepository(ValidationStore, provider.Object);
 
         var templateId = new Mock<IGetDefaultTemplateId>();
         templateId.Setup(x => x.GetValue()).Returns(Guid.Parse("00000000-0000-0000-0000-0000000000aa"));
@@ -114,6 +128,14 @@ internal sealed class RepositoryHarness
     public InMemoryStore<PersistedLayout> LayoutStore { get; } = new();
 
     public InMemoryStore<PersistedFolder> FolderStore { get; } = new();
+
+    public InMemoryStore<PersistedDataValues> DataValuesStore { get; } = new();
+
+    public InMemoryStore<PersistedValidation> ValidationStore { get; } = new();
+
+    public TestDataValuesRepository DataValues { get; }
+
+    public TestValidationRepository Validations { get; }
 
     public TestFormRepository Forms { get; }
 

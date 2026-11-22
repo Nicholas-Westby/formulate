@@ -42,6 +42,9 @@ namespace Formulate.BackOffice.DependencyInjection
             builder.Services.AddScoped<IFormulateTreeService, FormulateTreeService>();
             builder.Services.AddScoped<IFormApiService, FormApiService>();
             builder.Services.AddScoped<ILayoutApiService, LayoutApiService>();
+            builder.Services.AddScoped<IValidationApiService, ValidationApiService>();
+            builder.Services.AddScoped<IDataValuesApiService, DataValuesApiService>();
+            builder.Services.AddScoped<IFolderApiService, FolderApiService>();
             builder.Services.AddScoped<IMoveService, MoveService>();
             builder.Services.AddScoped<ConfigurationJson>();
 

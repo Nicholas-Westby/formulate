@@ -40,7 +40,7 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>> GetRoot(string treeAlias, bool foldersOnly, int skip, int take)
         {
-            if (!TryGetTree(treeAlias, out var tree))
+            if (!TreeEntities.TryGetTree(treeAlias, out var tree))
             {
                 return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree);
             }
@@ -53,7 +53,7 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>> GetChildren(string treeAlias, Guid parentId, bool foldersOnly, int skip, int take)
         {
-            if (!TryGetTree(treeAlias, out var tree))
+            if (!TreeEntities.TryGetTree(treeAlias, out var tree))
             {
                 return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree);
             }
@@ -73,7 +73,7 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>> GetAncestors(string treeAlias, Guid descendantId)
         {
-            if (!TryGetTree(treeAlias, out var tree))
+            if (!TreeEntities.TryGetTree(treeAlias, out var tree))
             {
                 return FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree);
             }
@@ -120,19 +120,6 @@ namespace Formulate.BackOffice.Api.Services
             }
 
             return items;
-        }
-
-        private static bool TryGetTree(string treeAlias, out TreeTypes tree)
-        {
-            tree = treeAlias switch
-            {
-                TreeAliases.Forms => TreeTypes.Forms,
-                TreeAliases.DataValues => TreeTypes.DataValues,
-                TreeAliases.Validations => TreeTypes.Validations,
-                _ => TreeTypes.Unknown,
-            };
-
-            return tree != TreeTypes.Unknown;
         }
 
         private static string GetEntityType(IPersistedEntity entity)
