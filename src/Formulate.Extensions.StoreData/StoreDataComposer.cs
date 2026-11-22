@@ -13,6 +13,10 @@ namespace Formulate.Extensions.StoreData
             builder.Services.Configure<StoreDataSettings>(builder.Config.GetSection(StoreDataSettings.SectionName));
             builder.Services.AddSingleton<UploadFolders>();
 
+            builder.Services.AddScoped<ISubmissionDatabase, ScopedSubmissionDatabase>();
+            builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
+            builder.Services.AddScoped<IPageUrlResolver, PageUrlResolver>();
+
             builder.Services.AddScoped<IStoreFields, StoreFields>();
             builder.Services.AddScoped<IStoreFiles, StoreFiles>();
             builder.Services.AddScoped<IStoreData, StoreData>();

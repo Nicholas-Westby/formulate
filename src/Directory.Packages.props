@@ -36,6 +36,8 @@
     <PackageVersion Include="coverlet.collector" Version="10.1.1" />
     <!-- Hosts controllers in memory. Matches the ASP.NET Core 10 shared framework patch the SDK installs. -->
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.13" />
+    <!-- Runs the submission queries against a real database in tests. Matches what Umbraco 17 uses. -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageVersion Include="Moq" Version="4.21.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />

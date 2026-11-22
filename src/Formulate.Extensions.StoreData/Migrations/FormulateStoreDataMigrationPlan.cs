@@ -20,6 +20,9 @@ namespace Formulate.Extensions.StoreData.Migrations
             // "AddTable" is the state the v4 migration runner stored under this plan name,
             // so databases that ran it already count as migrated. The step is idempotent.
             To<AddSubmissionsTable>("AddTable");
+
+            // Adds the page URL and the form index, to new and to existing databases alike.
+            From("AddTable").To<AddSubmissionUrlAndFormIndex>("formulate-5-submissions-url");
         }
     }
 }

@@ -10,6 +10,8 @@ namespace Formulate.Extensions.StoreData.Models
     {
         public const string TableName = "FormulateSubmissions";
 
+        public const int UrlMaxLength = 4000;
+
         [Column(Name = nameof(SubmissionId))]
         public Guid? SubmissionId { get; set; }
 
@@ -29,5 +31,8 @@ namespace Formulate.Extensions.StoreData.Models
 
         [Column(Name = nameof(PageId))]
         public int? PageId { get; set; }
+
+        [Column(Name = nameof(Url))]
+        public string? Url { get; set; }
     }
 }

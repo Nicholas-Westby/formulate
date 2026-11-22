@@ -3,24 +3,25 @@
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Utilities;
     using Formulate.Extensions.StoreData.Models;
-    using Umbraco.Cms.Infrastructure.Scoping;
-
+    
     internal sealed class StoreData : IStoreData
     {
-        private readonly IScopeProvider _scopeProvider;
+        private readonly ISubmissionRepository _repository;
+        private readonly IPageUrlResolver _pageUrls;
         private readonly IJsonUtility _jsonHelper;
         private readonly IStoreFiles _storeFiles;
         private readonly IStoreFields _storeFields;
 
-        public StoreData(IStoreFields storeFields, IStoreFiles storeFiles, IJsonUtility jsonHelper, IScopeProvider scopeProvider)
+        public StoreData(IStoreFields storeFields, IStoreFiles storeFiles, IJsonUtility jsonHelper, ISubmissionRepository repository, IPageUrlResolver pageUrls)
         {
             _storeFields = storeFields;
             _storeFiles = storeFiles;
             _jsonHelper = jsonHelper;
-            _scopeProvider = scopeProvider;
+            _repository = repository;
+            _pageUrls = pageUrls;
         }
 
-        public async Task ExecuteAsync(FormSubmissionRequest submission, CancellationToken cancellationToken)
+        public Task ExecuteAsync(FormSubmissionRequest submission, CancellationToken cancellationToken)
         {
             var form = submission.Form;
 
@@ -40,15 +41,19 @@
                 SubmissionId = submission.Id,
                 FormId = form.Id,
                 PageId = submission.PageId,
+                Url = Truncate(_pageUrls.GetUrl(submission.PageId)),
                 DataValues = serializedValues,
                 FileValues = serializedFiles,
             };
 
-            using (var scope = _scopeProvider.CreateScope())
-            {
-                var result = await scope.Database.InsertAsync(dto);
-                scope.Complete();
-            }
+            _repository.Insert(dto);
+
+            return Task.CompletedTask;
+        }
+
+        private static string? Truncate(string? url)
+        {
+            return url is { Length: > FormulateSubmissionDto.UrlMaxLength } ? url[..FormulateSubmissionDto.UrlMaxLength] : url;
         }
     }
 }
