@@ -28,6 +28,7 @@ namespace Formulate.Extensions.SendData
                 // The client's own logging writes the full URL, and for Query String that is the visitor's data.
                 .RemoveAllLoggers();
 
+            services.AddScoped<SendDataPayloadBuilder>();
             services.AddScoped<SendDataWorker>();
 
             return services;
