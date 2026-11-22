@@ -55,13 +55,13 @@ namespace Formulate.Extensions.SendData.Utilities
         /// would start sending a site's visitors' data to a URL that received none before an upgrade.
         /// </summary>
         /// <remarks>
-        /// A field's values are joined with ", ", as Formulate 3's field formatting did for a checkbox list.
-        /// Formulate 3 formatted values per field kind for transmission. Formulate 5 has no such formatting, so
-        /// every kind sends the submitted values as they arrived: a Date field the text its field posts
-        /// ("yyyy-MM-dd"), a Checkbox List its selected values' values, and an Upload field nothing (files are
-        /// never sent).
+        /// A field's values are sent as posted, joined with ", " as Formulate 3's field formatting did for a
+        /// checkbox list. Formulate 3 also formatted values per field kind for transmission; Formulate 5 has
+        /// no such formatting yet, so a Date field sends the text its field posts ("yyyy-MM-dd"), and an
+        /// Upload field nothing (files are never sent). The Date field coming next formats dates as v3 did.
+        /// A mapping whose name is blank uses the field's alias, or its name when it has no alias.
         /// </remarks>
-        public List<KeyValuePair<string, string>> GetData(FormSubmissionRequest submission, SendDataConfiguration configuration)
+        public List<KeyValuePair<string, string>> GetData(FormSubmissionRequest submission, SendDataConfiguration configuration, HandlerContext context)
         {
             var data = new List<KeyValuePair<string, string>>();
             var fields = submission.Form?.Fields ?? Array.Empty<PersistedFormField>();
@@ -94,6 +94,9 @@ namespace Formulate.Extensions.SendData.Utilities
             {
                 if (Guid.TryParse(mapping.Id, out var id) == false)
                 {
+                    _logger.LogWarning(
+                        "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) leaves out a field mapping, because its id {FieldId} is not a GUID.",
+                        context.HandlerName, context.HandlerId, context.FormName, context.FormId, mapping.Id);
                     continue;
                 }
 
@@ -145,7 +148,7 @@ namespace Formulate.Extensions.SendData.Utilities
                     break;
 
                 case Constants.TransmissionFormats.Json:
-                    request.Content = new StringContent(ToJson(data, GetWrapJson(context)), Encoding.UTF8, "application/json");
+                    request.Content = new StringContent(ToJson(data, GetWrapJson()), Encoding.UTF8, "application/json");
                     break;
 
                 default:
@@ -159,7 +162,13 @@ namespace Formulate.Extensions.SendData.Utilities
             {
                 if (request.Headers.TryAddWithoutValidation(header.Key, header.Value) == false)
                 {
-                    request.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    if (request.Content is null || request.Content.Headers.TryAddWithoutValidation(header.Key, header.Value) == false)
+                    {
+                        // The value is not logged: a header is often an API key.
+                        _logger.LogWarning(
+                            "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) did not add the header {Header} a {Notification} handler asked for, because it is not a valid header.",
+                            context.HandlerName, context.HandlerId, context.FormName, context.FormId, header.Key, nameof(Notifications.SendingDataNotification));
+                    }
                 }
             }
 
@@ -254,25 +263,10 @@ namespace Formulate.Extensions.SendData.Utilities
         /// <summary>
         /// Gets a value indicating whether the JSON is wrapped in an array (Formulate:SendData:JsonMode).
         /// </summary>
-        private bool GetWrapJson(HandlerContext context)
+        private bool GetWrapJson()
         {
-            var mode = _settings.Value.JsonMode;
-
-            if (string.IsNullOrWhiteSpace(mode) || string.Equals(mode, SendDataSettings.ObjectJsonMode, StringComparison.OrdinalIgnoreCase))
-            {
-                return false;
-            }
-
-            if (string.Equals(mode, SendDataSettings.WrappedArrayJsonMode, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            _logger.LogWarning(
-                "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sends a JSON object, because Formulate:SendData:JsonMode is {JsonMode}, which is not Object or WrappedArray.",
-                context.HandlerName, context.HandlerId, context.FormName, context.FormId, mode);
-
-            return false;
+            // A value that is neither is reported once at startup by SendDataJsonModeSettingCheck, and means Object.
+            return string.Equals(_settings.Value.JsonMode, SendDataSettings.WrappedArrayJsonMode, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>

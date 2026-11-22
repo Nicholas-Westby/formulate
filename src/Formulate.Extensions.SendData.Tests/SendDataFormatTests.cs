@@ -312,6 +312,8 @@ public sealed class SendDataFormatTests
         await services.SendAsync(Config("file:///etc/passwd", "POST", "JSON"), Submission(Form()));
 
         Assert.Empty(services.Network.Requests);
-        Assert.Contains("file:///etc/passwd", Assert.Single(services.Logs.Errors).Message);
+        var error = Assert.Single(services.Logs.Errors);
+        Assert.Contains("file", error.Message);
+        Assert.DoesNotContain("passwd", error.Message);
     }
 }

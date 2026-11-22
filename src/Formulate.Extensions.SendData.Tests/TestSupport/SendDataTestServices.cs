@@ -46,8 +46,9 @@ internal sealed class SendDataTestServices : IAsyncDisposable
     /// <summary>
     /// Creates the services.
     /// </summary>
+    /// <param name="fakeNetwork">False to use the client as the composer registers it, to reach a real listener.</param>
     /// <param name="configure">Changes to make to the services, such as adding notification handlers.</param>
-    public static SendDataTestServices Create(Action<IServiceCollection>? configure = null)
+    public static SendDataTestServices Create(Action<IServiceCollection>? configure = null, bool fakeNetwork = true)
     {
         var logs = new CapturingLoggerProvider();
         var network = new FakeHttpMessageHandler();
@@ -61,7 +62,11 @@ internal sealed class SendDataTestServices : IAsyncDisposable
         services.AddFormulateSendData();
 
         // The network is the only thing replaced.
-        services.AddHttpClient(Constants.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => network);
+        if (fakeNetwork)
+        {
+            services.AddHttpClient(Constants.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => network);
+        }
+
         services.AddSingleton<IEventAggregator>(x => new EventAggregator(type => x.GetService(type)!));
         services.RemoveAll<ISubmissionPageResolver>();
         services.AddSingleton<ISubmissionPageResolver>(pages);

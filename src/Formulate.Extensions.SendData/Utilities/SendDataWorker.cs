@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.SendData.Utilities
 {
+    using System.Collections.Concurrent;
     using System.Net;
     using System.Text;
     using Formulate.Core.FormHandlers;
@@ -25,6 +26,8 @@ namespace Formulate.Extensions.SendData.Utilities
         /// </summary>
         internal const int MaxResponseBodyBytes = 1_048_576;
 
+        private static readonly ConcurrentDictionary<Guid, bool> WarnedResultHandlers = new();
+
         private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly IEventAggregator _events;
@@ -45,7 +48,8 @@ namespace Formulate.Extensions.SendData.Utilities
         {
             var context = new HandlerContext(submission, handler);
 
-            if (string.IsNullOrWhiteSpace(configuration.ResultHandler) == false)
+            // Once for each handler in a process: the setting stays until the handler is saved again.
+            if (string.IsNullOrWhiteSpace(configuration.ResultHandler) == false && WarnedResultHandlers.TryAdd(context.HandlerId, true))
             {
                 _logger.LogWarning(
                     "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) has a resultHandler ({ResultHandler}) stored by Formulate 3, which is ignored. Handle the result in a notification handler for {Notification} instead.",
@@ -62,9 +66,10 @@ namespace Formulate.Extensions.SendData.Utilities
 
             if (Uri.TryCreate(configuration.Url, UriKind.Absolute, out var uri) == false || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
             {
+                // The URL is not logged: it can hold a key or a password. Its scheme says what is wrong with it.
                 _logger.LogError(
-                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sent no data because its URL {Url} is not an absolute http or https URL.",
-                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, configuration.Url);
+                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sent no data because its URL is not an absolute http or https URL (its scheme is {Scheme}).",
+                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, uri?.Scheme ?? "missing");
                 return;
             }
 
@@ -78,10 +83,26 @@ namespace Formulate.Extensions.SendData.Utilities
                 return;
             }
 
-            // What is logged and published is the URL without its query string, which can hold a key.
-            var logUrl = uri.GetLeftPart(UriPartial.Path);
+            // Logs never carry the URL's user info or query, which can hold a key or a password. Notifications get the
+            // real URL, as a site's own code may need it.
+            var logUrl = SafeUrl(uri);
+            List<KeyValuePair<string, string>> initialData;
+
+            try
+            {
+                initialData = _payload.GetData(submission, configuration, context);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sent no data to {Url} because its data could not be built.",
+                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, logUrl);
+                return;
+            }
+
             var sending = new SendingDataNotification(
-                submission, context.HandlerId, context.HandlerName, logUrl, configuration.Method!, format, _payload.GetData(submission, configuration));
+                submission, context.HandlerId, context.HandlerName, configuration.Url, configuration.Method!, format, initialData);
 
             try
             {
@@ -108,6 +129,7 @@ namespace Formulate.Extensions.SendData.Utilities
             HttpStatusCode? status = null;
             string? body = null;
             var truncated = false;
+            string? redirect = null;
             Exception? error = null;
 
             try
@@ -122,6 +144,7 @@ namespace Formulate.Extensions.SendData.Utilities
                 using var response = await _httpClientFactory.CreateClient(Constants.HttpClientName)
                     .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, limit.Token);
                 status = response.StatusCode;
+                redirect = GetRedirect(uri, response);
                 (body, truncated) = await ReadBodyAsync(response.Content, limit.Token);
             }
             catch (Exception ex)
@@ -129,8 +152,8 @@ namespace Formulate.Extensions.SendData.Utilities
                 error = ex;
             }
 
-            Log(context, logUrl, status, error);
-            await PublishSentAsync(new SentDataNotification(submission, context.HandlerId, context.HandlerName, logUrl, status, body, error, truncated), context, logUrl);
+            Log(context, logUrl, status, redirect, error, cancellationToken);
+            await PublishSentAsync(new SentDataNotification(submission, context.HandlerId, context.HandlerName, configuration.Url, status, body, error, truncated), context, logUrl);
         }
 
         /// <summary>
@@ -174,15 +197,15 @@ namespace Formulate.Extensions.SendData.Utilities
             }
         }
 
-        private void Log(HandlerContext context, string url, HttpStatusCode? status, Exception? error)
+        private void Log(HandlerContext context, string url, HttpStatusCode? status, string? redirect, Exception? error, CancellationToken cancellationToken)
         {
             if (error is OperationCanceledException)
             {
-                // Handlers run without a cancellation token, so a cancellation is the client's timeout.
+                // Handlers run without a cancellation token, so a cancellation is the time limit.
                 _logger.LogError(
                     error,
-                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) timed out sending data to {Url}. The submission was still accepted.",
-                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, url);
+                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) {Outcome} sending data to {Url}. The submission was still accepted.",
+                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, cancellationToken.IsCancellationRequested ? "was cancelled" : "timed out", url);
             }
             else if (error is not null)
             {
@@ -190,6 +213,14 @@ namespace Formulate.Extensions.SendData.Utilities
                     error,
                     "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) could not send data to {Url}. The submission was still accepted.",
                     context.HandlerName, context.HandlerId, context.FormName, context.FormId, url);
+            }
+            else if (status is >= (HttpStatusCode)300 and < (HttpStatusCode)400)
+            {
+                // A redirect is not followed, as in Formulate 3: the data would go to a URL the site owner did not choose.
+                // It is not an error, but the site owner should change the URL to where it now goes.
+                _logger.LogInformation(
+                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sent data to {Url}, which answered with status {StatusCode} ({StatusName}) and sent the request on to {Location}. Redirects are not followed: set the handler's URL to where the receiver now is.",
+                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, url, (int)status!.Value, status.Value, redirect ?? "(no Location)");
             }
             else if (status is < (HttpStatusCode)200 or >= (HttpStatusCode)300)
             {
@@ -203,6 +234,29 @@ namespace Formulate.Extensions.SendData.Utilities
                     "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sent data to {Url}, which answered with status {StatusCode}.",
                     context.HandlerName, context.HandlerId, context.FormName, context.FormId, url, (int)status!.Value);
             }
+        }
+
+        /// <summary>
+        /// Gets the URL without its user info, query and fragment, to log.
+        /// </summary>
+        private static string SafeUrl(Uri uri)
+        {
+            return uri.GetComponents(UriComponents.SchemeAndServer, UriFormat.UriEscaped) + uri.AbsolutePath;
+        }
+
+        /// <summary>
+        /// Gets the host and path of the response's Location, to log, or null when it has none.
+        /// </summary>
+        private static string? GetRedirect(Uri requested, HttpResponseMessage response)
+        {
+            var location = response.Headers.Location;
+
+            if (location is null)
+            {
+                return null;
+            }
+
+            return SafeUrl(location.IsAbsoluteUri ? location : new Uri(requested, location));
         }
 
         private async Task PublishSentAsync(SentDataNotification notification, HandlerContext context, string url)
