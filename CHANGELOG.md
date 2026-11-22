@@ -73,6 +73,7 @@ The packages are renamed, because the old IDs belong to another NuGet account. I
 - The back office API rejects configuration that a field, handler, validation, data values or layout kind cannot read (400, naming the item). Items of kinds that are not installed round-trip untouched.
 - API writes are serialized within one process, so simultaneous moves, deletes and creates cannot corrupt the tree. Sites that load balance the back office across servers should edit on one server.
 - Creating a form or layout with an id that another item already uses is rejected. A tree root id as a parent id gives 404.
+- Radio button lists now follow their Orientation setting. The renderer adds `formulate__field--radio-list--horizontal` or `--vertical` (and the same for `extended-radio-list`) to the list's fieldset, and with the Basic theme a list set to Vertical stacks its choices and one set to Horizontal lays them out in a row that wraps. A list left on "As the template lays them out" looks as before. A reCAPTCHA field without a site key adds no Google script and logs one warning.
 
 ### Removed
 

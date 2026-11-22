@@ -4,6 +4,19 @@
 .formulate__field {
     &--radio-list {
 
+        // A horizontal list lays its items out in a row, and wraps onto the next line on a narrow screen.
+        &--horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        // A list set to Vertical shows one item to a line. A list with no orientation has no class, and
+        // keeps the look it always had here: its labels are inline, so the items run along the line.
+        &--vertical label {
+            display: block;
+        }
+
         // The label.
         .formulate__field__label-text {
 

@@ -459,6 +459,10 @@ The registrations go on `window["formulate-plain-js-fields"]` and `window["formu
 
 The built-in field types are `text`, `button`, `rich-text`, `checkbox`, `textarea`, `hidden`, `select`, `header`, `upload`, `checkbox-list`, `date`, `radio-list`, `extended-radio-list` and `recaptcha`. The modules in `src/Formulate.Extensions.PlainJavaScriptTemplate/Client/src/fields` define them. The C# side maps each built-in field to its key (the `Mapping/FormFields` folder), so a key is not always the class name.
 
+The radio button list and the extended radio button list add the orientation chosen in the back office to their fieldset: `formulate__field--radio-list--horizontal` or `formulate__field--radio-list--vertical`, and `formulate__field--extended-radio-list--horizontal` or `formulate__field--extended-radio-list--vertical`. The letter case of the setting does not matter. A list left on "As the template lays them out", or with a value the renderer does not know, gets neither class and is laid out as the template or theme lays it out. The class is built from the field's type, so a custom field that extends the radio list renderer gets `formulate__field--<its type>--horizontal` or `--vertical`.
+
+The reCAPTCHA field loads Google's script only when a site key is set (`Formulate:Recaptcha:SiteKey`). Without one, no script is added, the field is an empty `formulate__field--recaptcha` wrapper (without the `g-recaptcha` class or a `data-sitekey`), and the console shows one warning for the page.
+
 ### A renderer built on a built-in one
 
 A phone field is a text field with the input type `tel`. This is the whole renderer:

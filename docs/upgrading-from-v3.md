@@ -126,6 +126,7 @@ Check the whitelist when you move it. Formulate 3 checked addresses only when `E
 - **Uploads** are accepted only for Upload fields. Each file is checked against `Formulate:Submissions:MaxUploadBytes` (10 MB by default). Store Data keeps its own limit, `Formulate:StoreData:MaxUploadBytes`. Uploaded files go to a folder outside the web root, with sanitized names.
 - **Store Data** has a new table, `FormulateSubmissions`. Formulate 3's submissions stay in the `FormulateSubmission` table, and their files in `App_Data/Formulate/FileStorage/Files`. Formulate 5 leaves them where they are. It does not show or export them. Keep them if you need them, or move them yourself.
 - **Forms render on Umbraco 18 and 19**, and forms outside content pages can be submitted.
+- **Radio button lists follow their Orientation setting.** Formulate 3's plain JavaScript renderer ignored it. Now the list's fieldset has `formulate__field--radio-list--horizontal` or `--vertical` (`formulate__field--extended-radio-list--...` for the extended list). With the Basic theme, a list set to Vertical stacks its choices and one set to Horizontal lays them out in a row that wraps. A list left on "As the template lays them out" looks as before.
 - **Several things Formulate 3 got wrong are fixed.** See the [changelog](../CHANGELOG.md).
 
 ## What changed for developers

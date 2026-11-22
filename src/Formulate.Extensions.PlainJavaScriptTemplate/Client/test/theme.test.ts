@@ -45,6 +45,17 @@ describe("the Basic theme", () => {
     expect(css).toContain("calc(50% - 10px)");
   });
 
+  it("lays the items of a horizontal radio button list out in a row that wraps, and a vertical list's one to a line", () => {
+    for (const field of ["radio-list", "extended-radio-list"]) {
+      expect(css).toMatch(
+        new RegExp(
+          `\\.formulate__field--${field}--horizontal\\s*\\{[^}]*display: flex;[^}]*flex-wrap: wrap;`,
+        ),
+      );
+    }
+    expect(css).toMatch(/\.formulate__field--radio-list--vertical label\s*\{\s*display: block;/);
+  });
+
   it("lets a site override a variable when it compiles the theme", () => {
     const custom = compile(" with ($formulate-color--border: #48a)");
     expect(custom.warnings).toEqual([]);

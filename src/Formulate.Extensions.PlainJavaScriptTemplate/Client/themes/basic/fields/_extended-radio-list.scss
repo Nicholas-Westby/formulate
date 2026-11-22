@@ -5,6 +5,15 @@
 .formulate__field {
     &--extended-radio-list {
 
+        // A horizontal list lays its items out in a row, and wraps onto the next line on a narrow screen.
+        // (A list set to Vertical, or with no orientation, keeps its look: one item to a line.)
+        &--horizontal {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            column-gap: $formulate-radio-spacing--horizontal;
+        }
+
         // The label that surrounds the input and text values.
         label {
 

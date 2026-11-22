@@ -9,13 +9,24 @@ import type {
 import { FieldRendererBase, setData } from "../utils/field.js";
 import { generateId } from "../utils/generate-id.js";
 
-/** Renders a list of radio buttons in a fieldset. The chosen value is posted under the field's ID. */
+/**
+ * Renders a list of radio buttons in a fieldset. The chosen value is posted
+ * under the field's ID. The fieldset gets the class for the field's
+ * orientation, such as formulate__field--radio-list--horizontal, so a site's
+ * CSS can lay the items out. Only "horizontal" and "vertical" (in any letter
+ * case, trimmed) add a class. No value, or any other, adds none, so the list
+ * is laid out as the site's template or theme lays it out.
+ */
 export class RenderRadioList extends FieldRendererBase<HTMLInputElement> {
   readonly elements: HTMLInputElement[] = [];
 
   constructor(fieldData: FormulateField, fieldValidators: FieldValidatorMap, cssClasses: string[]) {
     super(fieldData, fieldValidators);
     const fieldset = this.initializeGroup(cssClasses);
+    const orientation = fieldData.configuration?.orientation?.trim().toLowerCase();
+    if (orientation === "horizontal" || orientation === "vertical") {
+      fieldset.classList.add(`formulate__field--${fieldData.fieldType}--${orientation}`);
+    }
     const name = generateId("radio-button-list-");
     for (const item of fieldData.configuration?.items ?? []) {
       const input = this.initializeField({

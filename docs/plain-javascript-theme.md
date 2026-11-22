@@ -61,6 +61,7 @@ The Basic theme needs dart-sass 1.33 or later, because it uses the `@use` and `@
 
 ## Notes
 
+- A radio button list or extended radio button list set to Horizontal has the class `formulate__field--radio-list--horizontal` (or `formulate__field--extended-radio-list--horizontal`), and the theme lays its items out in a row that wraps on narrow screens. A list set to Vertical has `--vertical` and the theme shows one item to a line. A list left on "As the template lays them out" has neither class and looks as it always did in the theme. Without the theme, the class is there for your own CSS.
 - The renderer hides inactive steps in a multi-step form with the `hidden` attribute. The theme includes a rule that keeps anything inside a Formulate form with that attribute hidden, even over `!important` styles of your own, so keep it if you write your own styles for steps.
 - Multi-step forms slide between steps using the `formulate__step--animating` class. If you want a different animation, change the keyframes in `settings/_animations.scss` and the rules in `steps/_steps.scss`.
 - If you want to style forms from scratch, skip the theme and target the `formulate__...` classes directly.
