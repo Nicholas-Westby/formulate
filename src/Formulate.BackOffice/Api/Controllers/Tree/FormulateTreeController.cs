@@ -3,6 +3,7 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
     using System;
     using System.Collections.Generic;
     using Asp.Versioning;
+    using Formulate.BackOffice.Api.Filters;
     using Formulate.BackOffice.Api.Models.Tree;
     using Formulate.BackOffice.Api.Services;
     using Microsoft.AspNetCore.Http;
@@ -15,7 +16,8 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
     /// Lists the items of the Forms, Data Values and Validations trees.
     /// </summary>
     /// <remarks>
-    /// Content pickers use these endpoints, so they need back office access only, not the Formulate section.
+    /// Content pickers use the listing endpoints, so those need back office access only, not the Formulate
+    /// section. Create options are an editing aid, so that endpoint requires the section.
     /// </remarks>
     [ApiVersion("1.0")]
     [VersionedApiBackOfficeRoute("formulate/tree")]
@@ -24,10 +26,13 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
     {
         private readonly IFormulateTreeService _treeService;
 
+        private readonly ICreateOptionsApiService _createOptionsService;
+
         /// <inheritdoc cref="FormulateTreeController"/>
-        public FormulateTreeController(IFormulateTreeService treeService)
+        public FormulateTreeController(IFormulateTreeService treeService, ICreateOptionsApiService createOptionsService)
         {
             _treeService = treeService;
+            _createOptionsService = createOptionsService;
         }
 
         /// <summary>
@@ -80,6 +85,23 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
             var result = _treeService.GetAncestors(treeAlias, descendantId);
 
             return ToActionResult(result, treeAlias);
+        }
+
+        /// <summary>
+        /// Gets what can be created under a place in a tree.
+        /// </summary>
+        /// <param name="treeAlias">One of forms, data-values or validations.</param>
+        /// <param name="parentId">The ID of the folder or form to create under; leave out for the top of the tree.</param>
+        [HttpGet("{treeAlias}/create-options")]
+        [RequireFormulateSection]
+        [ProducesResponseType<IEnumerable<CreateOptionModel>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        public IActionResult CreateOptions(string treeAlias, Guid? parentId = null)
+        {
+            var result = _createOptionsService.GetCreateOptions(treeAlias, parentId);
+
+            return result.Status == ServiceStatus.Success ? Ok(result.Value) : ProblemFor(result);
         }
 
         private IActionResult ToActionResult<T>(FormulateTreeResult<T> result, string treeAlias)

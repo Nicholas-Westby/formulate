@@ -15,7 +15,7 @@ public class FormulateTreeControllerTests
 {
     private readonly Mock<IFormulateTreeService> _service = new();
 
-    private FormulateTreeController CreateController() => new(_service.Object);
+    private FormulateTreeController CreateController() => new(_service.Object, Mock.Of<ICreateOptionsApiService>());
 
     private static void AssertProblem(IActionResult result, int status)
     {

@@ -62,7 +62,7 @@ public sealed class FormulateOpenApiComposer : IComposer
     }
 
     /// <summary>
-    /// Gives the Formulate operations Management API style ids, such as GetFormulateConfigPing, so the
+    /// Gives the Formulate operations Management API style ids, such as GetFormulateConfig, so the
     /// generated client has readable function names. Umbraco 18 does this for every document itself.
     /// </summary>
     public sealed class FormulateOperationIdHandler : OperationIdHandler

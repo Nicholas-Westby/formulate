@@ -89,6 +89,35 @@ namespace Formulate.BackOffice.Api.Json
         }
 
         /// <summary>
+        /// Gets the configuration a kind starts with, as its definition describes it for the back office.
+        /// </summary>
+        /// <param name="fromDefinition">Asks the definition for its back office configuration for empty settings.</param>
+        /// <param name="kind">The kind's name, for the debug message.</param>
+        /// <returns>The parsed JSON; null when the definition gives nothing or fails, which is logged at debug level.</returns>
+        public JsonElement? DefaultFromDefinition(Func<object?> fromDefinition, string kind)
+        {
+            try
+            {
+                var configuration = fromDefinition();
+
+                if (configuration is null)
+                {
+                    return null;
+                }
+
+                using var document = JsonDocument.Parse(_jsonUtility.Serialize(configuration));
+
+                return document.RootElement.Clone();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "The definition of {Kind} could not describe its default configuration, so there is none.", kind);
+
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Gets the text to store for a configuration sent to the API.
         /// </summary>
         /// <param name="configuration">The configuration; null (or JSON null) stores nothing.</param>

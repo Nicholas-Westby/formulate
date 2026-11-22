@@ -5,12 +5,6 @@ namespace Formulate.BackOffice.DependencyInjection
     using Formulate.BackOffice.Api.Services;
     using Formulate.BackOffice.Persistence;
     using Formulate.BackOffice.Utilities;
-    using Formulate.BackOffice.Utilities.CreateOptions.DataValues;
-    using Formulate.BackOffice.Utilities.CreateOptions.FormFields;
-    using Formulate.BackOffice.Utilities.CreateOptions.FormHandlers;
-    using Formulate.BackOffice.Utilities.CreateOptions.Forms;
-    using Formulate.BackOffice.Utilities.CreateOptions.Layouts;
-    using Formulate.BackOffice.Utilities.CreateOptions.Validations;
     using Formulate.BackOffice.Utilities.DataValues;
     using Formulate.BackOffice.Utilities.FormFields;
     using Formulate.BackOffice.Utilities.FormHandlers;
@@ -36,8 +30,6 @@ namespace Formulate.BackOffice.DependencyInjection
         private static IUmbracoBuilder AddFormulateUtilities(
             this IUmbracoBuilder builder)
         {
-            builder.Services.AddScoped<IGetFolderIconOrDefault, GetFolderIconOrDefault>();
-
             builder.Services.AddScoped<ITreeEntityRepository, TreeEntityRepository>();
             builder.Services.AddScoped<IFormulateTreeService, FormulateTreeService>();
             builder.Services.AddScoped<IFormApiService, FormApiService>();
@@ -46,24 +38,21 @@ namespace Formulate.BackOffice.DependencyInjection
             builder.Services.AddScoped<IDataValuesApiService, DataValuesApiService>();
             builder.Services.AddScoped<IFolderApiService, FolderApiService>();
             builder.Services.AddScoped<IMoveService, MoveService>();
+            builder.Services.AddScoped<IDefinitionApiService, DefinitionApiService>();
+            builder.Services.AddScoped<ICreateOptionsApiService, CreateOptionsApiService>();
+            builder.Services.AddScoped<IConfigApiService, ConfigApiService>();
             builder.Services.AddScoped<ConfigurationJson>();
 
             builder.Services.AddScoped<ICreateFormsScaffoldingEntity, CreateFormsScaffoldingEntity>();
-            builder.Services.AddScoped<IGetFormsChildEntityOptions, GetFormsChildEntityOptions>();
 
             builder.Services.AddScoped<ICreateDataValuesScaffoldingEntity, CreateDataValuesScaffoldingEntity>();
-            builder.Services.AddScoped<IGetDataValuesChildEntityOptions, GetDataValuesChildEntityOptions>();
 
             builder.Services.AddScoped<ICreateLayoutsScaffoldingEntity, CreateLayoutsScaffoldingEntity>();
-            builder.Services.AddScoped<IGetLayoutsChildEntityOptions, GetLayoutsChildEntityOptions>();
 
             builder.Services.AddScoped<ICreateValidationsScaffoldingEntity, CreateValidationsScaffoldingEntity>();
-            builder.Services.AddScoped<IGetValidationsChildEntityOptions, GetValidationsChildEntityOptions>();
 
-            builder.Services.AddScoped<IGetFormFieldOptions, GetFormFieldOptions>();
             builder.Services.AddScoped<IGetFormFieldScaffolding, GetFormFieldScaffolding>();
 
-            builder.Services.AddScoped<IGetFormHandlerOptions, GetFormHandlerOptions>();
             builder.Services.AddScoped<IGetFormHandlerScaffolding, GetFormHandlerScaffolding>();
 
             builder.Services.AddSingleton<IGetDefaultTemplateId, GetDefaultTemplateId>();
