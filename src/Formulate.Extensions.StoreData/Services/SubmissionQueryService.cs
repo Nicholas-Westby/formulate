@@ -165,19 +165,25 @@ namespace Formulate.Extensions.StoreData.Services
             var csvColumns = UniqueHeaders(columns);
 
             // A temp file keeps memory flat however many submissions there are, and goes away when closed.
+            var streamOptions = new FileStreamOptions
+            {
+                Mode = FileMode.CreateNew,
+                Access = FileAccess.ReadWrite,
+                Share = FileShare.None,
+                Options = FileOptions.DeleteOnClose | FileOptions.SequentialScan,
+                BufferSize = 4096,
+            };
+
+            // The export holds every submission, so on Unix only the owner may read it. Windows has
+            // no Unix file modes, and setting one there throws PlatformNotSupportedException.
+            if (!OperatingSystem.IsWindows())
+            {
+                streamOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
             var stream = new FileStream(
                 Path.Combine(Path.GetTempPath(), "formulate-export-" + Guid.NewGuid().ToString("N")),
-                new FileStreamOptions
-                {
-                    Mode = FileMode.CreateNew,
-                    Access = FileAccess.ReadWrite,
-                    Share = FileShare.None,
-                    Options = FileOptions.DeleteOnClose | FileOptions.SequentialScan,
-                    BufferSize = 4096,
-
-                    // The export holds every submission, so on Unix only the owner may read it.
-                    UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite,
-                });
+                streamOptions);
 
             try
             {
