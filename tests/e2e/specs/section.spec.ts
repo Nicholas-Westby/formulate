@@ -1,6 +1,6 @@
-import { join } from 'node:path';
 import { expect, test } from '../fixtures/login.ts';
 import { getUmbracoVersion, rootWorkspaceUrlEnd } from '../fixtures/umbraco-version.ts';
+import { screenshotPath } from '../support/screenshots.ts';
 
 const TREES = [
 	{ label: 'Forms', apiAlias: 'forms', rootEntityType: 'formulate-forms-root' },
@@ -35,7 +35,7 @@ test('the Formulate section shows the welcome dashboard and the three trees', as
 		await expect(root.locator('umb-tree-item')).toHaveCount(0);
 	}
 
-	await page.screenshot({ path: join(import.meta.dirname, '..', 'screenshots', 'section.png') });
+	await page.screenshot({ path: screenshotPath('section.png') });
 });
 
 test('selecting a tree root opens a page with the tree name', async ({ page }) => {

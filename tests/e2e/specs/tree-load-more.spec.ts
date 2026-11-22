@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { getUmbracoVersion, treePageSize } from '../fixtures/umbraco-version.ts';
+import { screenshotPath } from '../support/screenshots.ts';
 
 /** More forms than Umbraco shows at once (50 in Umbraco 17.6, 100 from 17.7). */
 const FORM_COUNT = 105;
@@ -56,7 +56,7 @@ test('Load more shows every form at the Forms root', async ({ page }) => {
 		}
 
 		await expect(loadMore).toHaveCount(0);
-		await page.screenshot({ path: join(import.meta.dirname, '..', 'screenshots', 'tree-load-more.png') });
+		await page.screenshot({ path: screenshotPath('tree-load-more.png') });
 		const names = await formItems.evaluateAll((items) => items.map((item) => item.getAttribute('label')));
 		expect([...names].sort()).toStrictEqual(forms.map((form) => form.name).sort());
 	} finally {

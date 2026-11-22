@@ -1,12 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/login.ts';
 import { createFolder, emptyTree } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { TREES, childNames, confirmDelete, expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
-
-const SCREENSHOTS = join(import.meta.dirname, '..', 'screenshots');
+import { screenshotPath } from '../support/screenshots.ts';
 
 interface CreateOption {
 	entityType: string;
@@ -94,7 +92,7 @@ for (const tree of TREES) {
 		await expect(createDialog.locator('umb-ref-item').last()).toHaveAttribute('name', 'Folder...');
 		if (tree.apiAlias === 'forms') {
 			await expect(createDialog.locator('umb-ref-item')).toHaveCount(3);
-			await page.screenshot({ path: join(SCREENSHOTS, 'create-options.png'), animations: 'disabled' });
+			await page.screenshot({ path: screenshotPath('create-options.png'), animations: 'disabled' });
 		}
 		// Cancelling the folder dialog comes back to the create dialog, as in Umbraco.
 		await createDialog.locator('umb-ref-item[name="Folder..."]').click();
@@ -134,7 +132,7 @@ for (const tree of TREES) {
 			// waits for both and finishes their transitions.
 			await expect(move).not.toHaveAttribute('disabled');
 			await expect(move).toBeInViewport({ ratio: 1 });
-			await page.screenshot({ path: join(SCREENSHOTS, 'move.png'), animations: 'disabled' });
+			await page.screenshot({ path: screenshotPath('move.png'), animations: 'disabled' });
 		}
 		await move.click();
 		await expect(picker).toHaveCount(0);
@@ -167,7 +165,7 @@ for (const tree of TREES) {
 		await expect(page.locator('umb-workspace-breadcrumb uui-breadcrumb-item')).toHaveText([tree.label, 'Old archive']);
 		await expect(page.locator('umb-tree-workspace-view').getByText('No items')).toBeVisible();
 		if (tree.apiAlias === 'forms') {
-			await page.screenshot({ path: join(SCREENSHOTS, 'folder-workspace.png'), animations: 'disabled' });
+			await page.screenshot({ path: screenshotPath('folder-workspace.png'), animations: 'disabled' });
 		}
 		await page.locator('umb-workspace-action uui-button[label="Save"]').click();
 		await expect(treeItem(root, 'Old archive')).toBeVisible();
@@ -192,7 +190,7 @@ for (const tree of TREES) {
 		// The footer's breadcrumb shows the path to it.
 		await expect(page.locator('umb-workspace-breadcrumb uui-breadcrumb-item')).toHaveText([tree.label, 'Outer', 'Inner']);
 		if (tree.apiAlias === 'forms') {
-			await page.screenshot({ path: join(SCREENSHOTS, 'breadcrumb.png'), animations: 'disabled' });
+			await page.screenshot({ path: screenshotPath('breadcrumb.png'), animations: 'disabled' });
 		}
 	});
 }

@@ -1,11 +1,9 @@
-import { join } from 'node:path';
 import { KINDS, createFolder, createKindItem, emptyTree } from '../fixtures/formulate-api.ts';
 import { WORKSPACE_URL, editUrl, idInUrl, kindItemWorkspace, waitForNameFocus } from '../fixtures/kind-item-workspace.ts';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { confirmDelete, expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
-
-const SCREENSHOTS = join(import.meta.dirname, '..', 'screenshots');
+import { screenshotPath } from '../support/screenshots.ts';
 
 test.afterEach(async ({ page }) => {
 	await emptyTree(page, 'validations');
@@ -162,7 +160,7 @@ test('a Regular Expression validation is created in a folder, warns about a patt
 	await expect(treeItem(treeItem(treeItem(sidebar(page), 'Validation Library'), 'Patterns'), 'Zip code')).toHaveAttribute(
 		'active',
 	);
-	await page.screenshot({ path: join(SCREENSHOTS, 'validation.png'), animations: 'disabled' });
+	await page.screenshot({ path: screenshotPath('validation.png'), animations: 'disabled' });
 
 	// Deleting it from the tree takes it out of its folder, and leaves its workspace.
 	await runEntityAction(treeItem(folder, 'Zip code'), 'Delete');

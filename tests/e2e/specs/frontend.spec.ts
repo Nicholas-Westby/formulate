@@ -1,11 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { KINDS, createKindItem } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { expect, test } from '../fixtures/seeded-page.ts';
-
-const SCREENSHOTS = join(import.meta.dirname, '..', 'screenshots');
+import { screenshotPath } from '../support/screenshots.ts';
 
 /** The seed's document type (src/Website/Seed), which shows the form its "form" property picks. */
 const DOCUMENT_TYPE_ID = '5d3a0b0e-6a43-4a4f-9a3c-1f6f7b0f2a02';
@@ -235,7 +233,7 @@ test('a form renders with the theme, validates in the browser, and its submissio
 		});
 		expect(themedButton.border, 'the theme gives the button its black border').toBe('rgb(0, 0, 0)');
 		expect(themedButton.shadow, 'the theme gives the button a shadow').not.toBe('none');
-		await site.screenshot({ path: join(SCREENSHOTS, 'frontend-form.png'), fullPage: true });
+		await site.screenshot({ path: screenshotPath('frontend-form.png'), fullPage: true });
 
 		// A label that holds "</script>" shows as it was written, and breaks nothing.
 		await expect(form.locator('label', { hasText: 'Note' })).toContainText(TRICKY_LABEL);
@@ -246,7 +244,7 @@ test('a form renders with the theme, validates in the browser, and its submissio
 		const emailField = form.locator('.formulate__field', { hasText: 'Your email' });
 		await expect(emailField.locator('.formulate__inline-validation-summary')).toContainText(EMAIL_REQUIRED);
 		await expect(form.locator('.formulate__validation-summary')).toContainText(EMAIL_REQUIRED);
-		await site.screenshot({ path: join(SCREENSHOTS, 'frontend-errors.png'), fullPage: true });
+		await site.screenshot({ path: screenshotPath('frontend-errors.png'), fullPage: true });
 		expect(await site.evaluate(() => (window as unknown as { formulateEvents: object }).formulateEvents)).toEqual({});
 
 		// An email that does not match the pattern shows the pattern's message.
@@ -337,7 +335,7 @@ test('a multi-step form moves between its steps and is stored when it is sent', 
 		await expect(steps.nth(1)).not.toHaveAttribute('hidden');
 		await expect(steps.nth(0)).toBeHidden();
 		await expect(steps.nth(0)).toHaveAttribute('hidden');
-		await site.screenshot({ path: join(SCREENSHOTS, 'frontend-steps.png'), fullPage: true });
+		await site.screenshot({ path: screenshotPath('frontend-steps.png'), fullPage: true });
 
 		// Back keeps what was typed.
 		await form.getByRole('button', { name: 'Go back' }).click();

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import { expect, test } from '../fixtures/seeded-page.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
+import { screenshotPath } from '../support/screenshots.ts';
 
 const FORM_NAME = 'Contact Form';
 const LAYOUT_NAME = 'Contact';
@@ -127,7 +127,7 @@ test('the Form Layout Picker picks, shows, clears and renders a form layout', as
 		await expect(layoutItem).toBeVisible();
 		await expect(formItem.locator('#label-button').first()).toBeDisabled();
 		await expect(modal.getByRole('button', { name: 'Choose' })).toBeDisabled();
-		await page.screenshot({ path: join(import.meta.dirname, '..', 'screenshots', 'property-editor-picker.png') });
+		await page.screenshot({ path: screenshotPath('property-editor-picker.png') });
 
 		await layoutItem.locator('#label-button').click();
 		await modal.getByRole('button', { name: 'Choose' }).click();
@@ -139,7 +139,7 @@ test('the Form Layout Picker picks, shows, clears and renders a form layout', as
 		// A reload shows the pick again.
 		await page.reload();
 		await expectPicked(picker);
-		await page.screenshot({ path: join(import.meta.dirname, '..', 'screenshots', 'property-editor.png') });
+		await page.screenshot({ path: screenshotPath('property-editor.png') });
 
 		// Removing it stores no value.
 		await picker.locator('uui-ref-node uui-button[label="Remove"]').click();

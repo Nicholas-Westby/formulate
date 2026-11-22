@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 import { KINDS, createFolder, createKindItem, emptyTree, storeLegacyDataValues } from '../fixtures/formulate-api.ts';
 import {
@@ -13,8 +12,7 @@ import { dragRowToTop } from '../fixtures/drag.ts';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
-
-const SCREENSHOTS = join(import.meta.dirname, '..', 'screenshots');
+import { screenshotPath } from '../support/screenshots.ts';
 
 /** Opens the create dialog of the top of the Data Values tree and picks a kind. */
 async function createAtTheTop(page: Page, kindName: string) {
@@ -75,7 +73,7 @@ test('a List is created from the create dialog, sorted, and keeps its items afte
 	await page.reload();
 	await expect(name).toHaveValue('Colors');
 	await expect.poll(() => valuesOf(values)).toEqual(['Yellow', 'Red', 'Blue']);
-	await page.screenshot({ path: join(SCREENSHOTS, 'data-values-list.png'), animations: 'disabled' });
+	await page.screenshot({ path: screenshotPath('data-values-list.png'), animations: 'disabled' });
 });
 
 test('a Pair List is created with a value and a label per item, and keeps them after a reload', async ({ page }) => {
