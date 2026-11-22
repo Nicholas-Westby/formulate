@@ -265,7 +265,7 @@ builder.TemplateDefinitions().Append<MyTemplateDefinition>();
 
 <!-- pass 2: the editor contract. Describe the kind editor extension types in TypeScript, how a definition's EditorAlias selects the editor, how the editor receives and saves configuration, manifests, and a worked example for a custom field. Source: Plan C Task 3's kind-editor contract and src/Formulate.BackOffice/Client/src/core/kind-editor.ts and extension-types.ts. -->
 
-Each definition names a back office editor with its `EditorAlias`. The new back office is built with Umbraco's own UI elements, and custom editors for custom kinds are written as Umbraco extensions. This part of the guide comes with the back office documentation.
+Each definition names a back office editor with its `EditorAlias`. The new back office is built with Umbraco's own UI elements, and custom editors for custom kinds are written as Umbraco extensions. For a field, see [an editor for the field's settings](#an-editor-for-the-fields-settings). The rest of this part of the guide comes with the back office documentation.
 
 The back office talks to the server through the Umbraco Management API, at `/umbraco/management/api/v1/formulate/...`. The OpenAPI document is named `formulate`. Formulate's package does not register Swagger or any OpenAPI library, so it does not conflict with the one Umbraco uses on 17 (Swashbuckle) and on 18 and later (`Microsoft.AspNetCore.OpenApi`). Formulate's section alias is `Formulate.Section`. Calls need a signed in back office user. Changing anything needs the Formulate section.
 
@@ -328,63 +328,362 @@ Store Data and the Email handlers publish no notifications of their own. To chan
 
 ## Changing how forms render in the browser
 
-The Plain JavaScript template writes each form's data into the page and loads one script, `/App_Plugins/Formulate/PlainJavaScript/formulate.js`. The script builds the form. Everything below runs in the browser, before or after that script loads.
+The Plain JavaScript template writes each form's data into the page, and a script in the browser (the renderer) builds the form from it. The renderer is a set of small JavaScript modules, not one bundle, so your own scripts can import its parts and build field renderers on the built-in ones.
 
-### Add or replace a field renderer
+- [The renderer's files](#the-renderers-files)
+- [Importing the renderer's modules](#importing-the-renderers-modules)
+- [Registering a renderer or a validator](#registering-a-renderer-or-a-validator)
+- [A renderer built on a built-in one](#a-renderer-built-on-a-built-in-one)
+- [A renderer from scratch](#a-renderer-from-scratch)
+- [Add a validator](#add-a-validator)
+- [Scripts that are not modules](#scripts-that-are-not-modules)
+- [The server side of a custom field](#the-server-side-of-a-custom-field)
+- [Caching](#caching)
+- [Loading the renderer yourself](#loading-the-renderer-yourself)
+- [What the renderer's API exports](#what-the-renderers-api-exports)
+- [Events](#events)
+- [Other hooks](#other-hooks)
 
-Add registrations to `window["formulate-plain-js-fields"]`: an object, or an array of objects, with a `key` (the field type) and a `renderer` (a class). A registered renderer replaces the built-in one with the same key.
+### The renderer's files
 
-```html
-<script>
-  window["formulate-plain-js-fields"] = [
-    {
-      key: "phone",
-      renderer: class PhoneRenderer {
-        constructor(fieldData, fieldValidators, cssClasses, extraOptions) {
-          this.fieldData = fieldData;
-          this.input = document.createElement("input");
-          this.input.type = "tel";
-        }
-        getElement() { return this.input; }
-        setData(data, options) {
-          if (options && options.rawDataByAlias) { data[this.fieldData.alias] = this.input.value; }
-          else { data.append(this.fieldData.id, this.input.value); }
-        }
-        checkValidity() { return { success: true }; }
-      }
-    }
-  ];
-</script>
-```
+The renderer's files are in `/App_Plugins/Formulate/PlainJavaScript/` (under the site's path base, if it has one). Each module comes twice, side by side:
 
-- A field with no map of its own gets a field type from its class name: lower case, with `field` taken out. `PhoneField` becomes `phone`. A map (see below) sets it explicitly.
-- A renderer needs `getElement()`. `setData`, `checkValidity` and `toggleSubmitButton` are optional.
-- A field with no renderer is skipped, and a warning is written to the console.
-- The built-in field types are `text`, `button`, `rich-text`, `checkbox`, `textarea`, `hidden`, `select`, `header`, `upload`, `checkbox-list`, `date`, `radio-list`, `extended-radio-list` and `recaptcha`. The modules in `src/Formulate.Extensions.PlainJavaScriptTemplate/Client/src/fields` define them. The C# side maps each built-in field to its key (the `Mapping/FormFields` folder), so a key is not always the class name.
+- `name.js` is readable, with its comments. Read it to see what its minified twin does. There are no source maps.
+- `name.min.js` is minified. Formulate loads these, and your scripts should import these too.
 
-### Add a validator
+The minified files import only minified files, and the readable files only readable ones. For TypeScript, each module has `name.d.ts`, and `name.min.d.ts` re-exports it. To use them in a TypeScript project, copy the `.d.ts` files into it (the `Umbraco.Community.Formulate.Extensions.PlainJavaScriptTemplate` package has them in `staticwebassets/App_Plugins/Formulate/PlainJavaScript/`), and map the URL your imports use to the copy with a `paths` entry in `tsconfig.json`. A `declare module` does not work here, because TypeScript treats a name that starts with `/` as a relative path.
 
-Add registrations to `window["formulate-plain-js-validators"]`: objects with a `key` (the validation type, such as `required` or `regex`) and a `validator` (a class whose constructor takes the validation's configuration). Its methods `validateText`, `validateBool`, `validateTextArray` and `validateFile` each return true (or a promise of true) when the value is valid. A missing method counts as valid. A validation type with no validator is checked only by the server, and a warning is written to the console.
-
-### Send custom data to the renderer from C#
-
-The data the browser gets is built by mapping definitions (`IMapDefinition`, for Umbraco's mapper). To give a custom field its own field type name or configuration, add a map from your field class to `PlainJavaScriptFormField`:
-
-```csharp
-using Formulate.Extensions.PlainJavaScriptTemplate.Core;
-using Formulate.Extensions.PlainJavaScriptTemplate.Core.Mapping.FormFields;
-using Umbraco.Cms.Core.Mapping;
-
-public sealed class PhoneFieldMapDefinition : FormFieldMapDefinition<PhoneField>
+```json
 {
-    protected override PlainJavaScriptFormField Map(PhoneField field, MapperContext context)
-    {
-        return new PlainJavaScriptFormField(new { pattern = "[0-9 +-]+" }, "phone");
+  "compilerOptions": {
+    "paths": {
+      "/App_Plugins/Formulate/PlainJavaScript/*": ["./types/formulate/*"]
     }
+  }
 }
 ```
 
-Register it in a composer with `builder.MapDefinitions().Add<PhoneFieldMapDefinition>()`. The configuration is passed to the renderer as `fieldData.configuration`. Validations map the same way (`ValidationMapDefinition<T>` and `PlainJavaScriptValidation`).
+With that, `import { RenderText } from "/App_Plugins/Formulate/PlainJavaScript/api.min.js"` gets its types from `types/formulate/api.min.d.ts`.
+
+| File | What it is |
+| --- | --- |
+| `formulate.min.js` | The entry. It renders the forms on the page, exports the API and puts it on `window.formulatePlainJs`. The view loads it. |
+| `api.min.js` | The API. It exports the same as the entry, and importing it starts nothing. Import this one. |
+| `fields/` | The built-in field renderers, such as `fields/plain-text.min.js`. |
+| `validators/` | The built-in validators. |
+| `steps/` | The steps that render and submit a form. |
+| `utils/` | Helpers, such as the base class of the renderers (`utils/field.min.js`) and the validation helpers (`utils/validation.min.js`). |
+| `types.d.ts` | The types of the data the server sends, and of the renderer and validator contracts. It has no script. |
+| `modules.json` | The list of every minified module, the entry first. |
+| `themes/` | The [Basic theme](plain-javascript-theme.md). |
+
+Importing any module other than `formulate.min.js` starts nothing. On each page with a form, the view adds a `<link rel="modulepreload">` for each module in `modules.json`, then `<script type="module" src="/App_Plugins/Formulate/PlainJavaScript/formulate.min.js">`, once however many forms the page has. The links let the browser ask for every module at once, instead of finding the imports one level at a time.
+
+### Importing the renderer's modules
+
+Your script is a module script. Load it on the pages that have forms, after or before the form:
+
+```html
+<script type="module" src="/scripts/phone-field.js"></script>
+```
+
+In it, import from `api.min.js` by its URL:
+
+```js
+import { RenderText, registerFieldRenderer } from "/App_Plugins/Formulate/PlainJavaScript/api.min.js";
+```
+
+- Import the `.min.js` files, by the URL the renderer uses. A browser loads a module once for each URL, so the readable `api.js`, or `api.min.js` with a query string, would be a second copy of the renderer's code. Registrations still reach the renderer, because they go on the window, but the page loads the modules twice.
+- On a site with a path base, such as `/site`, put it in the URL (`/site/App_Plugins/...`), or import with a path relative to your own script.
+- If you bundle your scripts, leave Formulate's modules out of the bundle and import them by URL (most bundlers call these "external" imports).
+
+### Registering a renderer or a validator
+
+`registerFieldRenderer(key, renderer)` registers a renderer class for a field type, such as `phone`. `registerValidator(key, validator)` registers a validator class for a validation type, such as `required`. A registration replaces the built-in one with the same key, and a later registration for a key replaces an earlier one. A key that is not text, or a renderer or validator that is not a class, throws a `TypeError`.
+
+Register before the forms render. The renderer renders the page's forms at `DOMContentLoaded`, and every module script (unless it has `async`) and every script with `defer` runs before that, wherever it is on the page. A renderer registered later is used by the forms rendered after it (such as forms pushed onto `window["formulate-plain-js-forms"]`), and when a form on the page already rendered a field of that type, the console shows a warning. Validators work the same way.
+
+The registrations go on `window["formulate-plain-js-fields"]` and `window["formulate-plain-js-validators"]`, the lists Formulate 3 used, so every copy of the renderer on the page sees them. See [scripts that are not modules](#scripts-that-are-not-modules).
+
+The built-in field types are `text`, `button`, `rich-text`, `checkbox`, `textarea`, `hidden`, `select`, `header`, `upload`, `checkbox-list`, `date`, `radio-list`, `extended-radio-list` and `recaptcha`. The modules in `src/Formulate.Extensions.PlainJavaScriptTemplate/Client/src/fields` define them. The C# side maps each built-in field to its key (the `Mapping/FormFields` folder), so a key is not always the class name.
+
+### A renderer built on a built-in one
+
+A phone field is a text field with the input type `tel`. This is the whole renderer:
+
+```js
+import { RenderText, registerFieldRenderer } from "/App_Plugins/Formulate/PlainJavaScript/api.min.js";
+
+class RenderPhone extends RenderText {
+  static inputType = "tel";
+}
+
+registerFieldRenderer("phone", RenderPhone);
+```
+
+Everything else comes from `RenderText`: the label, the wrapper with its classes (`formulate__field formulate__field--phone`), the placeholder, the validation messages and what the field posts. `RenderDate` is built the same way. The dev site has this sample (`src/Website/wwwroot/scripts/phone-field.js`, with its C# side in `src/Website/SampleFields`), and a browser test checks it.
+
+Any built-in renderer can be extended: see [what the API exports](#what-the-renderers-api-exports).
+
+### A renderer from scratch
+
+Extend `FieldRendererBase`, and in the constructor call `initializeField`:
+
+```js
+import { FieldRendererBase, registerFieldRenderer } from "/App_Plugins/Formulate/PlainJavaScript/api.min.js";
+
+class RenderNumber extends FieldRendererBase {
+  constructor(fieldData, fieldValidators, cssClasses) {
+    super(fieldData, fieldValidators);
+    this.initializeField({ type: "number", cssClasses });
+  }
+}
+
+registerFieldRenderer("number", RenderNumber);
+```
+
+The base class sets up the field's validators. `initializeField` makes the element, its label and its wrapper, with the classes and the placeholder the built-in fields have. Then the base class does the rest:
+
+- `getValue()` gives the field's value: the element's value for an input, select or textarea, and `undefined` (nothing) for any other element. Override it for any other value.
+- `setData(data, options)` posts `getValue()`. An array is posted one item at a time, and `undefined` posts nothing.
+- `checkValidity()` checks `getValue()` with the field's validators and shows their messages in the field. A value of `undefined` is always valid. The static `validatorMethod` says which validator method checks the value: `"validateText"` (the default), `"validateBool"`, `"validateTextArray"` or `"validateFile"`.
+
+The constructor gets the field's data (`fieldData`, with `id`, `alias`, `label`, `fieldType`, `validations`, `configuration` and `initialValue`), the validator classes by validation type, the CSS classes for the wrapper, and `{ formElement, placeholderElement, stepIndex }`.
+
+`initializeField` takes these options:
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `nodeName` | `"input"` | The element to make. |
+| `type` | none | Its `type` attribute. |
+| `name`, `value` | none | Its `name` and `value` attributes. |
+| `cssClasses` | none | The wrapper's classes. Pass the constructor's `cssClasses`. |
+| `usePlaceholder` | `true` | Use the label as the placeholder. |
+| `useLabel` | `true` | Make a label for the element. |
+| `useWrapper` | `true` | Put the element and its label in a wrapper. |
+| `wrapperElementType` | `"div"` | The wrapper to make. |
+| `wrapperElement` | none | A wrapper that exists already, such as the fieldset from `initializeGroup`. |
+| `nestFieldInLabel` | `false` | Put the element inside its label. |
+| `fieldBeforeLabelText` | not set | Where the element goes. Not set or `true`, it goes before its label, and `false` puts it after. Inside a label, `true` puts it before the label's text, and otherwise it goes after the text. |
+| `wrapLabelText` | `false` | Put the label's text in a span (`formulate__field__label-text`). |
+| `label` | the field's label | The label's text. |
+| `label2` | none | A second text after the label's text, used with `wrapLabelText` (the extended radio buttons' descriptions). |
+
+The checkbox and radio button lists call `initializeField` once for each item, with `wrapperElement` (the fieldset), `nestFieldInLabel`, `wrapLabelText` and `fieldBeforeLabelText: true`.
+
+`initializeGroup(cssClasses)` makes a fieldset with a legend, for a field made of several inputs. A widget with a value of its own overrides `getValue`:
+
+```js
+class RenderRating extends FieldRendererBase {
+  constructor(fieldData, fieldValidators, cssClasses) {
+    super(fieldData, fieldValidators);
+    this.rating = 0;
+    const fieldset = this.initializeGroup(cssClasses);
+    for (let stars = 1; stars <= 5; stars++) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${stars} stars`;
+      button.addEventListener("click", () => { this.rating = stars; });
+      fieldset.appendChild(button);
+    }
+  }
+
+  getValue() {
+    return this.rating === 0 ? "" : String(this.rating);
+  }
+}
+```
+
+A renderer does not have to extend anything. A class with `getElement()` works, as in Formulate 3, and `setData(data, options)`, `checkValidity()` and `toggleSubmitButton(enabled)` are optional. `setData` gets a `FormData` (append the value under the field's `id`) or, when `options.rawDataByAlias` is set, an object (set the value under the field's `alias`).
+
+A field with no renderer is skipped, and a warning is written to the console.
+
+### Add a validator
+
+A validator is a class whose constructor takes the validation's configuration. Its methods `validateText`, `validateBool`, `validateTextArray` and `validateFile` each return true, or a promise of true, when the value is valid. A missing method counts as valid. The message shown is the one configured on the validation.
+
+```js
+import { registerValidator } from "/App_Plugins/Formulate/PlainJavaScript/api.min.js";
+
+class NoPizzaValidator {
+  validateText(value) {
+    return !/pizza/i.test(value ?? "");
+  }
+}
+
+registerValidator("no-pizza", NoPizzaValidator);
+```
+
+A validation type with no validator is checked only by the server, and a warning is written to the console. See [Validations](#validations) for the server side. A validation's type name and configuration come from a map, as for fields: `ValidationMapDefinition<T>` and `PlainJavaScriptValidation`.
+
+### Scripts that are not modules
+
+The window lists work in any script that runs before `DOMContentLoaded`, as in Formulate 3:
+
+```html
+<script>
+  window["formulate-plain-js-fields"] = window["formulate-plain-js-fields"] || [];
+  window["formulate-plain-js-fields"].push({ key: "star-rating", renderer: StarRating });
+</script>
+```
+
+Push onto the list, as above. Assigning the list replaces it, and with it every registration made before, such as one a module made with `registerFieldRenderer`. Formulate 3's single registration (`window["formulate-plain-js-fields"] = { key, renderer }`) is an assignment, so it works only in a script that runs before any other registration. The validators' list, `window["formulate-plain-js-validators"]`, works the same way.
+
+`window.formulatePlainJs` holds the API, with `version`, once `formulate.min.js` has run. A script that is not a module can use it when it runs after the renderer: a script file with `defer` placed after the form. (A script in the page itself runs as the page is read, before the renderer.)
+
+```js
+// phone-field-classic.js, loaded with <script src="/scripts/phone-field-classic.js" defer></script> after the form.
+const { RenderText, registerFieldRenderer } = window.formulatePlainJs;
+
+class RenderPhone extends RenderText {
+  static inputType = "tel";
+}
+
+registerFieldRenderer("phone", RenderPhone);
+```
+
+### The server side of a custom field
+
+A custom field needs these parts. The dev site's sample (`src/Website/SampleFields`) has them all.
+
+1. The field and its definition, as in [Form fields](#form-fields): `PhoneField` and `PhoneFieldDefinition`. Formulate finds the definition when the site starts.
+2. A map to `PlainJavaScriptFormField`, which says what the browser gets for the field: its field type (the key the renderer is registered under) and, if you like, a configuration.
+
+   ```csharp
+   using Formulate.Extensions.PlainJavaScriptTemplate.Core;
+   using Formulate.Extensions.PlainJavaScriptTemplate.Core.Mapping.FormFields;
+   using Umbraco.Cms.Core.Mapping;
+
+   public sealed class PhoneFieldMapDefinition : FormFieldMapDefinition<PhoneField>
+   {
+       protected override PlainJavaScriptFormField Map(PhoneField field, MapperContext context)
+       {
+           return new PlainJavaScriptFormField("phone");
+       }
+   }
+   ```
+
+   To send a configuration, pass it first: `new PlainJavaScriptFormField(new { autocomplete = "tel" }, "phone")`. The renderer reads it as `fieldData.configuration`. A field with no map of its own gets a field type from its class name: lower case, with `field` taken out, so `PhoneField` becomes `phone`.
+3. A composer that adds the map:
+
+   ```csharp
+   using Umbraco.Cms.Core.Composing;
+   using Umbraco.Cms.Core.DependencyInjection;
+
+   public sealed class PhoneFieldComposer : IComposer
+   {
+       public void Compose(IUmbracoBuilder builder)
+       {
+           builder.MapDefinitions().Add<PhoneFieldMapDefinition>();
+       }
+   }
+   ```
+
+4. The renderer, as in [a renderer built on a built-in one](#a-renderer-built-on-a-built-in-one), loaded on the pages that have forms.
+5. A back office editor for the field's settings, if it has any. It is optional: a field whose `EditorAlias` has no editor shows "No settings". See [the editor](#an-editor-for-the-fields-settings) below.
+
+The server checks the field's validations again when the form is submitted, and Store Data and the other handlers get its value like any other field's.
+
+#### An editor for the field's settings
+
+An editor is an Umbraco back office extension of the type `formulateFieldEditor`, whose `meta.editorAlias` is the definition's `EditorAlias`. Register it in an `umbraco-package.json` in your site's `App_Plugins` folder:
+
+```json
+{
+  "name": "My Fields",
+  "extensions": [
+    {
+      "type": "formulateFieldEditor",
+      "alias": "My.FieldEditor.Phone",
+      "name": "Phone field editor",
+      "element": "/App_Plugins/MyFields/phone-field-editor.js",
+      "meta": { "editorAlias": "my-phone-field" }
+    }
+  ]
+}
+```
+
+The element gets these properties:
+
+- `value`: the field's configuration as it is saved (any JSON your field reads), or nothing for a new field. Keep the settings you do not edit, and set a new object for each change rather than changing the old one.
+- `readonly`: true when nothing may be changed.
+- `context`: where the editor is shown, such as `{ formId, formFields }`.
+
+After each change, the element sets `value` to the new configuration and dispatches a `change` event from itself. The back office sets `value` and `readonly` again whenever they change, so the element shows them each time. A test in the back office (`src/Formulate.BackOffice/Client/src/core/plain-element-kind-editor.test.ts`) runs this editor.
+
+```js
+// /App_Plugins/MyFields/phone-field-editor.js
+export default class PhoneFieldEditor extends HTMLElement {
+  #value;
+  #readonly = false;
+  #input = document.createElement("input");
+
+  constructor() {
+    super();
+    this.#input.addEventListener("change", () => {
+      // A new object, which keeps the settings this editor does not edit.
+      this.#value = { ...this.#value, autocomplete: this.#input.value };
+      this.dispatchEvent(new Event("change"));
+    });
+  }
+
+  get value() {
+    return this.#value;
+  }
+
+  set value(value) {
+    this.#value = value;
+    this.#update();
+  }
+
+  get readonly() {
+    return this.#readonly;
+  }
+
+  set readonly(readonly) {
+    this.#readonly = readonly;
+    this.#update();
+  }
+
+  connectedCallback() {
+    this.append(this.#input);
+    this.#update();
+  }
+
+  #update() {
+    this.#input.value = this.#value?.autocomplete ?? "";
+    this.#input.disabled = this.#readonly;
+  }
+}
+
+customElements.define("my-phone-field-editor", PhoneFieldEditor);
+```
+
+The field reads the saved configuration in its definition's `CreateField`, as in [a field with its own configuration](#a-field-with-its-own-configuration).
+
+### Caching
+
+Formulate sends `Cache-Control: no-cache` with every file in `/App_Plugins/Formulate/PlainJavaScript/` that Umbraco serves, and it replaces any other `Cache-Control` that Umbraco's static file settings give those files. The files have no version in their URLs, so that each module has one URL. A browser keeps its copy, but checks with the server each time it uses it, and the server answers `304 Not Modified` when the file has not changed. After you upgrade Formulate, visitors get the new files with their next page.
+
+- The theme follows the same rule: its URL has no version either.
+- Static file middleware that your site adds before `app.UseUmbraco()` serves the files before Umbraco sees the request, so Formulate cannot set the header. Do not give this folder long-lived caching there: with one URL for each file, visitors would keep old modules after an upgrade.
+- A CDN or proxy in front of the site should keep to `no-cache` too, or be cleared when you deploy.
+- Your own scripts can have a version in their URLs (`/scripts/phone-field.js?v=2`). The URLs they import Formulate's modules by must not.
+
+### Loading the renderer yourself
+
+With `Formulate:PlainJavaScript:IncludeScript` set to `false`, the view adds no script and no preload links, and you add them. `IPlainJavaScriptAssets` gives the URLs:
+
+```cshtml
+@inject Formulate.Extensions.PlainJavaScriptTemplate.Core.IPlainJavaScriptAssets FormulateAssets
+@foreach (var url in FormulateAssets.GetModuleUrls(Context.Request.PathBase))
+{
+    <link rel="modulepreload" href="@url" />
+}
+<script type="module" src="@FormulateAssets.GetScriptUrl(Context.Request.PathBase)"></script>
+```
+
+The script tag needs `type="module"`, as `formulate.min.js` is a module. Load it once per page. `GetModuleUrls` is empty when `modules.json` is missing or cannot be read (a warning is logged), and the forms still work, only more slowly. The site reads `modules.json` once, so it picks up a changed list when it restarts. Until then, an old list only means some preloads are not needed or are missing: the imports still load the right files.
 
 ### What the renderer's API exports
 
@@ -459,11 +758,11 @@ The renderer dispatches events on the form's `.formulate-wrapper` element. They 
 
 ### Other hooks
 
-- `window["formulate-plain-js-forms"]` is the queue of forms. After the script loads, pushing a form onto it renders the form straight away, so forms added to the page later (for example in a dialog) work.
-- `window.formulatePlainJs.renderForm(form, placeholder)` renders one form into an element.
+- `window["formulate-plain-js-forms"]` is the queue of forms. Once the renderer has started, pushing a form onto it renders the form straight away, so forms added to the page later (for example in a dialog) work.
+- `renderForm(form, placeholder)` (also `window.formulatePlainJs.renderForm`) renders one form in place of a placeholder element.
 - `window.formulateMultiStepAnimationDelay` (milliseconds, default 500) sets how long the step animation classes stay on.
 - `window.labelAfterTextInput = false` places text inputs after their labels (Formulate 3's option).
-- `Formulate:PlainJavaScript:IncludeScript` set to `false` stops the view adding the script, so you can bundle it yourself. The theme has its own setting. See [the Basic theme](plain-javascript-theme.md).
+- The theme has its own setting. See [the Basic theme](plain-javascript-theme.md).
 - Custom validation messages and the reCAPTCHA and Date visitor messages are fixed English text for now.
 
 ## Compatibility rules

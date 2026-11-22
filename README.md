@@ -75,9 +75,19 @@ A form picker property gives your template a `FormLayout` value. To show it, use
 
 The picker's property editor alias is `Formulate.FormLayoutPicker`. The component renders nothing, and writes nothing to the log, when no form is picked, when the picked layout was deleted or does not belong to a form, or when the form was deleted or has no fields. It renders nothing and logs a warning when the layout has no template or its template is not installed.
 
-The Plain JavaScript template (the built-in one) writes the form's data into a script block and loads the renderer script, which builds the form in the browser. The script and the theme are added once per page, even when the page has several forms. Forms render with no styles unless you turn on the Basic theme.
+The Plain JavaScript template (the built-in one) writes the form's data into a script block and loads the renderer, which builds the form in the browser. The renderer is a set of small ES modules in `/App_Plugins/Formulate/PlainJavaScript/`, each in a readable and a minified file. The page loads `formulate.min.js` with `<script type="module">`, after a `<link rel="modulepreload">` for each module, so the browser asks for them all at once. The renderer and the theme are added once per page, even when the page has several forms. Forms render with no styles unless you turn on the Basic theme.
 
-Settings for the script and the theme are in the table below. To change how the form looks, see [the Plain JavaScript Basic theme](docs/plain-javascript-theme.md).
+Settings for the renderer and the theme are in the table below. To change how the form looks, see [the Plain JavaScript Basic theme](docs/plain-javascript-theme.md). To change how a field renders, or to add a field type of your own, see [Changing how forms render in the browser](docs/extending.md#changing-how-forms-render-in-the-browser). A phone field, for example, is a few lines built on the text field:
+
+```js
+import { RenderText, registerFieldRenderer } from "/App_Plugins/Formulate/PlainJavaScript/api.min.js";
+
+class RenderPhone extends RenderText {
+  static inputType = "tel";
+}
+
+registerFieldRenderer("phone", RenderPhone);
+```
 
 Query string values fill fields by alias. With `?source=newsletter`, the field whose alias is `source` starts with `newsletter`. For a hidden field the value replaces the configured text. An empty value (`?source=`) is ignored.
 
@@ -97,7 +107,7 @@ Set these in `appsettings.json`, or with environment variables (a double undersc
 
 | Key | Type | Default | What it does |
 | --- | --- | --- | --- |
-| `Formulate:PlainJavaScript:IncludeScript` | boolean | `true` | Adds the renderer script to the page. Set to `false` to load the script yourself, for example in your own bundle. |
+| `Formulate:PlainJavaScript:IncludeScript` | boolean | `true` | Adds the renderer to the page: `<script type="module">` for `formulate.min.js`, after a preload link for each of its modules. Set to `false` to add them yourself (see [Loading the renderer yourself](docs/extending.md#loading-the-renderer-yourself)). |
 | `Formulate:PlainJavaScript:Theme` | string | `"none"` | `"none"` or `"basic"` (not case sensitive). Any other value is treated as `"none"` and logs a warning. |
 | `Formulate:Website:Persistence:DataFolderPath` | string | `App_Data/Formulate/Json` | Where the JSON files are kept. A relative path (or one starting with `~/`) starts at the content root, never the web root. An absolute path is used as it is. |
 | `Formulate:Submissions:EnableServerSideValidation` | boolean | `true` | Checks Regular Expression validations on the server when a form is submitted. It does not affect Mandatory validations. |
