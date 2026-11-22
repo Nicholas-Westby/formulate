@@ -26,7 +26,10 @@ namespace Formulate.Extensions.SendEmail.Utilities
 
         private const string FallbackSubject = "Form submission";
 
-        private static readonly Regex LineBreaks = new(@"\r\n|\r|\n", RegexOptions.Compiled);
+        /// <summary>
+        /// Line breaks, with the spaces around them (such as a view's indenting).
+        /// </summary>
+        private static readonly Regex LineBreaks = new(@"\s*[\r\n]+\s*", RegexOptions.Compiled);
 
         private readonly IEmailSender _emailSender;
 
@@ -134,9 +137,15 @@ namespace Formulate.Extensions.SendEmail.Utilities
         }
 
         /// <summary>
-        /// Sends the email through Umbraco. Errors from Umbraco or the SMTP server are not caught: the
-        /// handler runner logs them, and the form's other handlers still run.
+        /// Sends the email through Umbraco.
         /// </summary>
+        /// <remarks>
+        /// A failed send (the SMTP server is down, refuses the login or the email) is logged as an error and
+        /// does not fail the visitor's submission: the form's other handlers, such as Store Data, have done
+        /// their work, and the visitor cannot fix the mail server. A cancelled send is a failure like any other:
+        /// handlers run without a cancellation token, so a cancellation here is a timeout in the site's sender
+        /// (such as an HttpClient call in a SendEmailNotification handler).
+        /// </remarks>
         public async Task SendAsync(OutgoingEmail email, string emailType, EmailHandlerContext context)
         {
             var attachments = email.Attachments
@@ -163,6 +172,15 @@ namespace Formulate.Extensions.SendEmail.Utilities
                 // email type tells it the email is Formulate's). This overload is the one Umbraco 17, 18
                 // and 19 all have.
                 await _emailSender.SendAsync(message, emailType, true, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) could not send its email (email type {EmailType}). The submission was still accepted. Check the SMTP server set in Umbraco:CMS:Global:Smtp, or the site's SendEmailNotification handler.",
+                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, emailType);
+
+                return;
             }
             finally
             {

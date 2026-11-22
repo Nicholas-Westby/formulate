@@ -1,0 +1,12 @@
+@model Formulate.Extensions.SendEmail.DesignedEmail.EmailData
+@{
+    Model.Helper.AttachFile(Model.Values.Resume);
+}
+<html>
+<body>
+    <p class="message">@Model.Message</p>
+    <p class="name">@Model.Values.Name</p>
+    <p class="sender">@Model.SenderEmail</p>
+    <p class="recipients">@string.Join(" ", Model.RecipientEmails)</p>
+</body>
+</html>

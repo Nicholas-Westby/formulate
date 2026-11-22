@@ -1,10 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
         <!-- This project is annotated for nullable reference types, unlike the shared default. -->
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>true</IsPackable>
+        <!-- The Designed Email samples are compiled into the assembly and served from the RCL, so no files are copied to sites. -->
+        <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+        <!--
+          Records each sample's source checksum in the assembly. Without it, a site that compiles its views at
+          runtime (Umbraco's InMemoryAuto models mode) always uses the compiled sample, even when it has its own
+          file at the same path. With it, that file's different content wins, as it does on a precompiled site.
+        -->
+        <GenerateRazorMetadataSourceChecksumAttributes>true</GenerateRazorMetadataSourceChecksumAttributes>
         <Title>Formulate.Extensions.SendEmail</Title>
         <Description>An email notification extension for Formulate, an advanced form builder for Umbraco.</Description>
     </PropertyGroup>

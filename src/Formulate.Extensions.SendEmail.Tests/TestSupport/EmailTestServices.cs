@@ -1,10 +1,14 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Formulate.Core.FormFields;
 using Formulate.Core.FormHandlers;
 using Formulate.Core.Submissions.Requests;
 using Formulate.Core.Utilities;
+using Formulate.Extensions.SendEmail.DesignedEmail;
 using Formulate.Extensions.SendEmail.FormHandlers;
 using Formulate.Extensions.SendEmail.Utilities;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -69,6 +73,7 @@ internal sealed class EmailTestServices : IAsyncDisposable
         services.Configure<EmailSettings>(x => x.Whitelist = whitelist);
         services.AddSingleton(TestForms.Json);
         services.AddSingleton(TestForms.FieldDefinitions);
+        AddRazor(services);
 
         // The same registrations the composer makes on a site.
         services.AddFormulateSendEmail();
@@ -87,14 +92,31 @@ internal sealed class EmailTestServices : IAsyncDisposable
     public SendEmailFormHandlerDefinition EmailDefinition =>
         new(Provider.GetRequiredService<IServiceScopeFactory>(), Provider.GetRequiredService<IJsonUtility>());
 
+    public DesignedEmailFormHandlerDefinition DesignedDefinition =>
+        new(Provider.GetRequiredService<IServiceScopeFactory>(), Provider.GetRequiredService<IJsonUtility>());
+
     /// <summary>
     /// Runs an Email handler with the configuration the back office stores (camelCase JSON).
     /// </summary>
     public Task SendEmailAsync(object? configuration, FormSubmissionRequest submission)
     {
-        var json = configuration is null ? null : configuration as string ?? JsonSerializer.Serialize(configuration);
+        return RunAsync(EmailDefinition, ToJson(configuration), submission);
+    }
 
-        return RunAsync(EmailDefinition, json, submission);
+    /// <summary>
+    /// Runs a Designed Email handler with the configuration the back office stores (camelCase JSON).
+    /// </summary>
+    public Task SendDesignedEmailAsync(object? configuration, FormSubmissionRequest submission)
+    {
+        return RunAsync(DesignedDefinition, ToJson(configuration), submission);
+    }
+
+    /// <summary>
+    /// A configuration as JSON: a string is used as it is.
+    /// </summary>
+    public static string? ToJson(object? configuration)
+    {
+        return configuration is null ? null : configuration as string ?? JsonSerializer.Serialize(configuration);
     }
 
     public static PersistedFormHandler Settings(IFormHandlerDefinition definition, string? json, string name = "Notify the team")
@@ -120,6 +142,32 @@ internal sealed class EmailTestServices : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await Provider.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Adds ASP.NET Core's Razor view engine, as a site has it.
+    /// </summary>
+    private static void AddRazor(IServiceCollection services)
+    {
+        // Services the web host registers, which Razor needs.
+        var diagnostics = new DiagnosticListener("Microsoft.AspNetCore");
+        services.AddSingleton(diagnostics);
+        services.AddSingleton<DiagnosticSource>(diagnostics);
+        services.AddSingleton<IDataProtectionProvider>(new EphemeralDataProtectionProvider());
+
+        services.AddMvcCore()
+            .AddViews()
+            .AddRazorViewEngine()
+            .ConfigureApplicationPartManager(manager =>
+            {
+                manager.ApplicationParts.Clear();
+
+                // The test assembly plays the site, and only it is a part to begin with. A site's build
+                // lists only the libraries whose public types use MVC, which leaves out Formulate's
+                // email library, so the library has to add its own views (see AddFormulateSendEmail).
+                manager.ApplicationParts.Add(new AssemblyPart(typeof(EmailTestServices).Assembly));
+                manager.ApplicationParts.Add(new CompiledRazorAssemblyPart(typeof(EmailTestServices).Assembly));
+            });
     }
 }
 

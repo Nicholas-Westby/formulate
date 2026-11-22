@@ -1,0 +1,14 @@
+@model Formulate.Extensions.SendEmail.DesignedEmail.EmailData
+@*
+    A plain text designed email, used when the handler has a text view and no HTML view (Umbraco's email
+    sender sends one body). Nothing in it is HTML encoded. To change it, copy this view into your site (for
+    example to ~/Views/Emails/Text.cshtml) and set the handler's text view to the copy's path.
+*@
+@{
+    // The value list lets you loop through every field without knowing the names of those fields in advance.
+    var valueList = Model.CollectionValues.GetRawValues();
+}
+@foreach (var item in valueList)
+{
+@:@item.Key: @(string.Join(", ", (object[])item.Value))
+}

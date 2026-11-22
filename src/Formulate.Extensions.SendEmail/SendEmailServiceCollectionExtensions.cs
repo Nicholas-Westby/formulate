@@ -1,6 +1,8 @@
 namespace Formulate.Extensions.SendEmail
 {
+    using Formulate.Extensions.SendEmail.DesignedEmail;
     using Formulate.Extensions.SendEmail.Utilities;
+    using Microsoft.AspNetCore.Mvc.ApplicationParts;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.DependencyInjection;
 
@@ -44,8 +46,37 @@ namespace Formulate.Extensions.SendEmail
             services.AddScoped<EmailDispatcher>();
             services.AddScoped<SendEmailContentBuilder>();
             services.AddScoped<SendEmailWorker>();
+            services.AddScoped<RazorEmailViewRenderer>();
+            services.AddScoped<DesignedEmailWorker>();
+            services.AddFormulateSendEmailViews();
 
             return services;
+        }
+
+        /// <summary>
+        /// Adds this library to MVC's application parts, so Razor finds the Designed Email samples in it.
+        /// </summary>
+        /// <remarks>
+        /// A site's build lists as parts only the libraries whose public types use MVC, which leaves this
+        /// one out. It is added after the parts already there, so a site's own view at a sample's path
+        /// still wins.
+        /// </remarks>
+        private static void AddFormulateSendEmailViews(this IServiceCollection services)
+        {
+            var assembly = typeof(SendEmailServiceCollectionExtensions).Assembly;
+
+            services.AddMvcCore().ConfigureApplicationPartManager(manager =>
+            {
+                if (manager.ApplicationParts.OfType<AssemblyPart>().Any(x => x.Assembly == assembly))
+                {
+                    return;
+                }
+
+                foreach (var part in ApplicationPartFactory.GetApplicationPartFactory(assembly).GetApplicationParts(assembly))
+                {
+                    manager.ApplicationParts.Add(part);
+                }
+            });
         }
     }
 }

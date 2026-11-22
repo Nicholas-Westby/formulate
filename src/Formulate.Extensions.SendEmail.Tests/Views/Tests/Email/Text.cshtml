@@ -1,0 +1,3 @@
+@model Formulate.Extensions.SendEmail.DesignedEmail.EmailData
+Name: @Model.Values.Name
+Colours: @string.Join(", ", (object[])Model.CollectionValues.Colours)

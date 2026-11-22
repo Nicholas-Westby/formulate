@@ -1,0 +1,57 @@
+@model Formulate.Extensions.SendEmail.DesignedEmail.EmailData
+@*
+    A designed email. Formulate also sends this when a Designed Email handler has no HTML or text view.
+    To change it, copy this view into your site (for example to ~/Views/Emails/Contact.cshtml) and set the
+    handler's HTML view to the copy's path.
+*@
+@{
+    // Helps with common operations, such as attaching files.
+    var helper = Model.Helper;
+
+    // Values are for fields that have simple text values, by field alias (or by name, without spaces and
+    // symbols, when a field has no alias), such as Model.Values.Email. Values.Url and Values.PageName are
+    // the page the form was on. A field the form does not have gives null, not an error.
+    var values = Model.Values;
+
+    // Collections are for fields that can have several values, such as a checkbox list. Each is an
+    // object[], such as Model.CollectionValues.FavoriteColors.
+    var collections = Model.CollectionValues;
+
+    // The value list lets you loop through every field without knowing the names of those fields in advance.
+    var valueList = collections.GetRawValues();
+
+    // Attach every uploaded file. To attach one upload, use helper.AttachFile(values.Photo).
+    foreach (var item in valueList)
+    {
+        helper.AttachFile(item.Value);
+    }
+}
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>@Model.Subject</title>
+</head>
+<body>
+
+    @* The message set on the handler in the back office. *@
+    @if (string.IsNullOrWhiteSpace(Model.Message) == false)
+    {
+        <p style="white-space: pre-line">@Model.Message</p>
+    }
+
+    <h2>Submitted Values</h2>
+    <ul>
+        @foreach (var item in valueList)
+        {
+            <li><strong>@item.Key:</strong> @(string.Join(", ", (object[])item.Value))</li>
+        }
+    </ul>
+
+    @* The sender and the recipients. *@
+    <p>
+        The sender @Model.SenderEmail sent this email to @(string.Join(", ", Model.RecipientEmails)).
+    </p>
+
+</body>
+</html>

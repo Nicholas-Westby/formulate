@@ -1,0 +1,26 @@
+@model Formulate.Extensions.SendEmail.DesignedEmail.EmailData
+@*
+    The subject of a designed email. Formulate puts what this view writes on one line, and nothing in it is
+    HTML encoded. To change it, copy this view into your site (for example to
+    ~/Views/Emails/Subject.cshtml) and set the handler's subject view to the copy's path.
+*@
+@{
+    // Values are for fields that have simple text values, and for the page the form was on.
+    var values = Model.Values;
+    var pageName = values.PageName as string;
+    var url = values.Url as string;
+
+    // The subject set on the handler can name the page with {PageName} and {Url}.
+    var subject = (Model.Subject ?? string.Empty)
+        .Replace("{PageName}", pageName ?? string.Empty)
+        .Replace("{Url}", url ?? string.Empty);
+}
+@* Use the handler's subject, or else name the page. With neither, Formulate uses the form's name. *@
+@if (string.IsNullOrWhiteSpace(subject) == false)
+{
+    <text>@subject</text>
+}
+else if (string.IsNullOrWhiteSpace(pageName) == false)
+{
+    <text>Email for @pageName Page at @url</text>
+}
