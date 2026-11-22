@@ -1,5 +1,7 @@
 namespace Formulate.Extensions.StoreData
 {
+    using Formulate.Core.Notifications;
+    using Formulate.Extensions.StoreData.FormHandlers;
     using Formulate.Extensions.StoreData.Services;
     using Formulate.Extensions.StoreData.Utilities;
     using Microsoft.Extensions.Configuration;
@@ -13,6 +15,8 @@ namespace Formulate.Extensions.StoreData
         {
             builder.Services.Configure<StoreDataSettings>(builder.Config.GetSection(StoreDataSettings.SectionName));
             builder.Services.AddSingleton<UploadFolders>();
+
+            builder.AddNotificationHandler<FormSubmittingNotification, UploadSizeNotificationHandler>();
 
             builder.Services.AddScoped<ISubmissionDatabase, ScopedSubmissionDatabase>();
             builder.Services.AddScoped<ISubmissionRepository, SubmissionRepository>();
