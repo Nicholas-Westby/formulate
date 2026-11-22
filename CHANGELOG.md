@@ -62,6 +62,7 @@ The packages are renamed, because the old IDs belong to another NuGet account. I
 - Uploads are accepted only for Upload fields, one file per field, and each is checked against `Formulate:Submissions:MaxUploadBytes` (10 MB) before it is read. A larger file fails the submission with a message on its field. When a form stores its data, Store Data refuses files over `Formulate:StoreData:MaxUploadBytes` (10 MB) with a message.
 - Values posted for display-only fields (Header, Rich Text, Text Constant, Button) are ignored. Each submission builds its fields once.
 - A form can be created only with a kind. A layout saved without a template gets the default template. An unknown template is rejected.
+- A Basic layout made in the back office starts with Auto Populate on, as the layout made with a new form does, so it shows the form's fields until they are laid out. In Formulate 3 it started with Auto Populate off and showed no fields.
 - The back office API rejects configuration that a field, handler, validation, data values or layout kind cannot read (400, naming the item). Items of kinds that are not installed round-trip untouched.
 - API writes are serialized within one process, so simultaneous moves, deletes and creates cannot corrupt the tree. Sites that load balance the back office across servers should edit on one server.
 - Creating a form or layout with an id that another item already uses is rejected. A tree root id as a parent id gives 404.
@@ -77,6 +78,7 @@ The packages are renamed, because the old IDs belong to another NuGet account. I
 ### Changes for extenders
 
 - `IHaveDirective` is renamed `IHaveEditor`.
+- `ILayoutDefinition` has `GetDefaultConfiguration()`, the configuration a new layout of the kind starts with in the back office. By default it is what `GetBackOfficeConfiguration` gives for a layout stored without one.
 - `IGetDataValuesItemsUtility.GetValues` has a `fieldId` parameter.
 - `IEntityRepository<T>` and `IRepositoryUtility<T>` have `GetAll()`.
 - `EntitySavingNotification<T>` and `EntitySavedNotification<T>` have `IsNew`. The constructors without `isNew` are removed.

@@ -185,6 +185,16 @@ public class DefinitionApiServiceTests
     }
 
     [Fact]
+    public void A_new_Basic_layout_starts_with_Auto_Populate_on_so_it_shows_the_fields_of_its_form()
+    {
+        _layouts.Add(new BasicLayoutDefinition(_harness.Forms, _harness.JsonUtility));
+
+        var model = Assert.Single(CreateService().GetLayouts());
+
+        Assert.Equal("""{"autoPopulate":true,"rows":[]}""", model.DefaultConfiguration!.Value.GetRawText());
+    }
+
+    [Fact]
     public void Templates_are_listed_by_id_and_name()
     {
         var template = new Mock<ITemplateDefinition>();

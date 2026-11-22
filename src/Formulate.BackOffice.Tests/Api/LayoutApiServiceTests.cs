@@ -157,6 +157,25 @@ public class LayoutApiServiceTests
     }
 
     [Fact]
+    public void A_Basic_layout_stored_without_a_configuration_is_read_with_Auto_Populate_off_as_the_site_shows_it()
+    {
+        // The site shows no form for it: BasicLayoutDefinition.CreateLayout gives no layout. A new layout starts
+        // with Auto Populate on, but only through the definitions endpoint.
+        var form = AddForm();
+        var service = CreateService();
+        var configurations = new List<string>();
+
+        foreach (var data in new[] { null, "" })
+        {
+            var id = Guid.NewGuid();
+            _harness.Layouts.Save(new PersistedLayout { Id = id, Name = "Bare", KindId = BasicKind, Path = new[] { RepositoryHarness.FormsRoot, form.Id, id }, Data = data! });
+            configurations.Add(Ok(service.Get(id)).Configuration!.Value.GetRawText());
+        }
+
+        Assert.Equal(new[] { """{"autoPopulate":false,"rows":[]}""", """{"autoPopulate":false,"rows":[]}""" }, configurations);
+    }
+
+    [Fact]
     public void Invalid_stored_configuration_is_returned_as_a_string_and_warned_about()
     {
         var form = AddForm();

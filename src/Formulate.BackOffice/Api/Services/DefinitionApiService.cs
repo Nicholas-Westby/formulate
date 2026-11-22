@@ -19,7 +19,8 @@ namespace Formulate.BackOffice.Api.Services
     /// </summary>
     /// <remarks>
     /// A kind's default configuration is what its definition describes for the back office when nothing
-    /// is stored yet, so the client can start a new item from it.
+    /// is stored yet, so the client can start a new item from it. A layout kind can start new layouts with
+    /// another (<see cref="ILayoutDefinition.GetDefaultConfiguration"/>).
     /// </remarks>
     public sealed class DefinitionApiService : IDefinitionApiService
     {
@@ -124,7 +125,7 @@ namespace Formulate.BackOffice.Api.Services
             Kinds(
                 _layoutDefinitions,
                 _ => FormulateIcons.For(EntityTypes.Layout, null),
-                definition => definition.GetBackOfficeConfiguration(new PersistedLayout { KindId = definition.KindId }));
+                definition => definition.GetDefaultConfiguration());
 
         /// <inheritdoc />
         public IReadOnlyList<TemplateDefinitionModel> GetTemplates()

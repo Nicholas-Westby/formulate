@@ -16,5 +16,13 @@ namespace Formulate.Core.Layouts
 
         /// <inheritdoc />
         public object GetBackOfficeConfiguration(PersistedLayout entity);
+
+        /// <summary>
+        /// Gets the configuration a new layout of this kind starts with in the back office.
+        /// </summary>
+        /// <returns>
+        /// By default, the back office configuration of a layout stored without one.
+        /// </returns>
+        public object GetDefaultConfiguration() => GetBackOfficeConfiguration(new PersistedLayout { KindId = KindId });
     }
 }

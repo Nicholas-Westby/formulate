@@ -236,7 +236,7 @@ Data values are lists of items for fields such as drop downs and radio button li
 
 ## Layouts and templates
 
-A layout places a form's fields in rows and cells. Implement `ILayoutDefinition` (see `BasicLayoutDefinition` for an example). A layout is shown by a template. A template is a Razor view in a view component folder:
+A layout places a form's fields in rows and cells. Implement `ILayoutDefinition` (see `BasicLayoutDefinition` for an example). A new layout starts in the back office with the configuration `GetDefaultConfiguration()` gives. By default that is what `GetBackOfficeConfiguration` gives for a layout stored without one. A layout is shown by a template. A template is a Razor view in a view component folder:
 
 ```csharp
 using System;

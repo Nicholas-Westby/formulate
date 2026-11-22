@@ -23,7 +23,8 @@ export const LAYOUT_KINDS: Array<KindDefinitionModel> = [
 		icon: 'icon-layout',
 		editorAlias: 'formulate-layout-basic',
 		isLegacy: false,
-		defaultConfiguration: { autoPopulate: false, rows: [] },
+		// As BasicLayoutDefinition.GetDefaultConfiguration gives it: a new layout shows the fields of its form.
+		defaultConfiguration: { autoPopulate: true, rows: [] },
 	},
 ];
 

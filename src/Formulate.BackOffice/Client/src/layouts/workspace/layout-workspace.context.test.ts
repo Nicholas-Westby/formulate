@@ -52,7 +52,7 @@ describe('Formulate layout workspace, creating a layout', () => {
 			formUnique: FORM_ID,
 			kindId: BASIC_LAYOUT,
 			templateId: PLAIN_JAVASCRIPT,
-			configuration: { autoPopulate: false, rows: [] },
+			configuration: { autoPopulate: true, rows: [] },
 		});
 		expect(context.getConfiguration()).not.toBe(LAYOUT_KINDS[0].defaultConfiguration);
 
@@ -70,7 +70,7 @@ describe('Formulate layout workspace, creating a layout', () => {
 					name: 'Contact Layout',
 					alias: null,
 					templateId: PLAIN_JAVASCRIPT,
-					configuration: { autoPopulate: false, rows: [] },
+					configuration: { autoPopulate: true, rows: [] },
 				},
 			],
 		]);

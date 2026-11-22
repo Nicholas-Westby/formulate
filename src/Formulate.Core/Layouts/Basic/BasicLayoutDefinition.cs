@@ -128,5 +128,19 @@ namespace Formulate.Core.Layouts.Basic
                 AutoPopulate = false
             };
         }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// Auto Populate is on, as for the layout made with a new form, so a new layout shows the fields of
+        /// its form until they are laid out. A layout stored without a configuration shows no form, so its
+        /// back office configuration has Auto Populate off.
+        /// </remarks>
+        public object GetDefaultConfiguration()
+        {
+            return new BasicLayoutConfiguration()
+            {
+                AutoPopulate = true
+            };
+        }
     }
 }
