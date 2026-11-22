@@ -2,16 +2,32 @@ import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import { css, html, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import type { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 
+/** The announcements of the moves, and the ones that say where a row is instead of its place in the list. */
+const PLACE_TERMS = {
+	formulate_itemPickedUp: 'formulate_itemPickedUpAt',
+	formulate_itemMoved: 'formulate_itemMovedTo',
+	formulate_itemPutDown: 'formulate_itemPutDownAt',
+	formulate_itemPutBack: 'formulate_itemPutBackAt',
+} as const;
+
 /** What the keyboard sorter needs of the list it sorts. */
 export interface FormulateKeyboardSorterArgs {
 	/** The keys of the rows, in their order. */
 	getKeys(): ReadonlyArray<string>;
-	/** Stores a row's new place; the list then shows its rows in their new order. */
-	move(key: string, to: number): void;
+	/**
+	 * Stores a row's new place; the list then shows its rows in their new order. It may refuse a place the row
+	 * cannot go to by returning false, such as one above the first of several lists that the rows move through.
+	 */
+	move(key: string, to: number): void | boolean;
 	/** The handle of a row, as the list shows it, to keep the focus on it. */
 	getHandle(key: string): HTMLElement | null | undefined;
 	/** Whether the rows can be moved. */
 	isReadonly(): boolean;
+	/**
+	 * Where a row is, for the announcements of the moves, such as "row 2, cell 1, place 1 of 3". Without it,
+	 * the announcements give the row's place in the list, such as "item 2 of 5".
+	 */
+	describePlace?(key: string): string;
 }
 
 /**
@@ -114,7 +130,10 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 		this.#moving = true;
 
 		try {
-			this.#args.move(key, to);
+			if (this.#args.move(key, to) === false) {
+				return false;
+			}
+
 			// Moving the row takes it out of the page for a moment, which loses the focus.
 			await this.#host.updateComplete;
 			this.#args.getHandle(key)?.focus();
@@ -129,7 +148,7 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 		const to = this.#indexOf(key) + offset;
 
 		if (!this.#args.isReadonly() && (await this.#moveTo(key, to))) {
-			this.#announce('formulate_itemMoved', to);
+			this.#announce('formulate_itemMoved', key, to);
 		}
 	}
 
@@ -142,11 +161,11 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 
 		if (this.#pickedUp === key) {
 			this.putDown();
-			this.#announce('formulate_itemPutDown', index);
+			this.#announce('formulate_itemPutDown', key, index);
 		} else {
 			this.#pickedUp = key;
 			this.#pickedUpFrom = index;
-			this.#announce('formulate_itemPickedUp', index);
+			this.#announce('formulate_itemPickedUp', key, index);
 		}
 	}
 
@@ -154,12 +173,20 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 		const to = this.#pickedUpFrom ?? this.#indexOf(key);
 		this.putDown();
 		await this.#moveTo(key, to);
-		this.#announce('formulate_itemPutBack', to);
+		this.#announce('formulate_itemPutBack', key, this.#indexOf(key));
 	}
 
-	/** Says what a keyboard move did, with the row's place (1 for the first) and the number of rows. */
-	#announce(key: string, index: number) {
-		this.#announcement = this.#host.localize.term(key, index + 1, this.#args.getKeys().length);
+	/**
+	 * Says what a keyboard move did: with where the row is, when the list describes its places, or else with the
+	 * row's place (1 for the first) and the number of rows.
+	 */
+	#announce(term: keyof typeof PLACE_TERMS, key: string, index: number) {
+		const place = this.#args.describePlace?.(key);
+
+		this.#announcement =
+			place === undefined
+				? this.#host.localize.term(term, index + 1, this.#args.getKeys().length)
+				: this.#host.localize.term(PLACE_TERMS[term], place);
 		this.#host.requestUpdate();
 	}
 

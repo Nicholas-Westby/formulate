@@ -56,6 +56,11 @@ export default {
 		itemMoved: (position: number, count: number) => `Moved to item ${position} of ${count}.`,
 		itemPutDown: (position: number, count: number) => `Put down at item ${position} of ${count}.`,
 		itemPutBack: (position: number, count: number) => `Put back at item ${position} of ${count}.`,
+		itemPickedUpAt: (place: string) =>
+			`Picked up, in ${place}. Press the up and down arrow keys to move it, Enter to put it down, or Escape to put it back.`,
+		itemMovedTo: (place: string) => `Moved to ${place}.`,
+		itemPutDownAt: (place: string) => `Put down in ${place}.`,
+		itemPutBackAt: (place: string) => `Put back in ${place}.`,
 		dynamicDataValues: 'This kind makes its items itself, so there is nothing to set here.',
 		usStatesDataValues:
 			'The 50 states, Washington, D.C., American Samoa, Guam, the Northern Mariana Islands, Puerto Rico and the U.S. Virgin Islands, in alphabetical order. Visitors see each name, such as Alabama; its two-letter postal code, such as AL, is what is stored. Formulate makes these items itself, so there is nothing to set here.',
@@ -65,6 +70,41 @@ export default {
 		templateNotInstalled: (id: string) => `Not installed (${id})`,
 		layoutFormMissing:
 			'The form of this layout could not be read, so its fields cannot be laid out here. Its name, alias and template can still be changed.',
+		layoutFieldsUnknown: "The fields of this layout's form are not known, so they cannot be laid out here.",
+		autoPopulate: 'Auto Populate',
+		autoPopulateDescription:
+			'Shows the fields one under another, in the order of the form. Turn it off to arrange them in rows, columns and steps.',
+		autoPopulated: 'Laid out automatically',
+		autoPopulatedDescription:
+			'The form shows its fields one under another, in the order of the form, and the fields added to it later too. Turn off Auto Populate to lay them out in rows, columns and steps.',
+		layoutRows: 'Rows',
+		layoutRowsDescription:
+			'Drag the fields into the cells, and the rows up and down. A step divider starts a new step of the form: visitors see one step at a time.',
+		addRowHeadline: 'Add a row',
+		addRowDescription:
+			'Click a column to start a new cell at it, or click it again to join it to the cell before it. Then add the row at the end of the rows.',
+		splitAtColumn: (column: number) => `Start a cell at column ${column}`,
+		newRowCells: (widths: Array<number>) =>
+			widths.length === 1 ? `One cell of ${widths[0]} columns` : `Cells of ${widths.slice(0, -1).join(', ')} and ${widths.at(-1)} columns`,
+		addRow: 'Add row',
+		unusedFields: 'Unused fields',
+		unusedFieldsDescription: 'The form does not show these fields. Drag them into a cell to show them.',
+		allFieldsUsed: 'Every field of the form is in the layout.',
+		emptyCell: 'Drop fields here',
+		layoutCell: (row: number, cell: number, columns: number) => `Row ${row}, cell ${cell}, ${columns} of 12 columns`,
+		layoutCellPlace: (row: number, cell: number, position: number, count: number) =>
+			`row ${row}, cell ${cell}, place ${position} of ${count}`,
+		unusedFieldsPlace: 'the unused fields',
+		moveRow: (position: number) => `Move row ${position}`,
+		deleteRow: (position: number) => `Delete row ${position}`,
+		addStep: 'Add step',
+		addStepAfter: (position: number) => `Add step after row ${position}`,
+		step: (number: number) => `Step ${number}`,
+		emptyStep: 'Empty step',
+		emptyStepDescription: 'No step starts here: a step divider needs a row right before it and a row after it.',
+		moveStep: (number: number | null) => (number ? `Move step ${number}` : 'Move empty step'),
+		deleteStep: (number: number | null) => (number ? `Delete step ${number}` : 'Delete empty step'),
+		removeMissingField: (position: number) => `Remove missing field ${position}`,
 		legacyDataValues:
 			'These data values were made by an older version of Formulate and can no longer be changed. Create new data values to use instead.',
 		fields: 'Fields',

@@ -23,7 +23,10 @@ afterEach(() => {
 	vi.restoreAllMocks();
 });
 
-/** A layout as Formulate 3 stored it, as the API gives it back: IDs without dashes, and more than the rows. */
+/**
+ * A layout in Formulate 3's shape, with one ID written without dashes in upper case. The API gives every ID
+ * with dashes, as it reads the layout through the server's own type, so this is for robustness only.
+ */
 const FORMULATE_3_CONFIGURATION = {
 	autoPopulate: false,
 	rows: [
