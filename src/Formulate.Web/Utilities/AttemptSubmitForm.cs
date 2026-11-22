@@ -71,8 +71,8 @@
                 formValues[fieldId] = new StringFormFieldValues(value);
             }
 
-            // Get file values. Only upload fields take files, and every file's size is checked before any
-            // file is read into memory.
+            // Get file values. Only upload fields take files, one each, and every kept file's size is checked
+            // before any file is read into memory.
             var postedFiles = GetUploadedFiles(form, inputFieldIds, input.Files);
             var maxBytes = _options.Value.MaxUploadBytes;
             var tooLarge = postedFiles.Where(x => x.File.Length > maxBytes).Select(x => x.Field).Distinct().ToArray();
@@ -150,27 +150,43 @@
         /// other field (including a field that takes text) is dropped, so a visitor cannot attach files to
         /// a form that does not ask for them.
         /// </summary>
+        /// <remarks>
+        /// Only the first file posted for each upload field is kept, because the form posts one. The others
+        /// are never read, so one crafted post cannot make the server hold many files at the size limit.
+        /// </remarks>
         private List<(PersistedFormField Field, IFormFile File)> GetUploadedFiles(PersistedForm form, HashSet<Guid> inputFieldIds, IFormFileCollection files)
         {
-            var uploadFields = (form.Fields ?? Array.Empty<PersistedFormField>())
-                .Where(x => x.KindId == UploadKindId && inputFieldIds.Contains(x.Id))
-                .GroupBy(x => x.Id)
-                .ToDictionary(x => x.Key, x => x.First());
+            var uploadFields = GetUploadFields(form, inputFieldIds);
             var uploaded = new List<(PersistedFormField Field, IFormFile File)>();
 
             foreach (var file in files)
             {
-                if (Guid.TryParse(file.Name, out var fieldId) && uploadFields.TryGetValue(fieldId, out var field))
+                if (Guid.TryParse(file.Name, out var fieldId) == false || uploadFields.TryGetValue(fieldId, out var field) == false)
                 {
-                    uploaded.Add((field, file));
+                    _logger.LogDebug("Ignored a file posted as {Name} to form {FormId}, because it is not one of the form's upload fields.", file.Name, form.Id);
+                }
+                else if (uploaded.Any(x => x.Field.Id == fieldId))
+                {
+                    _logger.LogDebug("Ignored a second file posted for field {FieldId} of form {FormId}; an upload field takes one file.", fieldId, form.Id);
                 }
                 else
                 {
-                    _logger.LogDebug("Ignored a file posted as {Name} to form {FormId}, because it is not one of the form's upload fields.", file.Name, form.Id);
+                    uploaded.Add((field, file));
                 }
             }
 
             return uploaded;
+        }
+
+        /// <summary>
+        /// Gets the form's upload fields that take a visitor's input, by ID.
+        /// </summary>
+        private static Dictionary<Guid, PersistedFormField> GetUploadFields(PersistedForm form, HashSet<Guid> inputFieldIds)
+        {
+            return (form.Fields ?? Array.Empty<PersistedFormField>())
+                .Where(x => x.KindId == UploadKindId && inputFieldIds.Contains(x.Id))
+                .GroupBy(x => x.Id)
+                .ToDictionary(x => x.Key, x => x.First());
         }
 
         private static async Task<byte[]> ReadAsync(IFormFile file, CancellationToken cancellationToken)

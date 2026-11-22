@@ -141,6 +141,22 @@ namespace Formulate.Web.Tests.UtilityTests
         }
 
         [Fact]
+        public async Task Only_the_first_file_of_an_upload_field_is_kept_and_the_others_are_not_read()
+        {
+            var site = new Site();
+            site.Settings.MaxUploadBytes = 1024;
+            var upload = site.Field(UploadFieldDefinition.Constants.KindId, "Resume");
+
+            // The later files throw when read, and one is over the limit: neither may be read or refuse the submission.
+            var output = await site.SubmitFiles(Readable(upload.Id, "first.pdf"), Unreadable(upload.Id, "second.pdf", 10), Unreadable(upload.Id, "huge.pdf", 1025));
+
+            Assert.True(output.IsSuccessful);
+            var file = Assert.Single(site.Submitted!.FilesValues[upload.Id].GetValues());
+            Assert.Equal("first.pdf", file.Name);
+            Assert.Equal(new byte[] { 1, 2, 3 }, file.Data);
+        }
+
+        [Fact]
         public void The_upload_limit_is_10_MB_unless_set()
         {
             Assert.Equal(10_485_760, new FormulateSubmissionsOptions().MaxUploadBytes);
@@ -218,7 +234,7 @@ namespace Formulate.Web.Tests.UtilityTests
 
             public Task<AttemptSubmitFormOutput> SubmitFiles(params (Guid FieldId, string Name)[] files)
             {
-                return Run(null, files.Select(x => (IFormFile)new FormFile(new MemoryStream(new byte[] { 1, 2, 3 }), 0, 3, x.FieldId.ToString("N"), x.Name) { Headers = new HeaderDictionary(), ContentType = "text/plain" }).ToArray());
+                return Run(null, files.Select(x => Readable(x.FieldId, x.Name)).ToArray());
             }
 
             public Task<AttemptSubmitFormOutput> SubmitFiles(params IFormFile[] files)
@@ -257,6 +273,14 @@ namespace Formulate.Web.Tests.UtilityTests
                 return submit.SubmitAsync(
                     new AttemptSubmitFormInput(_form.Id, 1, form, fileCollection), CancellationToken.None);
             }
+        }
+
+        /// <summary>
+        /// A posted 3-byte file (1, 2, 3).
+        /// </summary>
+        private static IFormFile Readable(Guid fieldId, string name)
+        {
+            return new FormFile(new MemoryStream(new byte[] { 1, 2, 3 }), 0, 3, fieldId.ToString("N"), name) { Headers = new HeaderDictionary(), ContentType = "text/plain" };
         }
 
         /// <summary>
