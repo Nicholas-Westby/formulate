@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test as base, expect, type Page } from '@playwright/test';
+import { callManagementApi } from './management-api.ts';
 import { E2E_USER } from './user.ts';
 
 export { expect };
@@ -29,6 +30,11 @@ export const test = base.extend<object, { signedInState: string }>({
 			// Sign in from a clean browser context, not one that already has a stored state.
 			const page = await browser.newPage({ baseURL, ignoreHTTPSErrors, storageState: undefined });
 			await logIn(page);
+
+			// Say which Umbraco version the site runs, so every run's output shows what it tested.
+			const server = await callManagementApi<{ version: string }>(page, 'GET', '/server/information');
+			console.log(`The site reports Umbraco ${server.version}.`);
+
 			mkdirSync(dirname(file), { recursive: true });
 			await page.context().storageState({ path: file });
 			await page.close();
