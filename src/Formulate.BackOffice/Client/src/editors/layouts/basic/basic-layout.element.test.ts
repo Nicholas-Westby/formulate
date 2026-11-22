@@ -367,6 +367,42 @@ describe('Formulate Basic layout designer, fields', () => {
 	});
 });
 
+describe('Formulate Basic layout designer, a layout that shows no fields', () => {
+	it('says so while no field of the form is in a cell, and stores nothing for it', async () => {
+		// The site shows nothing for a field that is no longer on the form either.
+		const { editor, shadow, fieldHandle, changes } = await render({ autoPopulate: false, rows: [row([6, GONE], [6]), step, row([12])] });
+		const notice = () => shadow.querySelector('#no-fields-shown');
+
+		expect([notice()?.textContent?.trim(), notice()?.getAttribute('role'), changes]).toStrictEqual([
+			'The form shows no fields until you drag them into the cells, or turn on Auto Populate.',
+			'note',
+			[],
+		]);
+		// Below the unused fields: it goes as the first field is dragged into a cell, which moves nothing above it.
+		expect(notice()?.previousElementSibling?.id).toBe('unused-section');
+
+		press(fieldHandle(keyOf(NAME))!, 'ArrowUp');
+		await settle(editor);
+		expect(notice()).toBeNull();
+
+		press(fieldHandle(keyOf(NAME))!, 'ArrowDown');
+		await settle(editor);
+		expect(notice()).not.toBeNull();
+	});
+
+	it('says nothing with Auto Populate on, or with a field in a cell', async () => {
+		const notices: Array<Element | null> = [];
+
+		for (const value of [{ autoPopulate: true, rows: [] }, { autoPopulate: false, rows: [row([6]), row([6], [6, STATE])] }]) {
+			const { shadow } = await render(value);
+			notices.push(shadow.querySelector('#no-fields-shown'));
+			document.body.replaceChildren();
+		}
+
+		expect(notices).toStrictEqual([null, null]);
+	});
+});
+
 describe('Formulate Basic layout designer, read-only and without the form', () => {
 	it('read-only, shows the layout with nothing to change', async () => {
 		const { shadow, rowsElement, fieldHandle } = await render({ autoPopulate: false, rows: [row([12, NAME]), step, row([12])] }, { readonly: true });

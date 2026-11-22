@@ -82,6 +82,7 @@ function placeOfMarker(key: string): FormulateFieldPlace | undefined {
  * - Fields are dragged between the cells and the unused fields, rows up and down, and both are moved with
  *   the keyboard too.
  * - A field placed in the layout that is no longer on the form shows as not found, and can be removed.
+ * - While no field of the form is in a cell, a notice says that the form shows no fields.
  *
  * The layout is stored as it is until the user changes it: showing it stores nothing, and a layout without
  * rows shows one empty row of 12 columns without storing it. Each change stores the layout without the
@@ -424,6 +425,8 @@ export class FormulateBasicLayoutEditorElement extends FormulateKindEditorElemen
 
 	#renderDesigner() {
 		const view = this.#view();
+		// The site shows nothing for a field that is no longer on the form either.
+		const showsFields = view.rows.some((row) => row.kind === 'row' && row.cells.some((cell) => cell.fields.some((field) => !field.missing)));
 
 		return html`
 			<section id="rows-section">
@@ -448,6 +451,8 @@ export class FormulateBasicLayoutEditorElement extends FormulateKindEditorElemen
 					.empty=${this.localize.term('formulate_allFieldsUsed')}
 					?readonly=${this.readonly}></formulate-basic-layout-cell>
 			</section>
+			<!-- Below the cells and the unused fields: it comes and goes as fields are dragged, and moves none of them. -->
+			${showsFields ? nothing : html`<p id="no-fields-shown" role="note">${this.localize.term('formulate_noFieldsShown')}</p>`}
 			${this.readonly ? nothing : this.#renderAddRow()}
 			${this.readonly ? nothing : this.#fieldKeyboard.renderStatus()}
 		`;
@@ -530,6 +535,16 @@ export class FormulateBasicLayoutEditorElement extends FormulateKindEditorElemen
 			#auto-populated p {
 				margin-bottom: 0;
 				color: var(--uui-color-text-alt);
+			}
+
+			/* As Umbraco's own warnings look, such as the language workspace's. */
+			#no-fields-shown {
+				margin: var(--uui-size-layout-1) 0 0;
+				padding: var(--uui-size-space-4) var(--uui-size-space-5);
+				border: 1px solid var(--uui-color-warning-standalone);
+				border-radius: var(--uui-border-radius);
+				background-color: var(--uui-color-warning);
+				color: var(--uui-color-warning-contrast);
 			}
 
 			#split-points {

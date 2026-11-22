@@ -77,6 +77,7 @@ export default {
 		autoPopulated: 'Laid out automatically',
 		autoPopulatedDescription:
 			'The form shows its fields one under another, in the order of the form, and the fields added to it later too. Turn off Auto Populate to lay them out in rows, columns and steps.',
+		noFieldsShown: 'The form shows no fields until you drag them into the cells, or turn on Auto Populate.',
 		layoutRows: 'Rows',
 		layoutRowsDescription:
 			'Drag the fields into the cells, and the rows up and down. A step divider starts a new step of the form: visitors see one step at a time.',
