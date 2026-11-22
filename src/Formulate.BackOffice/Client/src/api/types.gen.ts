@@ -143,7 +143,6 @@ export type FormResponseModel = {
 export type FormulateConfigResponseModel = {
     buttonKinds: Array<string>;
     fieldCategories: Array<FieldCategoryModel>;
-    useDefaultFolderIcon: boolean;
 };
 
 export type FormulateItemResponseModel = {
@@ -196,6 +195,11 @@ export type PagedFormulateTreeItemResponseModel = {
     items: Array<FormulateTreeItemResponseModel>;
 };
 
+export type PagedSubmissionResponseModel = {
+    total: number;
+    items: Array<SubmissionResponseModel>;
+};
+
 export type ProblemDetails = {
     type?: string | null;
     title?: string | null;
@@ -209,9 +213,32 @@ export type ReferenceByIdModel = {
     id: string;
 };
 
+export type SubmissionFileModel = {
+    fieldId: string;
+    fieldName: string;
+    fileName: string;
+};
+
+export type SubmissionResponseModel = {
+    id: string;
+    formId: string;
+    creationDate: string;
+    pageId?: number | null;
+    url?: string | null;
+    values: Array<SubmissionValueModel>;
+    files: Array<SubmissionFileModel>;
+};
+
+export type SubmissionValueModel = {
+    fieldId: string;
+    fieldName: string;
+    value: string;
+};
+
 export type TemplateDefinitionModel = {
     id: string;
     name: string;
+    isDefault: boolean;
 };
 
 export type UpdateDataValuesRequestModel = {
@@ -293,6 +320,10 @@ export type PostFormulateDataValuesErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Conflict
      */
     409: ProblemDetails;
@@ -321,6 +352,10 @@ export type DeleteFormulateDataValuesByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -352,6 +387,10 @@ export type GetFormulateDataValuesByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -387,6 +426,10 @@ export type PutFormulateDataValuesByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -426,6 +469,10 @@ export type PutFormulateDataValuesByIdMoveErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -596,6 +643,10 @@ export type PostFormulateFolderErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Conflict
      */
     409: ProblemDetails;
@@ -625,9 +676,17 @@ export type DeleteFormulateFolderByIdErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Conflict
+     */
+    409: ProblemDetails;
 };
 
 export type DeleteFormulateFolderByIdError = DeleteFormulateFolderByIdErrors[keyof DeleteFormulateFolderByIdErrors];
@@ -655,6 +714,10 @@ export type GetFormulateFolderByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -691,6 +754,10 @@ export type PutFormulateFolderByIdErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -726,6 +793,10 @@ export type PutFormulateFolderByIdMoveErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -757,6 +828,10 @@ export type PostFormulateFormErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Conflict
      */
     409: ProblemDetails;
@@ -785,6 +860,10 @@ export type DeleteFormulateFormByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -816,6 +895,10 @@ export type GetFormulateFormByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -852,6 +935,10 @@ export type PutFormulateFormByIdErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -887,6 +974,10 @@ export type PostFormulateFormByIdDuplicateErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -919,6 +1010,10 @@ export type PutFormulateFormByIdMoveErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -976,6 +1071,10 @@ export type PostFormulateLayoutErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Conflict
      */
     409: ProblemDetails;
@@ -1004,6 +1103,10 @@ export type DeleteFormulateLayoutByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -1035,6 +1138,10 @@ export type GetFormulateLayoutByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -1071,6 +1178,10 @@ export type PutFormulateLayoutByIdErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -1086,6 +1197,188 @@ export type PutFormulateLayoutByIdResponses = {
 };
 
 export type PutFormulateLayoutByIdResponse = PutFormulateLayoutByIdResponses[keyof PutFormulateLayoutByIdResponses];
+
+export type GetFormulateSubmissionData = {
+    body?: never;
+    path?: never;
+    query?: {
+        formId?: string;
+        skip?: number;
+        take?: number;
+    };
+    url: '/umbraco/management/api/v1/formulate/submission';
+};
+
+export type GetFormulateSubmissionErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetFormulateSubmissionError = GetFormulateSubmissionErrors[keyof GetFormulateSubmissionErrors];
+
+export type GetFormulateSubmissionResponses = {
+    /**
+     * OK
+     */
+    200: PagedSubmissionResponseModel;
+};
+
+export type GetFormulateSubmissionResponse = GetFormulateSubmissionResponses[keyof GetFormulateSubmissionResponses];
+
+export type DeleteFormulateSubmissionByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/umbraco/management/api/v1/formulate/submission/{id}';
+};
+
+export type DeleteFormulateSubmissionByIdErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteFormulateSubmissionByIdError = DeleteFormulateSubmissionByIdErrors[keyof DeleteFormulateSubmissionByIdErrors];
+
+export type DeleteFormulateSubmissionByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetFormulateSubmissionByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/umbraco/management/api/v1/formulate/submission/{id}';
+};
+
+export type GetFormulateSubmissionByIdErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetFormulateSubmissionByIdError = GetFormulateSubmissionByIdErrors[keyof GetFormulateSubmissionByIdErrors];
+
+export type GetFormulateSubmissionByIdResponses = {
+    /**
+     * OK
+     */
+    200: SubmissionResponseModel;
+};
+
+export type GetFormulateSubmissionByIdResponse = GetFormulateSubmissionByIdResponses[keyof GetFormulateSubmissionByIdResponses];
+
+export type GetFormulateSubmissionByIdFileByFieldIdData = {
+    body?: never;
+    path: {
+        id: string;
+        fieldId: string;
+    };
+    query?: {
+        fileName?: string;
+    };
+    url: '/umbraco/management/api/v1/formulate/submission/{id}/file/{fieldId}';
+};
+
+export type GetFormulateSubmissionByIdFileByFieldIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetFormulateSubmissionByIdFileByFieldIdError = GetFormulateSubmissionByIdFileByFieldIdErrors[keyof GetFormulateSubmissionByIdFileByFieldIdErrors];
+
+export type GetFormulateSubmissionByIdFileByFieldIdResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type GetFormulateSubmissionByIdFileByFieldIdResponse = GetFormulateSubmissionByIdFileByFieldIdResponses[keyof GetFormulateSubmissionByIdFileByFieldIdResponses];
+
+export type GetFormulateSubmissionExportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        formId?: string;
+    };
+    url: '/umbraco/management/api/v1/formulate/submission/export';
+};
+
+export type GetFormulateSubmissionExportErrors = {
+    /**
+     * The resource is protected and requires an authentication token
+     */
+    401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetFormulateSubmissionExportError = GetFormulateSubmissionExportErrors[keyof GetFormulateSubmissionExportErrors];
+
+export type GetFormulateSubmissionExportResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type GetFormulateSubmissionExportResponse = GetFormulateSubmissionExportResponses[keyof GetFormulateSubmissionExportResponses];
 
 export type GetFormulateTreeByTreeAliasAncestorsData = {
     body?: never;
@@ -1185,6 +1478,10 @@ export type GetFormulateTreeByTreeAliasCreateOptionsErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -1253,6 +1550,10 @@ export type PostFormulateValidationErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Conflict
      */
     409: ProblemDetails;
@@ -1281,6 +1582,10 @@ export type DeleteFormulateValidationByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -1312,6 +1617,10 @@ export type GetFormulateValidationByIdErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */
@@ -1348,6 +1657,10 @@ export type PutFormulateValidationByIdErrors = {
      */
     401: unknown;
     /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
      * Not Found
      */
     404: ProblemDetails;
@@ -1382,6 +1695,10 @@ export type PutFormulateValidationByIdMoveErrors = {
      * The resource is protected and requires an authentication token
      */
     401: unknown;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
     /**
      * Not Found
      */

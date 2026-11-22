@@ -47,12 +47,13 @@ const VALIDATIONS = kinds('Mandatory', 'formulate-mandatory');
 const DATA_VALUES = kinds('List', 'formulate-list');
 const LAYOUTS = kinds('Basic', 'formulate-basic-layout');
 
-const TEMPLATES: Array<TemplateDefinitionModel> = [{ id: '3a6f0ad3-c14d-4d81-9426-6e825e7f9004', name: 'Plain JavaScript' }];
+const TEMPLATES: Array<TemplateDefinitionModel> = [
+	{ id: '3a6f0ad3-c14d-4d81-9426-6e825e7f9004', name: 'Plain JavaScript', isDefault: true },
+];
 
 const CONFIG: FormulateConfigResponseModel = {
 	buttonKinds: ['Submit', 'Next', 'Previous'],
 	fieldCategories: [{ group: 'Personal', kind: 'Text' }],
-	useDefaultFolderIcon: true,
 };
 
 const RESPONSES: Record<string, unknown> = {
