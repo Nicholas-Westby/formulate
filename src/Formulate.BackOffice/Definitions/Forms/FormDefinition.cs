@@ -1,10 +1,11 @@
 ﻿namespace Formulate.BackOffice.Definitions.Forms
 {
     using System;
+    using Formulate.BackOffice.Api;
 
     public abstract class FormDefinition : IFormDefinition
     {
-        public virtual string Icon => Constants.Icons.Entities.Form; 
+        public virtual string Icon => FormulateIcons.Form;
 
         public virtual string Description => string.Empty;
 
