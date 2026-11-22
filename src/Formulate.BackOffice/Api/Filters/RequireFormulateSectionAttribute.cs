@@ -34,8 +34,9 @@ namespace Formulate.BackOffice.Api.Filters
         /// <inheritdoc />
         void IApiResponseMetadataProvider.SetContentTypes(MediaTypeCollection contentTypes)
         {
-            contentTypes.Clear();
-            contentTypes.Add("application/problem+json");
+            // Left alone on purpose. The API explorer gives the content types a filter attribute sets to
+            // every response of the action, not only to this 403. Umbraco's [Produces("application/json")]
+            // sets them for the whole Management API, and the 403 is sent as application/json too.
         }
     }
 }

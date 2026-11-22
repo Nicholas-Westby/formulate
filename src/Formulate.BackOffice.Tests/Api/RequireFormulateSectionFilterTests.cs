@@ -23,12 +23,22 @@ public sealed class RequireFormulateSectionFilterTests
     {
         // Swashbuckle (Umbraco 17) and Microsoft.AspNetCore.OpenApi (18 and later) both read this, so the document lists the 403.
         var metadata = Assert.IsAssignableFrom<IApiResponseMetadataProvider>(new RequireFormulateSectionAttribute());
-        var contentTypes = new MediaTypeCollection();
+
+        Assert.Equal((StatusCodes.Status403Forbidden, typeof(ProblemDetails)), (metadata.StatusCode, metadata.Type));
+    }
+
+    [Fact]
+    public void The_attribute_leaves_the_content_types_of_the_action_alone()
+    {
+        // The API explorer gives the content types a filter attribute sets to every response of the
+        // action, its 200 too. Umbraco's [Produces("application/json")] sets them for the whole
+        // Management API, and the 403 is sent as application/json like every other response.
+        IApiResponseMetadataProvider metadata = new RequireFormulateSectionAttribute();
+        var contentTypes = new MediaTypeCollection { "application/json" };
 
         metadata.SetContentTypes(contentTypes);
 
-        Assert.Equal((StatusCodes.Status403Forbidden, typeof(ProblemDetails)), (metadata.StatusCode, metadata.Type));
-        Assert.Equal(new[] { "application/problem+json" }, contentTypes);
+        Assert.Equal(new[] { "application/json" }, contentTypes);
     }
 
     [Fact]
