@@ -2,17 +2,22 @@ import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { E2E_USER } from './fixtures/user.ts';
+import { missingPackages, packageVersionProblem } from './support/local-packages.ts';
 import { RUN_FOLDER_PREFIX, removeOldRunFolders } from './support/run-folders.ts';
+import { siteEnvironment } from './support/site-environment.ts';
 
 /**
  * Starts the dev website (src/Website) on a new, empty database and drives its back office.
  *
  * Environment variables:
- *   UMBRACO_SITE_VERSION  The Umbraco version to run the site on, such as 18.3.2 (default: the version in
- *                         src/Directory.Packages.props).
- *   FORMULATE_E2E_PORT    The port the site listens on (default: 44331).
- *   DOTNET_EXE            The dotnet executable (default: dotnet). Umbraco 19 needs the .NET 11 SDK.
+ *   UMBRACO_SITE_VERSION       The Umbraco version to run the site on, such as 18.3.2 (default: the version in
+ *                              src/Directory.Build.props).
+ *   FORMULATE_PACKAGE_VERSION  Runs the site on the Formulate packages in artifacts/packages with this version
+ *                              (-p:FormulateFromPackages=true), instead of the source projects. It needs a
+ *                              prerelease label, such as 5.0.0-local.g1a2b3c4, and CI (where CI is set) must
+ *                              set it. "npm run test:packages" packs a new version and sets it.
+ *   FORMULATE_E2E_PORT         The port the site listens on (default: 44331).
+ *   DOTNET_EXE                 The dotnet executable (default: dotnet). Umbraco 19 needs the .NET 11 SDK.
  */
 
 // Two runs at once (such as in two worktrees) need two ports.
@@ -32,8 +37,28 @@ const runFolder = process.env.FORMULATE_E2E_RUN_FOLDER;
 mkdirSync(runFolder, { recursive: true });
 
 const siteVersion = process.env.UMBRACO_SITE_VERSION;
+const packageVersion = process.env.FORMULATE_PACKAGE_VERSION;
 const dotnet = process.env.DOTNET_EXE || 'dotnet';
-const msbuildArgs = siteVersion ? ` -p:UmbracoSiteVersion=${siteVersion}` : '';
+
+// CI tests only what is shipped, and a version needs a prerelease label of its own (see packageVersionProblem).
+const versionProblem = packageVersionProblem(packageVersion, { ci: !!process.env.CI });
+
+if (versionProblem) {
+	throw new Error(versionProblem);
+}
+
+const missing = packageVersion ? missingPackages(packageVersion) : [];
+
+if (missing.length > 0) {
+	throw new Error(
+		`artifacts/packages has no ${packageVersion} package of ${missing.join(', ')}. Pack them with "npm run pack:local", or put CI's "packages" artifact there.`,
+	);
+}
+
+const msbuildArgs = [
+	siteVersion ? ` -p:UmbracoSiteVersion=${siteVersion}` : '',
+	packageVersion ? ` -p:FormulateFromPackages=true -p:FormulatePackageVersion=${packageVersion}` : '',
+].join('');
 
 export default defineConfig({
 	testDir: './specs',
@@ -63,23 +88,7 @@ export default defineConfig({
 		stderr: 'pipe',
 		// Ask the site to stop, so it can shut down cleanly; Playwright kills it if it is still running after 10 seconds.
 		gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
-		env: {
-			ASPNETCORE_ENVIRONMENT: 'Development',
-			ASPNETCORE_URLS: ORIGIN,
-			Serilog__MinimumLevel__Default: 'Warning',
-			ConnectionStrings__umbracoDbDSN: `Data Source=${join(runFolder, 'Umbraco.sqlite.db')};Cache=Shared;Foreign Keys=True;Pooling=True`,
-			ConnectionStrings__umbracoDbDSN_ProviderName: 'Microsoft.Data.Sqlite',
-			Umbraco__CMS__Global__InstallMissingDatabase: 'true',
-			Umbraco__CMS__Unattended__InstallUnattended: 'true',
-			Umbraco__CMS__Unattended__UnattendedUserName: E2E_USER.name,
-			Umbraco__CMS__Unattended__UnattendedUserEmail: E2E_USER.email,
-			Umbraco__CMS__Unattended__UnattendedUserPassword: E2E_USER.password,
-			Formulate__Website__Persistence__DataFolderPath: join(runFolder, 'Formulate'),
-			// Leave no MSBuild or compiler server running after the build that "dotnet run" does.
-			MSBUILDDISABLENODEREUSE: '1',
-			UseSharedCompilation: 'false',
-			// Send no .NET telemetry from the build and the site.
-			DOTNET_CLI_TELEMETRY_OPTOUT: '1',
-		},
+		// Every name in it is a shell name: on Linux, the /bin/sh that starts the site drops any other.
+		env: siteEnvironment({ origin: ORIGIN, runFolder }),
 	},
 });

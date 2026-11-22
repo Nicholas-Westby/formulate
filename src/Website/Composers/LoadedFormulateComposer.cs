@@ -16,6 +16,10 @@ namespace Website.Composers;
 /// 5.0.0-local.g1a2b3c4.20261122093000), and its back office script comes from the package's folder under
 /// obj/FormulatePackages. The end-to-end tests read them from the site's log, to check that a run tested the
 /// build it asked for. It runs only in the Development environment and is never packed.
+///
+/// appsettings.Development.json keeps this logger at Information, so the lines are written even when the
+/// tests turn the rest of the log down to Warning. That setting lives there, not in an environment variable:
+/// the logger's name has dots, and on Linux the shell that starts the site (dash) drops such variables.
 /// </remarks>
 public sealed class LoadedFormulateComposer : IComposer
 {

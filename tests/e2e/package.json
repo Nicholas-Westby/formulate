@@ -11,7 +11,9 @@
   },
   "scripts": {
     "test": "playwright test",
-    "test:unit": "node --test support/run-folders.test.ts",
+    "test:packages": "node scripts/test-packages.ts",
+    "pack:local": "node scripts/pack-local.ts",
+    "test:unit": "node --test support/run-folders.test.ts support/local-packages.test.ts support/site-log.test.ts support/site-environment.test.ts",
     "typecheck": "tsc",
     "install-browser": "playwright install chromium"
   },

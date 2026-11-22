@@ -18,5 +18,5 @@
     "noImplicitReturns": true,
     "types": ["node"]
   },
-  "include": ["playwright.config.ts", "fixtures", "specs", "support"]
+  "include": ["playwright.config.ts", "fixtures", "scripts", "specs", "support"]
 }
