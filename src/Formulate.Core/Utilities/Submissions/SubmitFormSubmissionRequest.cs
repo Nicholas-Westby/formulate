@@ -41,11 +41,31 @@
         /// The handlers do not get <paramref name="cancellationToken"/>. The submission has arrived, so
         /// a visitor who closes the page must not stop it half way through being stored or sent.
         /// </remarks>
-        public async Task<bool> SubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken)
+        public async Task<SubmitFormSubmissionResult> SubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken)
         {
-            var modifiedInput = NotifySubmission(input);
+            var notification = NotifySubmission(input);
 
-            return await PerformSubmitAsync(modifiedInput);
+            if (notification.Cancel)
+            {
+                var message = string.IsNullOrWhiteSpace(notification.CancelMessage)
+                    ? FormSubmittingNotification.DefaultCancelMessage
+                    : notification.CancelMessage;
+
+                _logger.LogInformation(
+                    "A notification handler cancelled the submission of form {FormId}: {Message}",
+                    input.Form?.Id, message);
+
+                return new SubmitFormSubmissionResult()
+                {
+                    IsSuccessful = false,
+                    IsCancelled = true,
+                    CancelMessage = message
+                };
+            }
+
+            var succeeded = await PerformSubmitAsync(notification.Request);
+
+            return new SubmitFormSubmissionResult() { IsSuccessful = succeeded };
         }
 
         private async Task<bool> PerformSubmitAsync(FormSubmissionRequest input)
@@ -100,8 +120,8 @@
         /// Notifies custom notification handlers that form is being submitted.
         /// </summary>
         /// <param name="input">The request.</param>
-        /// <returns>A potentially modified <see cref="FormSubmissionRequest"/>.</returns>
-        private FormSubmissionRequest NotifySubmission(FormSubmissionRequest input)
+        /// <returns>The notification, which has the potentially modified request and whether it was cancelled.</returns>
+        private FormSubmittingNotification NotifySubmission(FormSubmissionRequest input)
         {
             using (var scope = _coreScopeProvider.CreateCoreScope())
             {
@@ -109,7 +129,7 @@
                 scope.Notifications.Publish(notification);
                 scope.Complete();
 
-                return notification.Request;
+                return notification;
             }
         }
 

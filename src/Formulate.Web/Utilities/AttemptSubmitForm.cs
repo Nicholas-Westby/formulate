@@ -94,9 +94,19 @@
             // submit payload.
             var submitResult = await _submitFormSubmissionRequest.SubmitAsync(payload, cancellationToken);
 
+            if (submitResult.IsCancelled)
+            {
+                // The error has no field: it tells the visitor why the form as a whole was refused.
+                return new AttemptSubmitFormOutput()
+                {
+                    IsSuccessful = false,
+                    Errors = new[] { new ValidationErrorSubmissionResponse(string.Empty, Guid.Empty, submitResult.CancelMessage) }
+                };
+            }
+
             return new AttemptSubmitFormOutput()
             {
-                IsSuccessful = submitResult
+                IsSuccessful = submitResult.IsSuccessful
             };
         }
     }

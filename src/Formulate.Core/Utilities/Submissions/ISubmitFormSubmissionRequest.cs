@@ -14,7 +14,10 @@
         /// Not passed on to the handlers: once a submission starts, every handler runs to the end,
         /// even if the visitor disconnects.
         /// </param>
-        /// <returns>True when every handler succeeded.</returns>
-        Task<bool> SubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken);
+        /// <returns>
+        /// The result: successful when every handler succeeded, or cancelled (with no handler run) when a
+        /// <see cref="Formulate.Core.Notifications.FormSubmittingNotification"/> handler cancelled it.
+        /// </returns>
+        Task<SubmitFormSubmissionResult> SubmitAsync(FormSubmissionRequest input, CancellationToken cancellationToken);
     }
 }

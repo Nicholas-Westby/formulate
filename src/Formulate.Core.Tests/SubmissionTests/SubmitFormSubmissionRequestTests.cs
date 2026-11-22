@@ -2,6 +2,7 @@ namespace Formulate.Core.Tests.SubmissionTests
 {
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Forms;
+    using Formulate.Core.Notifications;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Utilities.Submissions;
     using Microsoft.Extensions.Logging;
@@ -11,6 +12,10 @@ namespace Formulate.Core.Tests.SubmissionTests
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Data;
+    using Umbraco.Cms.Core.Events;
+    using Umbraco.Cms.Core.Notifications;
+    using Umbraco.Cms.Core.Persistence.Repositories;
     using Umbraco.Cms.Core.Scoping;
     using Xunit;
 
@@ -126,8 +131,68 @@ namespace Formulate.Core.Tests.SubmissionTests
             Assert.IsType<NotSupportedException>(entry.Exception);
         }
 
+        [Fact]
+        public async Task Cancelled_submission_runs_no_handlers()
+        {
+            var run = new List<string>();
+            var harness = new Harness();
+            harness.OnSubmitting = x => x.CancelSubmission("Submissions are closed.");
+            var request = harness.Request(harness.Handler("one", run), harness.Handler("two", run, asyncHandler: true));
+
+            var result = await harness.SubmitForResult(request);
+
+            Assert.False(result.IsSuccessful);
+            Assert.True(result.IsCancelled);
+            Assert.Equal("Submissions are closed.", result.CancelMessage);
+            Assert.Empty(run);
+        }
+
+        [Fact]
+        public async Task Cancelled_submission_keeps_the_first_message()
+        {
+            var harness = new Harness();
+            harness.OnSubmitting = x =>
+            {
+                x.CancelSubmission("First.");
+                x.CancelSubmission("Second.");
+            };
+
+            var result = await harness.SubmitForResult(harness.Request());
+
+            Assert.Equal("First.", result.CancelMessage);
+        }
+
+        [Fact]
+        public async Task Cancelling_without_a_message_uses_a_default_message()
+        {
+            var harness = new Harness();
+            harness.OnSubmitting = x => x.Cancel = true;
+
+            var result = await harness.SubmitForResult(harness.Request());
+
+            Assert.True(result.IsCancelled);
+            Assert.Equal(FormSubmittingNotification.DefaultCancelMessage, result.CancelMessage);
+        }
+
+        [Fact]
+        public async Task A_submission_nobody_cancels_is_not_cancelled()
+        {
+            var run = new List<string>();
+            var harness = new Harness();
+            harness.OnSubmitting = x => { };
+
+            var result = await harness.SubmitForResult(harness.Request(harness.Handler("one", run)));
+
+            Assert.True(result.IsSuccessful);
+            Assert.False(result.IsCancelled);
+            Assert.Null(result.CancelMessage);
+            Assert.Equal(new[] { "one" }, run);
+        }
+
         private sealed class Harness
         {
+            public Action<FormSubmittingNotification> OnSubmitting { get; set; }
+
             private readonly Mock<IFormHandlerFactory> _factory = new Mock<IFormHandlerFactory>();
 
             public CapturingLogger Logger { get; } = new CapturingLogger();
@@ -180,9 +245,36 @@ namespace Formulate.Core.Tests.SubmissionTests
                 return await SubmitWithToken(request, disconnected.Token);
             }
 
-            private Task<bool> SubmitWithToken(FormSubmissionRequest request, CancellationToken cancellationToken)
+            public Task<SubmitFormSubmissionResult> SubmitForResult(FormSubmissionRequest request)
             {
-                var scopeProvider = new Mock<ICoreScopeProvider>() { DefaultValue = DefaultValue.Mock };
+                return SubmitResultWithToken(request, CancellationToken.None);
+            }
+
+            private async Task<bool> SubmitWithToken(FormSubmissionRequest request, CancellationToken cancellationToken)
+            {
+                var result = await SubmitResultWithToken(request, cancellationToken);
+
+                return result.IsSuccessful;
+            }
+
+            private Task<SubmitFormSubmissionResult> SubmitResultWithToken(FormSubmissionRequest request, CancellationToken cancellationToken)
+            {
+                var notifications = new Mock<IScopedNotificationPublisher>();
+                notifications
+                    .Setup(x => x.Publish(It.IsAny<INotification>()))
+                    .Callback<INotification>(x =>
+                    {
+                        if (x is FormSubmittingNotification submitting)
+                        {
+                            OnSubmitting?.Invoke(submitting);
+                        }
+                    });
+                var scope = new Mock<ICoreScope>() { DefaultValue = DefaultValue.Mock };
+                scope.SetupGet(x => x.Notifications).Returns(notifications.Object);
+                var scopeProvider = new Mock<ICoreScopeProvider>();
+                scopeProvider
+                    .Setup(x => x.CreateCoreScope(It.IsAny<IsolationLevel>(), It.IsAny<RepositoryCacheMode>(), It.IsAny<IEventDispatcher>(), It.IsAny<IScopedNotificationPublisher>(), It.IsAny<bool?>(), It.IsAny<bool>(), It.IsAny<bool>()))
+                    .Returns(scope.Object);
                 var submitter = new SubmitFormSubmissionRequest(scopeProvider.Object, _factory.Object, Logger);
 
                 return submitter.SubmitAsync(request, cancellationToken);
