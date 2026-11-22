@@ -9,7 +9,10 @@ using Formulate.Core.FormFields.Upload;
 using Formulate.Core.Forms;
 using Formulate.Core.Submissions.Requests;
 using Formulate.Core.Utilities;
+using Formulate.Core.Utilities.Internal;
 using Formulate.Core.Utilities.Submissions;
+using Formulate.Core.Validations;
+using Formulate.Core.Validations.Mandatory;
 using Formulate.Web.Utilities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -157,6 +160,45 @@ namespace Formulate.Web.Tests.UtilityTests
         }
 
         [Fact]
+        public async Task Text_posted_under_an_upload_field_is_ignored()
+        {
+            var site = new Site();
+            var upload = site.Field(UploadFieldDefinition.Constants.KindId);
+            var text = site.Field(TextFieldDefinition.Constants.KindId);
+
+            await site.Submit((upload, "not a file"), (text, "t"));
+
+            Assert.Equal(new[] { text.Id }, site.Submitted!.FieldValues.Keys);
+        }
+
+        [Fact]
+        public async Task A_mandatory_upload_field_with_only_text_posted_fails()
+        {
+            var site = new Site();
+            var upload = site.Field(UploadFieldDefinition.Constants.KindId, "Resume", mandatoryMessage: "Please choose a file.");
+
+            var output = await site.Submit((upload, "not a file"));
+
+            Assert.False(output.IsSuccessful);
+            var error = Assert.Single(output.Errors);
+            Assert.Equal(upload.Id, error.FieldId);
+            Assert.Equal(new[] { "Please choose a file." }, error.Messages);
+            Assert.Null(site.Submitted);
+        }
+
+        [Fact]
+        public async Task A_mandatory_upload_field_with_a_file_passes()
+        {
+            var site = new Site();
+            var upload = site.Field(UploadFieldDefinition.Constants.KindId, "Resume", mandatoryMessage: "Please choose a file.");
+
+            var output = await site.SubmitFiles((upload.Id, "cv.pdf"));
+
+            Assert.True(output.IsSuccessful);
+            Assert.Single(site.Submitted!.FilesValues[upload.Id].GetValues());
+        }
+
+        [Fact]
         public void The_upload_limit_is_10_MB_unless_set()
         {
             Assert.Equal(10_485_760, new FormulateSubmissionsOptions().MaxUploadBytes);
@@ -204,6 +246,7 @@ namespace Formulate.Web.Tests.UtilityTests
         {
             private readonly PersistedForm _form = new PersistedForm { Id = Guid.NewGuid(), Fields = Array.Empty<PersistedFormField>() };
             private readonly Mock<ISubmitFormSubmissionRequest> _submitter = new Mock<ISubmitFormSubmissionRequest>();
+            private readonly Dictionary<Guid, PersistedValidation> _validations = new Dictionary<Guid, PersistedValidation>();
 
             public Site()
             {
@@ -219,9 +262,27 @@ namespace Formulate.Web.Tests.UtilityTests
 
             public FormulateSubmissionsOptions Settings { get; } = new FormulateSubmissionsOptions();
 
-            public PersistedFormField Field(string kindId, string name = "Field")
+            /// <summary>
+            /// Adds a field to the form. A field given a mandatory message gets a Mandatory validation, and
+            /// the submission is then validated by Formulate's real validator instead of one that accepts all.
+            /// </summary>
+            public PersistedFormField Field(string kindId, string name = "Field", string? mandatoryMessage = null)
             {
                 var field = new PersistedFormField { Id = Guid.NewGuid(), KindId = Guid.Parse(kindId), Name = name };
+
+                if (mandatoryMessage is not null)
+                {
+                    var validation = new PersistedValidation
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "Required",
+                        KindId = Guid.Parse(MandatoryValidationDefinition.Constants.KindId),
+                        Data = System.Text.Json.JsonSerializer.Serialize(new { message = mandatoryMessage }),
+                    };
+                    _validations[validation.Id] = validation;
+                    field.Validations = new[] { validation.Id };
+                }
+
                 _form.Fields = _form.Fields.Append(field).ToArray();
 
                 return field;
@@ -248,10 +309,6 @@ namespace Formulate.Web.Tests.UtilityTests
             {
                 var forms = new Mock<IFormEntityRepository>();
                 forms.Setup(x => x.Get(_form.Id)).Returns(_form);
-                var validator = new Mock<IValidateFormSubmissionRequest>();
-                validator
-                    .Setup(x => x.Validate(It.IsAny<FormSubmissionRequest>()))
-                    .Returns(new ValidateFormSubmissionRequestOutput());
                 var json = Mock.Of<IJsonUtility>();
                 var definitions = new FormFieldDefinitionCollection(() => new IFormFieldDefinition[]
                 {
@@ -262,7 +319,7 @@ namespace Formulate.Web.Tests.UtilityTests
                     new RichTextFieldDefinition(json),
                     new UploadFieldDefinition()
                 });
-                var submit = new AttemptSubmitForm(forms.Object, definitions, validator.Object, _submitter.Object,
+                var submit = new AttemptSubmitForm(forms.Object, definitions, Validator(definitions), _submitter.Object,
                     Options.Create(Settings), NullLogger<AttemptSubmitForm>.Instance);
 
                 var form = new FormCollection((values ?? Array.Empty<(PersistedFormField, string)>())
@@ -272,6 +329,29 @@ namespace Formulate.Web.Tests.UtilityTests
 
                 return submit.SubmitAsync(
                     new AttemptSubmitFormInput(_form.Id, 1, form, fileCollection), CancellationToken.None);
+            }
+
+            private IValidateFormSubmissionRequest Validator(FormFieldDefinitionCollection definitions)
+            {
+                if (_validations.Count == 0)
+                {
+                    var accepting = new Mock<IValidateFormSubmissionRequest>();
+                    accepting
+                        .Setup(x => x.Validate(It.IsAny<FormSubmissionRequest>()))
+                        .Returns(new ValidateFormSubmissionRequestOutput());
+
+                    return accepting.Object;
+                }
+
+                var json = new JsonUtility(new NewtonsoftJsonSerializer());
+                var validationFactory = new ValidationFactory(
+                    new ValidationDefinitionCollection(() => new IValidationDefinition[] { new MandatoryValidationDefinition(json) }),
+                    NullLogger<ValidationFactory>.Instance);
+                var validations = new Mock<IValidationEntityRepository>();
+                validations.Setup(x => x.Get(It.IsAny<Guid>())).Returns((Guid id) => _validations.GetValueOrDefault(id)!);
+                var fields = new FormFieldFactory(definitions, validationFactory, validations.Object, NullLogger<FormFieldFactory>.Instance);
+
+                return new ValidateFormSubmissionRequest(fields);
             }
         }
 

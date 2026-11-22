@@ -55,13 +55,15 @@
             // Only fields that take a visitor's input are read. A value posted for any other id is dropped, so
             // a visitor cannot overwrite a Text Constant, add data to a Header, or invent a field.
             var inputFieldIds = GetInputFieldIds(form);
+            var uploadFields = GetUploadFields(form, inputFieldIds);
 
-            // Get form values.
+            // Get form values. Upload fields take files only: text posted under one is dropped, so it cannot
+            // stand in for a file (and pass a Mandatory validation without one).
             var formValues = new Dictionary<Guid, IStringFormFieldValues>();
 
             foreach (var key in input.Form.Keys)
             {
-                if (Guid.TryParse(key, out var fieldId) == false || inputFieldIds.Contains(fieldId) == false)
+                if (Guid.TryParse(key, out var fieldId) == false || inputFieldIds.Contains(fieldId) == false || uploadFields.ContainsKey(fieldId))
                 {
                     continue;
                 }
@@ -73,7 +75,7 @@
 
             // Get file values. Only upload fields take files, one each, and every kept file's size is checked
             // before any file is read into memory.
-            var postedFiles = GetUploadedFiles(form, inputFieldIds, input.Files);
+            var postedFiles = GetUploadedFiles(form, uploadFields, input.Files);
             var maxBytes = _options.Value.MaxUploadBytes;
             var tooLarge = postedFiles.Where(x => x.File.Length > maxBytes).Select(x => x.Field).Distinct().ToArray();
 
@@ -154,9 +156,8 @@
         /// Only the first file posted for each upload field is kept, because the form posts one. The others
         /// are never read, so one crafted post cannot make the server hold many files at the size limit.
         /// </remarks>
-        private List<(PersistedFormField Field, IFormFile File)> GetUploadedFiles(PersistedForm form, HashSet<Guid> inputFieldIds, IFormFileCollection files)
+        private List<(PersistedFormField Field, IFormFile File)> GetUploadedFiles(PersistedForm form, Dictionary<Guid, PersistedFormField> uploadFields, IFormFileCollection files)
         {
-            var uploadFields = GetUploadFields(form, inputFieldIds);
             var uploaded = new List<(PersistedFormField Field, IFormFile File)>();
 
             foreach (var file in files)
