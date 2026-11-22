@@ -50,6 +50,30 @@ export function siteAddresses(e2ePort: string | undefined): SiteAddresses {
 }
 
 /**
+ * The line the dev site's seed (src/Website/Seed/FormulateTestContentComposer.cs) logs when it has finished: it
+ * made the test content, it gave up, or it did not run.
+ */
+export const SEED_FINISHED =
+	/Seeded the Formulate test content\.|The Formulate test content could not be made\.|The Formulate test content was not seeded/;
+
+/**
+ * When Playwright counts the site as ready for the specs (the webServer's readiness options): once the seed has
+ * logged its last line. Nothing asks the site for a page before then.
+ *
+ * The seed makes its page once Umbraco has started, when the site already answers requests. The first back office
+ * request, such as Playwright asking for /umbraco to see whether the site is up, has Umbraco write its OpenIddict
+ * clients to the database. On Umbraco 17 and 18, a write by another connection just as the seed saves its page
+ * makes that save fail after 9 min 40 s: Umbraco stores the page's relations after the save, in a transaction that
+ * reads before it writes, and once another connection has written in between, SQLite refuses that transaction's
+ * write ("database is locked") however often Umbraco retries it.
+ * @returns The options to spread into the webServer config. A url or a port there would have Playwright ask for a
+ * page, or start the specs, while the seed runs.
+ */
+export function siteReadiness(): { wait: { stdout: RegExp } } {
+	return { wait: { stdout: SEED_FINISHED } };
+}
+
+/**
  * The folders in a run's folder that the site writes to: the emails it sends (as .eml files, through Umbraco's
  * pickup folder) and what the dev site's echo receives (src/Website/Composers/DevEchoComposer.cs), for the specs to
  * read, and the files visitors upload with the forms that store their submissions.

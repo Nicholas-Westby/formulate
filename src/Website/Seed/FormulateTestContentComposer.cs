@@ -137,9 +137,11 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
             return;
         }
 
-        // Each step makes its thing only if it is missing, so a failed attempt can be repeated. The dev
-        // site's SQLite database can be locked while the seed runs (the end-to-end tests sign in at the
-        // same moment), which fails a save with "database is locked".
+        // Each step makes its thing only if it is missing, so a failed attempt can be repeated. On Umbraco
+        // 17 and 18, the page's save fails with "database is locked" after 9 min 40 s if another connection
+        // writes to the SQLite database just as Umbraco stores the page's relations, as the back office's
+        // first request does. The end-to-end tests send no request until the seed has logged its last line
+        // (siteReadiness in tests/e2e/support/site-environment.ts).
         const int attempts = 5;
 
         for (var attempt = 1; attempt <= attempts; attempt++)

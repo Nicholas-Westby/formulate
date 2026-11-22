@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { REPO_ROOT } from './repo.ts';
-import { SHELL_NAME, runFolderPaths, siteAddresses, siteEnvironment } from './site-environment.ts';
+import { SEED_FINISHED, SHELL_NAME, runFolderPaths, siteAddresses, siteEnvironment, siteReadiness } from './site-environment.ts';
 import { LOADED_FORMULATE_LOGGER } from './site-log.ts';
 
 /** The logger of the dev site's line that says where its email goes (src/Website/Composers/DevEmailComposer.cs). */
@@ -37,7 +37,7 @@ test('a name with a dot is not a shell name', () => {
 test("the dev site's Development settings keep the lines about the loaded Formulate, where email goes and the seed at Information", () => {
 	// The environment turns the rest of the log down to Warning; specs/loaded-formulate.spec.ts needs the first
 	// lines, the next says in each run's log where the site's email goes, and the seed's say whether it made and
-	// published the test page.
+	// published the test page (and the specs wait for its last line, see siteReadiness).
 	const settings = developmentSettings();
 
 	assert.equal(ENVIRONMENT.Serilog__MinimumLevel__Default, 'Warning');
@@ -69,6 +69,54 @@ test("the site opens the run's database as the dev site opens its own, without a
 	);
 	assert.doesNotMatch(ENVIRONMENT.ConnectionStrings__umbracoDbDSN, /cache\s*=/i);
 	assert.equal(ENVIRONMENT.ConnectionStrings__umbracoDbDSN_ProviderName, own.umbracoDbDSN_ProviderName);
+});
+
+test('the specs start when the seed has finished, and nothing asks the site for a page while it seeds', () => {
+	// Asking for /umbraco until it answered had Umbraco write its back office OpenIddict clients while the seed
+	// saved its page. On Umbraco 17 and 18, a write by another connection at that moment stalls the page's save
+	// for 9 min 40 s. A url or a port here would let Playwright ask, or start the specs, before the seed is done.
+	assert.deepEqual(siteReadiness(), { wait: { stdout: SEED_FINISHED } });
+
+	// Playwright counts the site as ready on whichever comes first, so the config must not add one of its own.
+	const config = readFileSync(join(REPO_ROOT, 'tests', 'e2e', 'playwright.config.ts'), 'utf8');
+	const webServer = config.slice(config.indexOf('webServer: {'));
+
+	assert.match(webServer, /^\t\t\.\.\.siteReadiness\(\),$/m);
+	assert.doesNotMatch(webServer, /^\s*(url|port|wait)\s*:/m);
+});
+
+test("the seed's last line is one of the three it ends with, and none of the lines before it", () => {
+	const seeder = readFileSync(join(REPO_ROOT, 'src', 'Website', 'Seed', 'FormulateTestContentComposer.cs'), 'utf8');
+	// As the console prints them, with a value for the runtime level.
+	const last = [
+		'Seeded the Formulate test content.',
+		'The Formulate test content could not be made.',
+		'The Formulate test content was not seeded: the runtime level is {Level}, not Run.',
+	];
+	const before = [
+		'Seeding the Formulate test content (attempt {Attempt}).',
+		'The Formulate test content could not be made (attempt {Attempt}), trying again.',
+		'Updated the Formulate test template.',
+		'Publishing the Formulate test page.',
+		'Published the Formulate test page.',
+		'The Formulate test page could not be published: {Status}.',
+		'The Formulate test page is in the recycle bin, so it is left unpublished.',
+	];
+
+	for (const message of [...last, ...before]) {
+		assert.ok(seeder.includes(`"${message}"`), `the seed logs "${message}"`);
+	}
+
+	const printed = (message: string) =>
+		`[WebServer] [14:12:30 INF] ${message.replace('{Level}', 'Install').replace('{Attempt}', '1').replace('{Status}', 'Unknown')}\n`;
+
+	for (const message of last) {
+		assert.match(printed(message), SEED_FINISHED);
+	}
+
+	for (const message of before) {
+		assert.doesNotMatch(printed(message), SEED_FINISHED);
+	}
 });
 
 test("the site writes its email, the echo's records and the files visitors upload in the run's folder", () => {

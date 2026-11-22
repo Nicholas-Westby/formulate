@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { missingPackages, packageVersionProblem } from './support/local-packages.ts';
 import { RUN_FOLDER_PREFIX, removeOldRunFolders } from './support/run-folders.ts';
-import { siteAddresses, siteEnvironment } from './support/site-environment.ts';
+import { siteAddresses, siteEnvironment, siteReadiness } from './support/site-environment.ts';
 
 /**
  * Starts the dev website (src/Website) on a new, empty database and drives its back office.
@@ -85,10 +85,10 @@ export default defineConfig({
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
 	webServer: {
 		command: `"${dotnet}" run --project ../../src/Website --no-launch-profile${msbuildArgs}`,
-		url: `${ORIGIN}/umbraco`,
-		ignoreHTTPSErrors: true,
+		// Ready when the dev site's seed has finished, which no request may race (see siteReadiness). A site that
+		// is already on the port makes this one fail to start.
+		...siteReadiness(),
 		timeout: 240_000,
-		reuseExistingServer: false,
 		// Show the site's warnings and errors (Umbraco's information messages are left out below).
 		stdout: 'pipe',
 		stderr: 'pipe',
