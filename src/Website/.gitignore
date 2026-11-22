@@ -497,3 +497,6 @@ appsettings.Local.json
 /App_Data/
 appsettings-schema*.json
 umbraco-package-schema.json
+
+# The Formulate Test Page template, which the seed makes at runtime.
+/Views/formulateTestPage.cshtml
