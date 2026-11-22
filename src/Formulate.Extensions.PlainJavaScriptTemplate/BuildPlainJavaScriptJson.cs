@@ -117,7 +117,7 @@
             payload["__RequestVerificationToken"] = csrfToken;
 
             // Convert to a JSON string that can be consumed by JavaScript.
-            return _jsonUtility.Serialize(new
+            var json = _jsonUtility.Serialize(new
             {
                 data = new
                 {
@@ -136,6 +136,39 @@
                     url = "/api/formulate/plain-js/submit"
                 }
             });
+
+            return EscapeForScriptBlock(json);
+        }
+
+        /// <summary>
+        /// Escapes the characters that could end a script block or start an HTML comment inside it
+        /// (and the two line separators older script engines reject in strings). Each of these only
+        /// appears inside a JSON string, where \uXXXX is an exact equivalent, so the result parses
+        /// to the same data.
+        /// </summary>
+        private static string EscapeForScriptBlock(string json)
+        {
+            var builder = new System.Text.StringBuilder(json.Length + 16);
+
+            foreach (var c in json)
+            {
+                switch (c)
+                {
+                    case '<':
+                    case '>':
+                    case '&':
+                    case '\'':
+                    case '\u2028':
+                    case '\u2029':
+                        builder.Append("\\u").Append(((int)c).ToString("x4"));
+                        break;
+                    default:
+                        builder.Append(c);
+                        break;
+                }
+            }
+
+            return builder.ToString();
         }
 
         private string GenerateAntiForgeryToken()
