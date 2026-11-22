@@ -1,44 +1,37 @@
-﻿namespace Formulate.Extensions.SendData.FormHandlers
+namespace Formulate.Extensions.SendData.FormHandlers
 {
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Submissions.Requests;
-    using System.Net.Http;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using Formulate.Extensions.SendData.Utilities;
+    using Microsoft.Extensions.DependencyInjection;
 
     /// <summary>
     /// Sends form submission data to a URL.
     /// </summary>
     internal sealed class SendDataFormHandler : AsyncFormHandler
     {
-        private readonly HttpClient _httpClient;
-        private readonly SendDataConfiguration _configuration;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public SendDataFormHandler(IFormHandlerSettings settings, SendDataConfiguration configuration, IHttpClientFactory httpClientFactory) : base(settings)
+        public SendDataFormHandler(IFormHandlerSettings settings, SendDataConfiguration configuration, IServiceScopeFactory scopeFactory)
+            : base(settings)
         {
-            _configuration = configuration;
-
-            if (string.IsNullOrWhiteSpace(_configuration.HttpClientName))
-            {
-                _httpClient = httpClientFactory.CreateClient(_configuration.HttpClientName);
-            }
-            else
-            {
-                _httpClient = httpClientFactory.CreateClient();
-            }
+            Configuration = configuration;
+            _scopeFactory = scopeFactory;
         }
 
-        public override async Task HandleAsync(FormSubmissionRequest submission,
-            CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Gets the handler's configuration.
+        /// </summary>
+        internal SendDataConfiguration Configuration { get; }
+
+        /// <inheritdoc />
+        public override async Task HandleAsync(FormSubmissionRequest submission, CancellationToken cancellationToken = default)
         {
-            var content = "{\"message\": \"Hello world!\"}";
+            // The services are scoped, so each submission gets its own scope.
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            var worker = scope.ServiceProvider.GetRequiredService<SendDataWorker>();
 
-            var message = new HttpRequestMessage(HttpMethod.Post, _configuration.EndpointUrl)
-            {
-                Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
-            };
-
-            await _httpClient.SendAsync(message, cancellationToken);
+            await worker.SendAsync(submission, this, Configuration, cancellationToken);
         }
     }
 }

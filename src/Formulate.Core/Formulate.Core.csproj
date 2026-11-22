@@ -17,5 +17,6 @@
         <InternalsVisibleTo Include="Formulate.BackOffice.Tests" />
         <InternalsVisibleTo Include="Formulate.Extensions.PlainJavaScriptTemplate.Tests" />
         <InternalsVisibleTo Include="Formulate.Extensions.SendEmail.Tests" />
+        <InternalsVisibleTo Include="Formulate.Extensions.SendData.Tests" />
     </ItemGroup>
 </Project>

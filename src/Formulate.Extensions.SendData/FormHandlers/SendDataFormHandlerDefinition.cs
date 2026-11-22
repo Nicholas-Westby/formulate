@@ -3,20 +3,20 @@
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Utilities;
     using System;
-    using System.Net.Http;
+    using Microsoft.Extensions.DependencyInjection;
 
     /// <summary>
     /// The data definition for a form handler that sends data to a URL.
     /// </summary>
     public sealed class SendDataFormHandlerDefinition : FormHandlerDefinition
     {
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         private readonly IJsonUtility _jsonUtility;
 
-        public SendDataFormHandlerDefinition(IHttpClientFactory httpClientFactory, IJsonUtility jsonUtility)
+        public SendDataFormHandlerDefinition(IServiceScopeFactory scopeFactory, IJsonUtility jsonUtility)
         {
-            _httpClientFactory = httpClientFactory;
+            _scopeFactory = scopeFactory;
             _jsonUtility = jsonUtility;
         }
 
@@ -64,17 +64,31 @@
         /// <inheritdoc />
         public override IFormHandler CreateHandler(IFormHandlerSettings settings)
         {
-            var configuration = _jsonUtility.Deserialize<SendDataConfiguration>(settings.Data);
-
-            var handler = new SendDataFormHandler(settings, configuration, _httpClientFactory);
-
-            return handler;
+            // Scoped services are resolved when the handler runs, not here.
+            return new SendDataFormHandler(settings, ReadConfiguration(settings), _scopeFactory);
         }
 
         /// <inheritdoc />
         public override object GetBackOfficeConfiguration(IFormHandlerSettings settings)
         {
-            return _jsonUtility.Deserialize<SendDataConfiguration>(settings.Data);
+            var configuration = ReadConfiguration(settings);
+
+            // Formulate 3's result handler is not used, so the editor is not given it to save back.
+            configuration.ResultHandler = null;
+
+            return configuration;
+        }
+
+        /// <summary>
+        /// Reads the stored configuration. A handler that was just added has none (null or "{}"), which
+        /// gives the defaults: no URL, so it sends nothing until it is configured.
+        /// </summary>
+        private SendDataConfiguration ReadConfiguration(IFormHandlerSettings settings)
+        {
+            var configuration = _jsonUtility.Deserialize<SendDataConfiguration>(settings?.Data) ?? new SendDataConfiguration();
+            configuration.Normalize();
+
+            return configuration;
         }
     }
 }

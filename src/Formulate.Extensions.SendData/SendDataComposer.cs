@@ -7,6 +7,7 @@ namespace Formulate.Extensions.SendData
     {
         public void Compose(IUmbracoBuilder builder)
         {
+            builder.Services.AddFormulateSendData();
         }
     }
 }

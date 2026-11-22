@@ -15,6 +15,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="Formulate.Extensions.SendData.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
     </ItemGroup>
 
