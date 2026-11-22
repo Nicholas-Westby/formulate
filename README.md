@@ -270,6 +270,8 @@ npm test
 npm run typecheck
 ```
 
+In `src/Formulate.BackOffice/Client`, `npm run typecheck:18` and `npm run typecheck:19` also type-check the back office client against the back office of Umbraco 18.3.2 and 19.0.0-rc1. They install that version in `Client/.typecheck`, which is not committed, and leave the client's own packages alone.
+
 Browser tests (Playwright, against the dev site on a new empty database), in `tests/e2e`:
 
 ```
@@ -282,9 +284,20 @@ The site runs over HTTPS on `https://localhost:44331`, so trust the .NET develop
 
 Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco version, `FORMULATE_E2E_PORT` to use another port (so two runs can go at once), and `DOTNET_EXE` to point at a different `dotnet` (Umbraco 19 needs the .NET 11 SDK).
 
+`npm run test:packages` runs them on the packed packages, the way a site installs Formulate, instead of the source projects. It packs Formulate into `artifacts/packages` with a version of its own, such as `5.0.0-local.g1a2b3c4` (with the time added when there are uncommitted changes), because NuGet never looks again at a version it has already extracted. Then it runs the tests on the dev site built from those packages with `-p:FormulateFromPackages=true`. A test reads the site's log to check that the site loaded that version. `npm run pack:local` only packs, and prints how to run the tests or the dev site on the pack. A release version such as `5.0.0` is refused, since an old pack with that version could stand in for the new one.
+
+This mode keeps the packages it restores in `src/Website/obj/FormulatePackages`, not in NuGet's own folder. That folder grows by about 0.7 GB for each Umbraco version you run the tests on. You can delete it at any time; the next run downloads what it needs again.
+
 The compatibility check runs in CI. It reads the built Formulate assemblies and confirms that every Umbraco member they use exists in Umbraco 18 and 19. Code compiled against 17.6 must not use members that Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`, such as `Id` and `Name`. The source compiles against both 17 and 18, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` or an extension method instead.
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the build, the tests, the compatibility check and the browser tests on every pull request and on every push to `v5/main`.
+CI also compiles the libraries against Umbraco 18.3.2 and 19.0.0-rc1. There, as in every build, using an `[Obsolete]` member is an error, so an API that Umbraco deprecates shows up before a later version removes it. To run the same checks (the second needs the .NET 11 SDK):
+
+```
+dotnet build src/Formulate/Formulate.csproj -c Release '-p:UmbracoVersionRange=[18.3.2]' -p:SkipClientBuild=true
+dotnet build src/Formulate/Formulate.csproj -c Release '-p:UmbracoVersionRange=[19.0.0-rc1]' -p:TargetFramework=net11.0 -p:SkipClientBuild=true
+```
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the build, the tests, the compatibility and compile checks, and the browser tests on the packed packages, on every pull request and on every push to `v5/main`.
 
 ## Contributing
 

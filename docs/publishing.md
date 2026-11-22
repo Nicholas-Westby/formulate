@@ -78,7 +78,7 @@ Do this after the first release, so the prefix is in use when NuGet looks at it.
 
 A release is a tag. The tag is the version. `release.yml` does the rest.
 
-1. Check that `v5/main` is green. Open the Actions tab and look at the latest CI run on `v5/main`. It builds, tests, checks Umbraco 18 and 19 compatibility, and runs the browser tests on Umbraco 17.6.2, 17.8.2, 18.3.2 and 19.0.0-rc1.
+1. Check that `v5/main` is green. Open the Actions tab and look at the latest CI run on `v5/main`. It builds, tests, checks Umbraco 18 and 19 compatibility, packs, and runs the browser tests on those packages on Umbraco 17.6.2, 17.8.2, 18.3.2 and 19.0.0-rc1. To run the browser tests on packages from your own checkout, run `npm run test:packages` in `tests/e2e` (see the [README](../README.md#running-the-tests)).
 2. Update `CHANGELOG.md`. Move the notes under the new version and date. Commit and push to `v5/main`.
 3. Make sure your local checkout is the commit you mean to release:
 
