@@ -207,6 +207,9 @@ for (const tree of TREES) {
 		const name = page.locator('umb-folder-workspace-editor').locator('uui-input#nameInput input');
 		await expect(name).toHaveValue('Archive');
 		await name.fill('Old archive');
+		// The footer says where the folder is, with the name being typed, and the page lists what is in it.
+		await expect(page.locator('umb-workspace-breadcrumb uui-breadcrumb-item')).toHaveText([tree.label, 'Old archive']);
+		await expect(page.locator('umb-tree-workspace-view').getByText('No items')).toBeVisible();
 		if (tree.apiAlias === 'forms') {
 			await page.screenshot({ path: join(SCREENSHOTS, 'folder-workspace.png'), animations: 'disabled' });
 		}
