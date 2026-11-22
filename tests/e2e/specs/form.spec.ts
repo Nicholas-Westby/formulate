@@ -168,7 +168,7 @@ test('the Contact form is designed with its fields and a handler, reordered, sav
 	await expect.poll(() => namesOf(workspace.fieldRows)).toEqual(['Name', 'Email', 'State', 'Interests', 'Intro', 'Submit']);
 
 	// The rich text goes above the inputs, dragged by its handle.
-	await dragRowToTop(page, workspace.fieldRows.nth(4), workspace.fieldRows, () => namesOf(workspace.fieldRows), [
+	await dragRowToTop(page, workspace.fieldRows.nth(4).locator('.handle'), workspace.fieldRows, () => namesOf(workspace.fieldRows), [
 		'Intro',
 		'Name',
 		'Email',

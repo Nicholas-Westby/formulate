@@ -52,7 +52,7 @@ test('a List is created from the create dialog, sorted, and keeps its items afte
 	await rows.nth(2).locator('.handle').press('ArrowUp');
 	await expect.poll(() => valuesOf(values)).toEqual(['Red', 'Blue', 'Green', 'Yellow']);
 	// Sort by dragging the handle, with Umbraco's sorter.
-	await dragRowToTop(page, rows.nth(3), rows, () => valuesOf(values), ['Yellow', 'Red', 'Blue', 'Green']);
+	await dragRowToTop(page, rows.nth(3).locator('.handle'), rows, () => valuesOf(values), ['Yellow', 'Red', 'Blue', 'Green']);
 	await expect.poll(() => valuesOf(values)).toEqual(['Yellow', 'Red', 'Blue', 'Green']);
 	// Remove one.
 	await editor.locator('uui-button.remove[label="Remove Green"]').click();
