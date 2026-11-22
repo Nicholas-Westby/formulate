@@ -48,7 +48,9 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
     internal static readonly Guid PageKey = new("5d3a0b0e-6a43-4a4f-9a3c-1f6f7b0f2a03");
 
     // The template shows the picked form. The property is empty until a form is picked, and the
-    // component needs a value to be called with, so the call is left out then.
+    // component needs a value to be called with, so the call is left out then. Formulate has no
+    // built-in success message, so the page shows its own when the form's success event arrives
+    // (the event bubbles from the form's wrapper to the document).
     private const string TemplateContent = """
         @using Umbraco.Extensions
         @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
@@ -68,6 +70,12 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
             {
                 @await Component.InvokeAsync("FormulateForm", form)
             }
+            <p id="thank-you" role="status" hidden>Thank you, your message was sent.</p>
+            <script>
+                document.addEventListener("formulate form: submit: success", function () {
+                    document.getElementById("thank-you").hidden = false;
+                });
+            </script>
         </body>
         </html>
         """;
@@ -115,21 +123,45 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
 
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
-        if (!_hostEnvironment.IsDevelopment() || _runtimeState.Level != RuntimeLevel.Run)
+        if (!_hostEnvironment.IsDevelopment())
         {
             return;
         }
 
-        try
+        if (_runtimeState.Level != RuntimeLevel.Run)
         {
-            var dataType = await EnsureDataTypeAsync();
-            var contentType = await EnsureDocumentTypeAsync(dataType);
-            await EnsurePageAsync(contentType);
+            _logger.LogInformation("The Formulate test content was not seeded: the runtime level is {Level}, not Run.", _runtimeState.Level);
+            return;
         }
-        catch (Exception exception)
+
+        // Each step makes its thing only if it is missing, so a failed attempt can be repeated. The dev
+        // site's SQLite database can be locked while the seed runs (the end-to-end tests sign in at the
+        // same moment), which fails a save with "database is locked".
+        const int attempts = 5;
+
+        for (var attempt = 1; attempt <= attempts; attempt++)
         {
-            // Seeding is a convenience: a failure must not stop the site.
-            _logger.LogError(exception, "The Formulate test content could not be made.");
+            try
+            {
+                _logger.LogInformation("Seeding the Formulate test content (attempt {Attempt}).", attempt);
+                var dataType = await EnsureDataTypeAsync();
+                // The seed owns the template: it is brought up to date even when everything else exists.
+                var template = await EnsureTemplateAsync();
+                var contentType = await EnsureDocumentTypeAsync(dataType, template);
+                await EnsurePageAsync(contentType);
+                _logger.LogInformation("Seeded the Formulate test content.");
+                return;
+            }
+            catch (Exception exception) when (attempt < attempts)
+            {
+                _logger.LogWarning(exception, "The Formulate test content could not be made (attempt {Attempt}), trying again.", attempt);
+                await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+            }
+            catch (Exception exception)
+            {
+                // Seeding is a convenience: a failure must not stop the site.
+                _logger.LogError(exception, "The Formulate test content could not be made.");
+            }
         }
     }
 
@@ -163,25 +195,43 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
 
     private async Task<ITemplate> EnsureTemplateAsync()
     {
-        var existing = await _templateService.GetAsync(TemplateAlias);
+        var template = await _templateService.GetAsync(TemplateAlias);
 
-        if (existing is not null)
+        if (template is null)
         {
-            return existing;
+            var created = await _templateService.CreateAsync(
+                DocumentTypeName,
+                TemplateAlias,
+                TemplateContent,
+                Constants.Security.SuperUserKey);
+
+            template = created.Success
+                ? created.Result!
+                : throw new InvalidOperationException($"The template could not be created: {created.Status}.");
         }
 
-        var result = await _templateService.CreateAsync(
-            DocumentTypeName,
-            TemplateAlias,
-            TemplateContent,
-            Constants.Security.SuperUserKey);
+        // The view file is git-ignored and outlives the database, so an older seed's copy may be there
+        // (a new template is made with the file's content when the file exists).
+        if (Normalize(template.Content) != Normalize(TemplateContent))
+        {
+            template.Content = TemplateContent;
+            var updated = await _templateService.UpdateAsync(template, Constants.Security.SuperUserKey);
 
-        return result.Success
-            ? result.Result!
-            : throw new InvalidOperationException($"The template could not be created: {result.Status}.");
+            if (!updated.Success)
+            {
+                throw new InvalidOperationException($"The template could not be updated: {updated.Status}.");
+            }
+
+            _logger.LogInformation("Updated the Formulate test template.");
+        }
+
+        return template;
     }
 
-    private async Task<IContentType> EnsureDocumentTypeAsync(IDataType dataType)
+    private static string Normalize(string? content) =>
+        (content ?? string.Empty).TrimStart('\uFEFF').Replace("\r\n", "\n").Trim();
+
+    private async Task<IContentType> EnsureDocumentTypeAsync(IDataType dataType, ITemplate template)
     {
         var existing = await _contentTypeService.GetAsync(DocumentTypeKey);
 
@@ -190,8 +240,6 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
         {
             return existing;
         }
-
-        var template = await EnsureTemplateAsync();
 
         var contentType = new ContentType(_shortStringHelper, Constants.System.Root)
         {

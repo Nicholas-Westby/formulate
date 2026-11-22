@@ -3,7 +3,6 @@ using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Infrastructure.BackgroundJobs;
-using Umbraco.Cms.Infrastructure.BackgroundJobs.Jobs;
 
 namespace Website.Composers;
 
@@ -11,12 +10,15 @@ namespace Website.Composers;
 /// Stops the dev site from reporting to Umbraco's telemetry service.
 /// </summary>
 /// <remarks>
-/// Even at the "Minimal" telemetry level, the lowest Umbraco offers, <see cref="ReportSiteJob"/> sends the
+/// Even at the "Minimal" telemetry level, the lowest Umbraco offers, Umbraco's <c>ReportSiteJob</c> sends the
 /// site's ID and Umbraco version. The dev site, the end-to-end tests' sites and CI's sites should report
 /// nothing, so this removes the job. It runs only in the Development environment and is never packed.
 /// </remarks>
 public sealed class NoTelemetryComposer : IComposer
 {
+    // Matched by name, so a later Umbraco that moves the type shows as the "registered" log line, not a build error.
+    internal const string ReportSiteJobTypeName = "Umbraco.Cms.Infrastructure.BackgroundJobs.Jobs.ReportSiteJob";
+
     public void Compose(IUmbracoBuilder builder)
     {
         // The host registers its environment as an instance, so it can be read while composing.
@@ -33,7 +35,7 @@ public sealed class NoTelemetryComposer : IComposer
         // Umbraco registers each recurring job as an IRecurringBackgroundJob, and its hosted service runs
         // every one it finds, so the job is gone once its registration is.
         var jobs = builder.Services
-            .Where(x => x.ServiceType == typeof(IRecurringBackgroundJob) && x.ImplementationType == typeof(ReportSiteJob))
+            .Where(x => x.ServiceType == typeof(IRecurringBackgroundJob) && x.ImplementationType?.FullName == ReportSiteJobTypeName)
             .ToList();
 
         foreach (var job in jobs)
@@ -53,7 +55,7 @@ public sealed class NoTelemetryLogger(IEnumerable<IRecurringBackgroundJob> jobs,
 {
     public void Handle(UmbracoApplicationStartedNotification notification)
     {
-        var running = jobs.Any(x => x is ReportSiteJob);
+        var running = jobs.Any(x => x.GetType().FullName == NoTelemetryComposer.ReportSiteJobTypeName);
 
         logger.LogInformation(
             "Umbraco's telemetry job (ReportSiteJob) is {State}.",
