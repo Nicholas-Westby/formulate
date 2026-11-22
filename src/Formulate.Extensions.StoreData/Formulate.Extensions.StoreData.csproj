@@ -26,4 +26,8 @@
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="Formulate.Extensions.StoreData.Tests" />
+    </ItemGroup>
+
 </Project>

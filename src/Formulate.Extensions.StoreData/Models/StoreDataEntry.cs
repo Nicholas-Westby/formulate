@@ -13,11 +13,11 @@
         /// <summary>
         /// Gets or sets the field name.
         /// </summary>
-        public string FieldName { get; set; }
+        public string FieldName { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the field value.
         /// </summary>
-        public string Value { get; set; }
+        public string Value { get; set; } = string.Empty;
     }
 }

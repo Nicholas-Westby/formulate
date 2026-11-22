@@ -52,7 +52,7 @@ namespace Formulate.Web.Persistence
             _logger = logger;
 
             var persistence = options.Value.Persistence;
-            _jsonRootPath = ResolveDataFolder(persistence.DataFolderPath, hostEnvironment.ContentRootPath);
+            _jsonRootPath = ContentRootPath.Resolve(persistence.DataFolderPath, hostEnvironment.ContentRootPath);
             _logger.LogInformation("Formulate stores its JSON files in {DataFolder}.", _jsonRootPath);
         }
 
@@ -64,25 +64,6 @@ namespace Formulate.Web.Persistence
             var updatedSettings = UpdateSettings(settings);
 
             return new WebHostRepositoryUtility<TEntity>(updatedSettings, _jsonUtility, _entityCache, _logger);
-        }
-
-        /// <summary>
-        /// Resolves the configured data folder to a full path.
-        /// </summary>
-        /// <remarks>
-        /// A leading "~/" or "~\" and a plain relative path are relative to the content root. Any
-        /// other rooted path (such as "/var/formulate" or "C:\data") is used as is.
-        /// </remarks>
-        private static string ResolveDataFolder(string configured, string contentRootPath)
-        {
-            if (configured.StartsWith("~/") || configured.StartsWith("~\\"))
-            {
-                configured = configured.Substring(2)
-                    .Replace('\\', Path.DirectorySeparatorChar)
-                    .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-            }
-
-            return Path.GetFullPath(configured, contentRootPath);
         }
 
         /// <summary>

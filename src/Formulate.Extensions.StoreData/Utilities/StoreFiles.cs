@@ -1,93 +1,107 @@
-﻿namespace Formulate.Extensions.StoreData.Utilities
+namespace Formulate.Extensions.StoreData.Utilities
 {
+    using Formulate.Core.FormFields.Upload;
     using Formulate.Extensions.StoreData.Models;
-    using Microsoft.AspNetCore.Hosting;
-    using Umbraco.Extensions;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
 
     internal sealed class StoreFiles : IStoreFiles
     {
-        private readonly IWebHostEnvironment _webHostEnvironment;
+        private static readonly Guid UploadKindId = Guid.Parse(UploadFieldDefinition.Constants.KindId);
 
-        public StoreFiles(IWebHostEnvironment webHostEnvironment)
+        private readonly UploadFolders _folders;
+        private readonly IOptions<StoreDataSettings> _settings;
+        private readonly ILogger<StoreFiles> _logger;
+
+        public StoreFiles(UploadFolders folders, IOptions<StoreDataSettings> settings, ILogger<StoreFiles> logger)
         {
-            _webHostEnvironment = webHostEnvironment;
+            _folders = folders;
+            _settings = settings;
+            _logger = logger;
         }
 
         /// <summary>
-        /// Store form submission files in a location.
+        /// Stores the files of a form submission.
         /// </summary>
         /// <param name="input">The input.</param>
-        /// <returns>A readonly collection of <see cref="StoreDataEntry"/>.</returns>
+        /// <returns>A readonly collection of <see cref="StoreDataEntry"/>, one per stored file.</returns>
         /// <remarks>
         /// <para>
-        /// By default, files will be stored in a file system folder based on submission ID followed by field ID.
+        /// Files go in {uploads folder}/{submission ID}/{field ID}/{name}. The name is the one the client sent,
+        /// made safe (see <see cref="UploadFileNames"/>) and given a " (2)", " (3)" suffix when it repeats.
+        /// The returned value is that stored name, which is what the submissions API downloads by.
         /// </para>
-        /// <para>The returned values provide a value so the Formulate backoffice can access them.</para>
+        /// <para>
+        /// Only upload fields keep files. A file for another kind of field, or one over
+        /// <see cref="StoreDataSettings.MaxUploadBytes"/>, is dropped and logged.
+        /// </para>
         /// </remarks>
         public IReadOnlyCollection<StoreDataEntry> Execute(StoreFilesInput input)
         {
             var entries = new List<StoreDataEntry>();
-            var files = input.Files;
+            var maxBytes = _settings.Value.MaxUploadBytes;
 
-            if (files.Any() == false)
+            foreach (var kvp in input.Files)
             {
-                return entries;
-            }
-
-            var configBasePath = "/App_Data/Formulate/StoreData";
-            var basePath = _webHostEnvironment.MapPathWebRoot(configBasePath);
-
-            CreateDirectoryIfMissing(basePath);
-
-            var formattedSubmissionId = input.SubmissionId.ToString("N");
-            var submissionPath = Path.Combine(basePath, formattedSubmissionId);
-
-            CreateDirectoryIfMissing(submissionPath);
-
-            var form = input.Form;
-
-            // Normal fields.
-            foreach (var kvp in files)
-            {
-                var values = kvp.Value.GetValues();
-                var field = form.Fields.FirstOrDefault(x => x.Id == kvp.Key);
+                var field = input.Form.Fields.FirstOrDefault(x => x.Id == kvp.Key);
 
                 if (field is null)
                 {
                     continue;
                 }
 
-                var formattedFieldId = field.Id.ToString("N");
-                var fieldPath = Path.Combine(submissionPath, formattedFieldId);
-
-                CreateDirectoryIfMissing(fieldPath);
-
-                foreach (var file in values)
+                if (field.KindId != UploadKindId)
                 {
-                    var fileSystemPath = Path.Combine(fieldPath, file.Name);
-                    
-                    // TODO: Add code that allows for multiple uploads where the file name is the same.
+                    _logger.LogWarning(
+                        "Ignored files sent for field {FieldId} ({FieldName}) of form {FormId} because it is not an upload field.",
+                        field.Id, field.Name, input.Form.Id);
+                    continue;
+                }
 
-                    File.WriteAllBytes(fileSystemPath, file.Data);
+                var fieldFolder = _folders.FieldFolder(input.SubmissionId, field.Id);
+                var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    entries.Add(new StoreDataEntry()
+                foreach (var file in kvp.Value.GetValues())
+                {
+                    var length = file.Data?.LongLength ?? 0;
+
+                    if (length > maxBytes)
+                    {
+                        _logger.LogWarning(
+                            "Rejected the file {FileName} ({Length} bytes) for field {FieldId} of form {FormId}: it is over the {MaxUploadBytes} byte limit.",
+                            UploadFileNames.Sanitize(file.Name), length, field.Id, input.Form.Id, maxBytes);
+                        continue;
+                    }
+
+                    var storedName = UploadFileNames.MakeUnique(UploadFileNames.Sanitize(file.Name), taken);
+                    var path = _folders.FilePath(input.SubmissionId, field.Id, storedName)
+                        ?? throw new InvalidOperationException($"The upload name '{storedName}' is outside its folder.");
+
+                    try
+                    {
+                        Directory.CreateDirectory(fieldFolder);
+                        File.WriteAllBytes(path, file.Data ?? Array.Empty<byte>());
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        // One file the file system refuses must not lose the submission and its other values.
+                        _logger.LogWarning(
+                            ex,
+                            "Could not store the file {FileName} for field {FieldId} of form {FormId}; the rest of the submission is kept.",
+                            storedName, field.Id, input.Form.Id);
+                        continue;
+                    }
+
+                    entries.Add(new StoreDataEntry
                     {
                         FieldId = field.Id,
                         FieldName = field.Name,
-                        Value = file.Name,
+                        Value = storedName,
                     });
                 }
             }
 
             return entries;
-        }
-
-        private static void CreateDirectoryIfMissing(string path)
-        {
-            if (!Directory.Exists(path))
-            {
-                Directory.CreateDirectory(path);
-            }
         }
     }
 }
