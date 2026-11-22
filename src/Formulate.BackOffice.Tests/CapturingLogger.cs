@@ -7,7 +7,7 @@ namespace Formulate.BackOffice.Tests;
 /// </summary>
 internal sealed class CapturingLogger<T> : ILogger<T>
 {
-    public List<(LogLevel Level, string Message)> Entries { get; } = new();
+    public List<(LogLevel Level, string Message, Exception? Exception)> Entries { get; } = new();
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
@@ -16,6 +16,6 @@ internal sealed class CapturingLogger<T> : ILogger<T>
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
         Func<TState, Exception?, string> formatter)
     {
-        Entries.Add((logLevel, formatter(state, exception)));
+        Entries.Add((logLevel, formatter(state, exception), exception));
     }
 }

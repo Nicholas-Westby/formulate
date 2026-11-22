@@ -8,7 +8,8 @@ namespace Formulate.BackOffice.Migrations
     /// <remarks>
     /// Umbraco discovers package migration plans automatically and runs any that have not yet
     /// completed when the site starts. It stores the plan's progress in umbracoKeyValue under
-    /// "Umbraco.Core.Upgrader.State+Formulate".
+    /// "Umbraco.Core.Upgrader.State+Formulate". Since sites store these states, never rename one:
+    /// add each new step after the current final state.
     /// </remarks>
     public sealed class FormulateMigrationPlan : PackageMigrationPlan
     {
@@ -27,8 +28,10 @@ namespace Formulate.BackOffice.Migrations
         protected override void DefinePlan()
         {
             const string sectionGranted = "formulate-5-section-granted";
+            const string formulate3SectionMoved = "formulate-5-legacy-section-moved";
 
             To<GrantSectionToAdministrators>(sectionGranted);
+            To<MoveFormulate3SectionPermissions>(formulate3SectionMoved);
 
             // A site upgraded from Formulate 3 starts at that version's final state. Without this
             // transition, Umbraco would refuse to run the plan and the site would fail to start.
