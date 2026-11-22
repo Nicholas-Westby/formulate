@@ -2,7 +2,8 @@ import { mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
-import { E2E_USER } from './fixtures/user.js';
+import { E2E_USER } from './fixtures/user.ts';
+import { RUN_FOLDER_PREFIX, removeOldRunFolders } from './support/run-folders.ts';
 
 /**
  * Starts the dev website (src/Website) on a new, empty database and drives its back office.
@@ -17,8 +18,14 @@ const ORIGIN = 'https://localhost:44331';
 
 // Every run starts from nothing: a new folder holds the site's SQLite database and Formulate's JSON files.
 // (An in-memory database does not work: its tables are gone before Umbraco's install has finished.)
-// The test workers load this file too, and inherit the folder from the main process.
-process.env.FORMULATE_E2E_RUN_FOLDER ??= join(tmpdir(), `formulate-e2e-${Date.now()}`);
+// Playwright loads this file in its main process first, then in each test worker, which inherits the
+// folder. Only the main process picks the folder, and removes the folders of runs a day old or more.
+if (!process.env.FORMULATE_E2E_RUN_FOLDER) {
+	const newRunFolder = join(tmpdir(), `${RUN_FOLDER_PREFIX}${Date.now()}`);
+	removeOldRunFolders(tmpdir(), { now: Date.now(), keep: newRunFolder });
+	process.env.FORMULATE_E2E_RUN_FOLDER = newRunFolder;
+}
+
 const runFolder = process.env.FORMULATE_E2E_RUN_FOLDER;
 mkdirSync(runFolder, { recursive: true });
 

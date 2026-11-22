@@ -5,8 +5,10 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
     "skipLibCheck": true,
     "noEmit": true,
     "strict": true,
@@ -16,5 +18,5 @@
     "noImplicitReturns": true,
     "types": ["node"]
   },
-  "include": ["playwright.config.ts", "fixtures", "specs"]
+  "include": ["playwright.config.ts", "fixtures", "specs", "support"]
 }

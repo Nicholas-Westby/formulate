@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { expect, test } from '../fixtures/login.js';
+import { expect, test } from '../fixtures/login.ts';
 
 const TREES = [
 	{ label: 'Forms', apiAlias: 'forms', rootEntityType: 'formulate-forms-root' },

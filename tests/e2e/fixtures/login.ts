@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { test as base, expect, type Page } from '@playwright/test';
-import { E2E_USER } from './user.js';
+import { E2E_USER } from './user.ts';
 
 export { expect };
 
