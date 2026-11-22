@@ -65,5 +65,16 @@ namespace Formulate.Core.Tests.PersistenceTests
             Assert.False(((EntitySavingNotification<PersistedForm>)Assert.Single(_published, x => x is EntitySavingNotification<PersistedForm>)).IsNew);
             Assert.False(((EntitySavedNotification<PersistedForm>)Assert.Single(_published, x => x is EntitySavedNotification<PersistedForm>)).IsNew);
         }
+
+        [Theory]
+        [InlineData(typeof(EntitySavingNotification<PersistedForm>))]
+        [InlineData(typeof(EntitySavedNotification<PersistedForm>))]
+        public void A_save_notification_can_only_be_made_by_saying_whether_the_entity_is_new(Type notification)
+        {
+            // A constructor without IsNew would quietly mean "not new", so listeners for new forms would miss some.
+            var constructor = Assert.Single(notification.GetConstructors());
+
+            Assert.Equal(new[] { typeof(PersistedForm), typeof(bool) }, Array.ConvertAll(constructor.GetParameters(), x => x.ParameterType));
+        }
     }
 }

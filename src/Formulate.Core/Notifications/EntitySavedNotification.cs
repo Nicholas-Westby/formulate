@@ -5,11 +5,11 @@ namespace Formulate.Core.Notifications
 {
     public sealed class EntitySavedNotification<TPersistedEntity> : INotification where TPersistedEntity : class, IPersistedEntity
     {
-        public EntitySavedNotification(TPersistedEntity entity)
-            : this(entity, false)
-        {
-        }
-
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EntitySavedNotification{TPersistedEntity}"/> class.
+        /// </summary>
+        /// <param name="entity">The entity.</param>
+        /// <param name="isNew">True when the entity is being stored for the first time.</param>
         public EntitySavedNotification(TPersistedEntity entity, bool isNew)
         {
             Entity = entity;
