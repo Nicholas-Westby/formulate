@@ -1,6 +1,11 @@
 import { expect, test } from '../fixtures/login.ts';
 import { getUmbracoVersion, rootWorkspaceUrlEnd } from '../fixtures/umbraco-version.ts';
+import { readBuildProperty } from '../support/repo.ts';
 import { screenshotPath } from '../support/screenshots.ts';
+
+// The version the dashboard shows: the pack's (such as 5.0.0-local.g1a2b3c4), which its build writes in, or the
+// source's own.
+const FORMULATE_VERSION = process.env.FORMULATE_PACKAGE_VERSION || readBuildProperty('VersionPrefix');
 
 const TREES = [
 	{ label: 'Forms', apiAlias: 'forms', rootEntityType: 'formulate-forms-root' },
@@ -19,7 +24,7 @@ test('the Formulate section shows the welcome dashboard and the three trees', as
 
 	const dashboard = page.locator('formulate-welcome-dashboard');
 	await expect(dashboard.getByRole('heading', { name: 'Welcome to Formulate' })).toBeVisible();
-	await expect(dashboard.getByText('Formulate 5.0.0')).toBeVisible();
+	await expect(dashboard.getByText(`Formulate ${FORMULATE_VERSION}`, { exact: true })).toBeVisible();
 
 	const sidebar = page.locator('umb-section-sidebar');
 	for (const [index, tree] of TREES.entries()) {
