@@ -23,6 +23,14 @@
     <ProjectReference Include="..\Formulate\Formulate.csproj" />
   </ItemGroup>
 
+  <!--
+    Composers/FormulateOpenApiComposer.cs uses Swashbuckle on Umbraco 17. Umbraco 18 and later build
+    OpenAPI documents with Microsoft.AspNetCore.OpenApi, which Umbraco references at the version it needs.
+  -->
+  <ItemGroup Condition="'$(UmbracoMajor)' != '' and $([System.Int32]::Parse('$(UmbracoMajor)')) &lt; 18">
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Developer-only overrides, loaded in Debug builds. Never published. -->
     <Content Update="appsettings.Local.json" CopyToPublishDirectory="Never" />

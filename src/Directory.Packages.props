@@ -18,6 +18,8 @@
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoSiteVersion)" />
     <PackageVersion Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="$(UmbracoSiteVersion)" />
+    <!-- Builds the dev site's OpenAPI document on Umbraco 17, the version Umbraco 17.6 to 17.8 use. -->
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
   <ItemGroup>
