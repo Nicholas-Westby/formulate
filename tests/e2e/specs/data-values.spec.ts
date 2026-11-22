@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { KINDS, createFolder, createKindItem, emptyTree, storeLegacyDataValues } from '../fixtures/formulate-api.ts';
 import {
 	WORKSPACE_URL,
@@ -9,6 +9,7 @@ import {
 	valuesOf,
 	waitForNameFocus,
 } from '../fixtures/kind-item-workspace.ts';
+import { dragRowToTop } from '../fixtures/drag.ts';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
@@ -20,47 +21,6 @@ async function createAtTheTop(page: Page, kindName: string) {
 	await page.goto('/umbraco/section/formulate');
 	await runEntityAction(treeItem(sidebar(page), 'Data Values'), 'Create');
 	await page.locator('formulate-create-options-modal').locator(`umb-ref-item[name="${kindName}..."]`).click();
-}
-
-/**
- * Drags a row of a list editor by its handle to the top of the list, as a hand does. Umbraco's sorter moves
- * the row while it is dragged, so the row is held over the top until it shows there. The pointer then moves
- * a little more before the drop: the browser accepts a drop only when the last drag event was a dragover
- * the sorter took, and the first event after the rows move under the pointer is a dragenter, which the
- * sorter leaves alone. (A hand never stops dead the moment the row moves; a test does.)
- * @param page The page.
- * @param row The row to drag.
- * @param rows The list's rows.
- * @param values The inputs whose values show the order.
- * @param expected The values in the order the drag leaves them.
- */
-async function dragRowToTop(page: Page, row: Locator, rows: Locator, values: Locator, expected: Array<string>) {
-	const handle = (await row.locator('.handle').boundingBox())!;
-	const top = (await rows.first().boundingBox())!;
-	const x = handle.x + handle.width / 2;
-	const from = handle.y + handle.height / 2;
-	const to = top.y + 4;
-
-	await page.mouse.move(x, from);
-	await page.mouse.down();
-	for (let step = 1; step <= 10; step++) {
-		await page.mouse.move(x, from + ((to - from) * step) / 10);
-		await page.waitForTimeout(20);
-	}
-	// Stay over the top row, a pixel this way or that, until the row shows there.
-	let wiggle = 0;
-	await expect
-		.poll(async () => {
-			await page.mouse.move(x, to + (wiggle++ % 2));
-			return valuesOf(values);
-		})
-		.toEqual(expected);
-	for (let nudge = 1; nudge <= 3; nudge++) {
-		await page.waitForTimeout(50);
-		await page.mouse.move(x + nudge, to + 2);
-	}
-	await page.waitForTimeout(50);
-	await page.mouse.up();
 }
 
 test.afterEach(async ({ page }) => {
@@ -94,7 +54,7 @@ test('a List is created from the create dialog, sorted, and keeps its items afte
 	await rows.nth(2).locator('.handle').press('ArrowUp');
 	await expect.poll(() => valuesOf(values)).toEqual(['Red', 'Blue', 'Green', 'Yellow']);
 	// Sort by dragging the handle, with Umbraco's sorter.
-	await dragRowToTop(page, rows.nth(3), rows, values, ['Yellow', 'Red', 'Blue', 'Green']);
+	await dragRowToTop(page, rows.nth(3), rows, () => valuesOf(values), ['Yellow', 'Red', 'Blue', 'Green']);
 	await expect.poll(() => valuesOf(values)).toEqual(['Yellow', 'Red', 'Blue', 'Green']);
 	// Remove one.
 	await editor.locator('uui-button.remove[label="Remove Green"]').click();
