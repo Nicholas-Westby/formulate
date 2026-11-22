@@ -27,7 +27,8 @@ namespace Formulate.Extensions.StoreData
         public string UploadsFolderPath { get; set; } = DefaultUploadsFolderPath;
 
         /// <summary>
-        /// Gets or sets the largest file, in bytes, that is stored. Larger files are dropped and logged.
+        /// Gets or sets the largest file, in bytes, that is stored. When a form has an enabled Store Data handler, a larger file fails the submission with a message that
+        /// names the field and the limit. The store itself also drops such a file and logs it.
         /// </summary>
         public long MaxUploadBytes { get; set; } = DefaultMaxUploadBytes;
     }
