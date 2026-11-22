@@ -1,0 +1,79 @@
+<Project>
+
+  <!--
+    Builds a project's client-side (npm) code as part of "dotnet build". Paths are relative to the project.
+
+    A project opts in by setting these properties:
+
+      FormulateClientDirectory        The folder that holds package.json (such as Client).
+      FormulateClientOutput           The main built file. MSBuild skips the npm build while it is newer than every input.
+      FormulateClientOutputDirectory  The folder the npm build writes to (such as wwwroot/App_Plugins/Formulate). Everything
+                                      in it is added as content, so a clean build still serves and packs the new files.
+
+    and may set these:
+
+      FormulateClientExtraInputs      More files to watch, relative to the client directory and separated by ";"
+                                      (for example themes/**). They are added to FormulateClientInputs.
+      FormulateClientInputs           Replaces the default list of watched files (relative to the client directory):
+                                      src/**;public/**;package.json;package-lock.json;vite.config.ts;tsconfig.json
+      SkipClientBuild                 Pass -p:SkipClientBuild=true on the command line to skip the npm build.
+
+    The client directory is left out of the project's default items, so package.json, node_modules and the tests never
+    reach the build output or the package. IDE design-time builds never run npm. "npm ci" runs when package-lock.json
+    is newer than node_modules/.package-lock.json (which npm writes on install) or node_modules is missing.
+  -->
+  <PropertyGroup Condition="'$(FormulateClientDirectory)' != ''">
+    <DefaultItemExcludes>$(DefaultItemExcludes);$(FormulateClientDirectory)/**</DefaultItemExcludes>
+
+    <FormulateClientInputs Condition="'$(FormulateClientInputs)' == ''">src/**;public/**;package.json;package-lock.json;vite.config.ts;tsconfig.json</FormulateClientInputs>
+    <FormulateClientInputs Condition="'$(FormulateClientExtraInputs)' != ''">$(FormulateClientInputs);$(FormulateClientExtraInputs)</FormulateClientInputs>
+    <!-- The same list with the client directory in front of each entry. -->
+    <_FormulateClientInputPaths>$([MSBuild]::Unescape($(FormulateClientDirectory)/$(FormulateClientInputs.Replace(';', ';$(FormulateClientDirectory)/'))))</_FormulateClientInputPaths>
+  </PropertyGroup>
+
+  <!-- The client files the npm build reads (globs are only expanded in items, not in target Inputs). -->
+  <ItemGroup Condition="'$(FormulateClientDirectory)' != ''">
+    <FormulateClientInput Include="$(_FormulateClientInputPaths)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_FormulateClientActive Condition="'$(FormulateClientDirectory)' != '' and '$(FormulateClientOutput)' != '' and '$(DesignTimeBuild)' != 'true'">true</_FormulateClientActive>
+  </PropertyGroup>
+
+  <!-- Installs the npm packages when the lock file changes (npm writes node_modules/.package-lock.json on install). -->
+  <Target Name="FormulateRestoreClient"
+          Condition="'$(_FormulateClientActive)' == 'true' and '$(SkipClientBuild)' != 'true'"
+          Inputs="$(FormulateClientDirectory)/package-lock.json"
+          Outputs="$(FormulateClientDirectory)/node_modules/.package-lock.json">
+    <Message Importance="high" Text="Installing the client packages in $(FormulateClientDirectory) (npm ci)." />
+    <Exec Command="npm ci" WorkingDirectory="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(FormulateClientDirectory)'))" />
+  </Target>
+
+  <!-- Runs the npm build when a client source is newer than the built file. -->
+  <Target Name="FormulateBuildClient"
+          DependsOnTargets="FormulateRestoreClient"
+          BeforeTargets="AssignTargetPaths;ResolveStaticWebAssetsInputs"
+          Condition="'$(_FormulateClientActive)' == 'true' and '$(SkipClientBuild)' != 'true'"
+          Inputs="@(FormulateClientInput)"
+          Outputs="$(FormulateClientOutput)">
+    <Message Importance="high" Text="Building the client code in $(FormulateClientDirectory) (npm run build)." />
+    <Exec Command="npm run build" WorkingDirectory="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(FormulateClientDirectory)'))" />
+  </Target>
+
+  <!--
+    Files created during the build are not in the project's item lists, because those were collected
+    before the build started. This adds them as content, so that a clean build still serves and packs them.
+    It always runs (even when the npm build is skipped), right before static web assets are worked out.
+  -->
+  <Target Name="FormulateIncludeClientOutput"
+          DependsOnTargets="FormulateBuildClient"
+          BeforeTargets="AssignTargetPaths;ResolveStaticWebAssetsInputs"
+          Condition="'$(_FormulateClientActive)' == 'true' and '$(FormulateClientOutputDirectory)' != ''">
+    <ItemGroup>
+      <FormulateGeneratedFile Include="$(FormulateClientOutputDirectory)/**" />
+      <Content Include="@(FormulateGeneratedFile)" Exclude="@(Content)" />
+      <FormulateGeneratedFile Remove="@(FormulateGeneratedFile)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
