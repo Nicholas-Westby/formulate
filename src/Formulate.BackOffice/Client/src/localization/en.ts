@@ -18,5 +18,13 @@ export default {
 		welcomeShowForm:
 			'To show a form on a page, add a property that uses the Formulate Form Layout Picker to a document type, then pick a layout.',
 		version: (version: string) => `Formulate ${version}`,
+		nothingToCreate: 'Nothing can be created here.',
+		itemNotFound: 'This item no longer exists. Someone may have deleted it.',
+		moved: 'Moved',
+		duplicated: 'Duplicated',
+		confirmDeleteFolder: (name: string) =>
+			`Are you sure you want to delete <strong>${name}</strong>? Everything in the folder is deleted with it.`,
+		confirmDeleteForm: (name: string) =>
+			`Are you sure you want to delete <strong>${name}</strong>? Its layouts are deleted with it.`,
 	},
 } satisfies UmbLocalizationDictionary;

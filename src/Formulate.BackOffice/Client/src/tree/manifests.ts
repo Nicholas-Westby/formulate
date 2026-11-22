@@ -1,3 +1,5 @@
+import type { ManifestWorkspaceContextMenuStructureKind } from '@umbraco-cms/backoffice/menu';
+import { UMB_WORKSPACE_CONDITION_ALIAS } from '@umbraco-cms/backoffice/workspace';
 import {
 	FORMULATE_DATA_VALUES_ENTITY_TYPE,
 	FORMULATE_DATA_VALUES_FOLDER_ENTITY_TYPE,
@@ -18,6 +20,7 @@ import {
 	FORMULATE_VALIDATIONS_TREE_REPOSITORY_ALIAS,
 } from '../constants.js';
 import { FORMULATE_DATA_VALUES_TREE, FORMULATE_FORMS_TREE, FORMULATE_VALIDATIONS_TREE } from './trees.js';
+import type { FormulateTreeDefinition } from './types.js';
 
 const repositories: Array<UmbExtensionManifest> = [
 	{
@@ -119,7 +122,7 @@ const menuItems: Array<UmbExtensionManifest> = [
 	{
 		type: 'menuItem',
 		kind: 'tree',
-		alias: 'Formulate.MenuItem.Forms',
+		alias: FORMULATE_FORMS_TREE.menuItemAlias,
 		name: 'Formulate Forms Menu Item',
 		weight: 300,
 		meta: { label: FORMULATE_FORMS_TREE.rootName, menus: [FORMULATE_MENU_ALIAS], treeAlias: FORMULATE_FORMS_TREE_ALIAS },
@@ -127,7 +130,7 @@ const menuItems: Array<UmbExtensionManifest> = [
 	{
 		type: 'menuItem',
 		kind: 'tree',
-		alias: 'Formulate.MenuItem.DataValues',
+		alias: FORMULATE_DATA_VALUES_TREE.menuItemAlias,
 		name: 'Formulate Data Values Menu Item',
 		weight: 200,
 		meta: {
@@ -139,7 +142,7 @@ const menuItems: Array<UmbExtensionManifest> = [
 	{
 		type: 'menuItem',
 		kind: 'tree',
-		alias: 'Formulate.MenuItem.Validations',
+		alias: FORMULATE_VALIDATIONS_TREE.menuItemAlias,
 		name: 'Formulate Validations Menu Item',
 		weight: 100,
 		meta: {
@@ -148,6 +151,58 @@ const menuItems: Array<UmbExtensionManifest> = [
 			treeAlias: FORMULATE_VALIDATIONS_TREE_ALIAS,
 		},
 	},
+];
+
+/**
+ * Shows where the open item is in its tree, as Umbraco's own trees do: a breadcrumb in the workspace's
+ * footer, and the tree expanded down to the item, also when the item is opened by its URL. Both apply to
+ * the workspaces on the tree's list (FORMULATE_*_TREE_WORKSPACE_ALIASES in constants.ts).
+ * @param tree The tree.
+ * @param name The tree's name in the aliases, such as DataValues.
+ * @param api The tree's menu structure context, which reads the tree through the tree's repository.
+ * @returns The workspace context and the footer app.
+ */
+function workspaceStructure(
+	tree: FormulateTreeDefinition,
+	name: string,
+	api: ManifestWorkspaceContextMenuStructureKind['api'],
+): Array<UmbExtensionManifest> {
+	const inTreeWorkspaces = () => [{ alias: UMB_WORKSPACE_CONDITION_ALIAS, oneOf: [...tree.workspaceAliases] }];
+
+	return [
+		{
+			type: 'workspaceContext',
+			kind: 'menuStructure',
+			alias: `Formulate.WorkspaceContext.MenuStructure.${name}`,
+			name: `Formulate ${name} Menu Structure Workspace Context`,
+			api,
+			meta: { menuItemAlias: tree.menuItemAlias },
+			conditions: inTreeWorkspaces(),
+		},
+		{
+			type: 'workspaceFooterApp',
+			kind: 'menuBreadcrumb',
+			alias: `Formulate.WorkspaceFooterApp.Breadcrumb.${name}`,
+			name: `Formulate ${name} Breadcrumb Workspace Footer App`,
+			conditions: inTreeWorkspaces(),
+		},
+	];
+}
+
+const workspaceStructures: Array<UmbExtensionManifest> = [
+	...workspaceStructure(FORMULATE_FORMS_TREE, 'Forms', () =>
+		import('./menu-structure.context.js').then((module) => ({ api: module.FormulateFormsMenuStructureWorkspaceContext })),
+	),
+	...workspaceStructure(FORMULATE_DATA_VALUES_TREE, 'DataValues', () =>
+		import('./menu-structure.context.js').then((module) => ({
+			api: module.FormulateDataValuesMenuStructureWorkspaceContext,
+		})),
+	),
+	...workspaceStructure(FORMULATE_VALIDATIONS_TREE, 'Validations', () =>
+		import('./menu-structure.context.js').then((module) => ({
+			api: module.FormulateValidationsMenuStructureWorkspaceContext,
+		})),
+	),
 ];
 
 // Selecting a tree's root opens a workspace with the tree's name, as Umbraco's own trees do.
@@ -200,5 +255,6 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...treeItems,
 	...menuItems,
 	...rootWorkspaces,
+	...workspaceStructures,
 	...entityActions,
 ];

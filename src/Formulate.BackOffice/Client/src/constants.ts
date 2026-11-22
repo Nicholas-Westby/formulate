@@ -33,6 +33,10 @@ export const FORMULATE_VALIDATIONS_TREE_API_ALIAS = 'validations';
 export const FORMULATE_SECTION_ALIAS = 'Formulate.Section';
 export const FORMULATE_SECTION_PATHNAME = 'formulate';
 export const FORMULATE_MENU_ALIAS = 'Formulate.Menu';
+// The menu's items, one per tree.
+export const FORMULATE_FORMS_MENU_ITEM_ALIAS = 'Formulate.MenuItem.Forms';
+export const FORMULATE_DATA_VALUES_MENU_ITEM_ALIAS = 'Formulate.MenuItem.DataValues';
+export const FORMULATE_VALIDATIONS_MENU_ITEM_ALIAS = 'Formulate.MenuItem.Validations';
 
 // Trees and their repositories.
 export const FORMULATE_FORMS_TREE_ALIAS = 'Formulate.Tree.Forms';
@@ -41,3 +45,46 @@ export const FORMULATE_VALIDATIONS_TREE_ALIAS = 'Formulate.Tree.Validations';
 export const FORMULATE_FORMS_TREE_REPOSITORY_ALIAS = 'Formulate.Repository.Tree.Forms';
 export const FORMULATE_DATA_VALUES_TREE_REPOSITORY_ALIAS = 'Formulate.Repository.Tree.DataValues';
 export const FORMULATE_VALIDATIONS_TREE_REPOSITORY_ALIAS = 'Formulate.Repository.Tree.Validations';
+
+// Folders: one repository per tree, sharing one store.
+export const FORMULATE_FORMS_FOLDER_REPOSITORY_ALIAS = 'Formulate.Repository.Folder.Forms';
+export const FORMULATE_DATA_VALUES_FOLDER_REPOSITORY_ALIAS = 'Formulate.Repository.Folder.DataValues';
+export const FORMULATE_VALIDATIONS_FOLDER_REPOSITORY_ALIAS = 'Formulate.Repository.Folder.Validations';
+export const FORMULATE_FOLDER_STORE_ALIAS = 'Formulate.Store.Folder';
+// Picking a folder in a tree opens it in its tree's folder workspace, where it can be renamed.
+export const FORMULATE_FORMS_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.Forms';
+export const FORMULATE_DATA_VALUES_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.DataValues';
+export const FORMULATE_VALIDATIONS_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.Validations';
+
+// The workspaces of each tree's items. Each one shows the tree's breadcrumb in its footer, and opening one
+// expands the tree down to its item. A new workspace for a tree's items goes on that tree's list.
+export const FORMULATE_FORMS_TREE_WORKSPACE_ALIASES: ReadonlyArray<string> = [FORMULATE_FORMS_FOLDER_WORKSPACE_ALIAS];
+export const FORMULATE_DATA_VALUES_TREE_WORKSPACE_ALIASES: ReadonlyArray<string> = [
+	FORMULATE_DATA_VALUES_FOLDER_WORKSPACE_ALIAS,
+];
+export const FORMULATE_VALIDATIONS_TREE_WORKSPACE_ALIASES: ReadonlyArray<string> = [
+	FORMULATE_VALIDATIONS_FOLDER_WORKSPACE_ALIAS,
+];
+
+// Items of every entity type, as pickers and entity actions show them.
+export const FORMULATE_ITEM_REPOSITORY_ALIAS = 'Formulate.Repository.Item';
+export const FORMULATE_ITEM_STORE_ALIAS = 'Formulate.Store.Item';
+
+// Details (whole entities, as workspaces edit them).
+export const FORMULATE_FORM_DETAIL_REPOSITORY_ALIAS = 'Formulate.Repository.Detail.Form';
+export const FORMULATE_LAYOUT_DETAIL_REPOSITORY_ALIAS = 'Formulate.Repository.Detail.Layout';
+export const FORMULATE_VALIDATION_DETAIL_REPOSITORY_ALIAS = 'Formulate.Repository.Detail.Validation';
+export const FORMULATE_DATA_VALUES_DETAIL_REPOSITORY_ALIAS = 'Formulate.Repository.Detail.DataValues';
+export const FORMULATE_FORM_DETAIL_STORE_ALIAS = 'Formulate.Store.Detail.Form';
+export const FORMULATE_LAYOUT_DETAIL_STORE_ALIAS = 'Formulate.Store.Detail.Layout';
+export const FORMULATE_VALIDATION_DETAIL_STORE_ALIAS = 'Formulate.Store.Detail.Validation';
+export const FORMULATE_DATA_VALUES_DETAIL_STORE_ALIAS = 'Formulate.Store.Detail.DataValues';
+
+// Moving items to another folder of their tree. Layouts have none: a layout's parent is its form.
+export const FORMULATE_FORM_MOVE_REPOSITORY_ALIAS = 'Formulate.Repository.Move.Form';
+export const FORMULATE_FOLDER_MOVE_REPOSITORY_ALIAS = 'Formulate.Repository.Move.Folder';
+export const FORMULATE_VALIDATION_MOVE_REPOSITORY_ALIAS = 'Formulate.Repository.Move.Validation';
+export const FORMULATE_DATA_VALUES_MOVE_REPOSITORY_ALIAS = 'Formulate.Repository.Move.DataValues';
+
+// Copying forms. The copy goes next to the original.
+export const FORMULATE_FORM_DUPLICATE_REPOSITORY_ALIAS = 'Formulate.Repository.Duplicate.Form';

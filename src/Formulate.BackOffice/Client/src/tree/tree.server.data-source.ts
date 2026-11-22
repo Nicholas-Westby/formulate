@@ -14,8 +14,12 @@ import {
 	type FormulateTreeItemResponseModel,
 	type PagedFormulateTreeItemResponseModel,
 } from '../api/index.js';
-import { FORMULATE_FORM_ENTITY_TYPE, FORMULATE_LAYOUT_ENTITY_TYPE } from '../constants.js';
-import { FORMULATE_DATA_VALUES_TREE, FORMULATE_FORMS_TREE, FORMULATE_VALIDATIONS_TREE } from './trees.js';
+import {
+	FORMULATE_DATA_VALUES_TREE,
+	FORMULATE_FORMS_TREE,
+	FORMULATE_VALIDATIONS_TREE,
+	getFormulateParent,
+} from './trees.js';
 import type { FormulateTreeDefinition, FormulateTreeItemModel } from './types.js';
 
 /** How many items each request reads, unless Umbraco asks for a page of another size. */
@@ -168,11 +172,7 @@ async function readAroundTarget(
 	};
 }
 
-/**
- * Maps an API item to a tree item. The API gives only the parent's ID, so its entity type comes from
- * where the item is: a layout's parent is its form, any other item's parent is a folder, and an item
- * without a parent is at the top of the tree.
- */
+/** Maps an API item to a tree item. The API gives only the parent's ID (see getFormulateParent). */
 function toTreeItem(item: FormulateTreeItemResponseModel, tree: FormulateTreeDefinition): FormulateTreeItemModel {
 	return {
 		unique: item.id,
@@ -181,12 +181,6 @@ function toTreeItem(item: FormulateTreeItemResponseModel, tree: FormulateTreeDef
 		hasChildren: item.hasChildren,
 		isFolder: item.isFolder,
 		icon: item.icon,
-		parent: item.parent
-			? {
-					unique: item.parent.id,
-					entityType:
-						item.entityType === FORMULATE_LAYOUT_ENTITY_TYPE ? FORMULATE_FORM_ENTITY_TYPE : tree.folderEntityType,
-				}
-			: { unique: null, entityType: tree.rootEntityType },
+		parent: getFormulateParent(item.entityType, item.parent?.id, tree),
 	};
 }
