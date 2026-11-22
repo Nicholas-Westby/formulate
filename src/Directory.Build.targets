@@ -80,6 +80,9 @@
       <_FormulateDeletedFile Remove="@(_FormulateDeletedFile)" />
 
       <FormulateGeneratedFile Include="$(FormulateClientOutputDirectory)/**" />
+      <!-- Release builds (and so packages) leave out source maps, which only help while debugging. -->
+      <FormulateGeneratedFile Remove="$(FormulateClientOutputDirectory)/**/*.map" Condition="'$(Configuration)' == 'Release'" />
+      <Content Remove="$(FormulateClientOutputDirectory)/**/*.map" Condition="'$(Configuration)' == 'Release'" />
       <Content Include="@(FormulateGeneratedFile)" Exclude="@(Content)" />
       <FormulateGeneratedFile Remove="@(FormulateGeneratedFile)" />
     </ItemGroup>
