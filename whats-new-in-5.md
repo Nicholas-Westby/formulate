@@ -16,6 +16,7 @@ Formulate 5.0.0 is a new version for current Umbraco. Formulate 4 was never rele
 * **Submissions view.** Forms with a Store Data handler show their submissions, with CSV export.
 * **Formulate Pro is now part of Formulate, for free.** [Designed Emails](/pro/designed-emails) and the [basic theme](/pro/basic-theme) are in the main package. Pro licences are no longer needed or sold.
 * **No telemetry.** Formulate 5 doesn't send any usage data anywhere.
+* **Custom field renderers can build on the built-in ones.** The renderer is a set of small JavaScript modules, so a phone field is a few lines on top of the text field. See [Custom Field Renderers](/plain-javascript/custom-field-renderers).
 
 ![The Submissions view for the Contact Us form, with the CSV export button](/images/v5/submissions-view.png)
 
@@ -31,7 +32,7 @@ Install it with `dotnet add package Umbraco.Community.Formulate`. See [Installin
 2. Add a property that uses it (for example, alias `form`) to a document type.
 3. Pick a form layout on the content node.
 4. Render it in your Razor template: `@await Component.InvokeAsync("FormulateForm", Model.Value<Formulate.Core.FormLayout>("form"))`. With Models Builder, use `@await Component.InvokeAsync("FormulateForm", Model.Form)`.
-5. The form renderer script is added to the page automatically. To add it yourself, set `"Formulate": { "PlainJavaScript": { "IncludeScript": false } }` in `appsettings.json`.
+5. The form renderer is added to the page automatically. To add it yourself, set `"Formulate": { "PlainJavaScript": { "IncludeScript": false } }` in `appsettings.json`, and load `formulate.min.js` with `<script type="module">`.
 
 More detail is on the [Render Form](/plain-javascript/render-form) page.
 
@@ -46,6 +47,6 @@ There is no automatic migration. The full steps, the settings that moved and the
 * **"List Function" data values** load as a legacy kind with no items. Re-create them as a List or US States data value.
 * **Send Data's JSON format** sends a plain object by default. To keep Formulate 3's `[ {...} ]`, set `Formulate:SendData:JsonMode` to `WrappedArray`. Date values are sent as `MMMM dd, yyyy`.
 * **Settings** are in `appsettings.json` now. See the [settings table](https://github.com/Nicholas-Westby/formulate/blob/v5/main/README.md#settings).
-* **The front end stays the same.** The BEM classes (`formulate__...`), JavaScript events and custom field type hooks (`window["formulate-plain-js-fields"]`) are unchanged. Existing styles and custom field types keep working.
+* **The front end stays the same.** The BEM classes (`formulate__...`), JavaScript events and custom field type hooks (`window["formulate-plain-js-fields"]`) are unchanged. Existing styles and custom field types keep working. If you load the renderer yourself, load it as a module: see [Loading the Renderer Yourself](/plain-javascript/custom-field-renderers#loading-the-renderer-yourself).
 * **No AngularJS template.** The AngularJS pages on this site apply to Formulate 3 only.
 * **Questions go to GitHub.** Please use the [issue tracker](https://github.com/Nicholas-Westby/formulate/issues).

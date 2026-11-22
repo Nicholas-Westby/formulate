@@ -26,7 +26,7 @@ Once you've installed Formulate and created a form, there are five steps to show
 
    The component shows nothing, and writes nothing to the log, when no form is picked, when the picked layout was deleted or does not belong to a form, or when the form was deleted or has no fields. When the layout has no template, or its template isn't installed, it shows nothing and logs a warning.
 
-5. The form renderer script is added to the page automatically, once per page, even when the page has several forms. To add it yourself instead (for example, in your own bundle), turn this off in `appsettings.json`:
+5. The form renderer is added to the page automatically, once per page, even when the page has several forms. It is a set of small JavaScript modules: the page preloads them and loads `formulate.min.js` with `<script type="module">`. To add it yourself instead, turn this off in `appsettings.json`:
 
    ```json
    {
@@ -38,11 +38,15 @@ Once you've installed Formulate and created a form, there are five steps to show
    }
    ```
 
+   Then see [Loading the Renderer Yourself](/plain-javascript/custom-field-renderers#loading-the-renderer-yourself).
+
 Forms have no styles unless you turn on the [basic theme](/pro/basic-theme), with `"Theme": "basic"` under `Formulate:PlainJavaScript` in `appsettings.json`. The settings are listed in the [README on GitHub](https://github.com/Nicholas-Westby/formulate/blob/v5/main/README.md#settings).
 
 ![The Form Layout Picker on a content node, with a form layout selected](/images/v5/layout-picker-content-node.png)
 
 The front-end classes (BEM names such as `formulate__...`), the JavaScript events and the custom field type hooks (`window["formulate-plain-js-fields"]`) are the same as in Formulate 3. Existing styles and custom field types keep working.
+
+To add a field type of your own, or to change how a built-in field renders, see [Custom Field Renderers](/plain-javascript/custom-field-renderers). A renderer can build on a built-in one, so a phone field takes a few lines.
 
 # Handling Events
 

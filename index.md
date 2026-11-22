@@ -36,6 +36,7 @@ Here are a few pages that will help you get started with Formulate:
   * [Simple Form](/simple-form)
   * [Complex Form](/complex-form)
 * [Render Form](/plain-javascript/render-form)
+* [Custom Field Renderers](/plain-javascript/custom-field-renderers)
 * Additional Tips:
   * [Validations](/validations)
   * [Designed Emails](/pro/designed-emails)
@@ -44,7 +45,7 @@ Here are a few pages that will help you get started with Formulate:
 * Advanced Topics:
   * [Extensibility](/extensibility)
   * [Contributing to Formulate](https://github.com/Nicholas-Westby/formulate#contributing)
-  * [Custom Field Types](/articles/custom-field-types)
+  * [Custom Field Types (Formulate 3)](/articles/custom-field-types)
 * [Frequently Asked Questions](/faq)
 * [Testimonials](/testimonials)
 

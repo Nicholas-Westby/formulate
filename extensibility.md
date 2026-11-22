@@ -7,11 +7,11 @@ title: Formulate Extensibility
 
 You can extend or replace much of Formulate. Here are some examples:
 
-* **Fields.** You can create your own types of fields. A field has a back office part and a front-end renderer. The [custom field types](/articles/custom-field-types) page covers the front-end renderer, which works the same in Formulate 5.
+* **Fields.** You can create your own types of fields. A field has a C# part, an optional back office editor and a front-end renderer. The [custom field renderers](/plain-javascript/custom-field-renderers) page shows a phone field built on the text field. The older [custom field types](/articles/custom-field-types) page is for Formulate 3.
 * **Handlers.** A handler runs on the server when somebody submits a form. Formulate comes with handlers to store data, send emails, send designed emails and send data to external APIs. You can also write your own.
 * **Validations.** Formulate comes with Mandatory and Regular Expression validations. If you need something more specific, you can create your own.
 * **Data Values.** Formulate comes with List, Pair List and US States. You can create your own kind of data value, such as a list that comes from an API.
-* **Form Rendering.** The front-end classes, events and field hooks are plain JavaScript and CSS. You can restyle forms or change what happens on submit. See [Render Form](/plain-javascript/render-form).
+* **Form Rendering.** The front-end classes, events and field hooks are plain JavaScript and CSS. You can restyle forms or change what happens on submit. The renderer is a set of JavaScript modules that your own scripts can import. See [Render Form](/plain-javascript/render-form) and [Custom Field Renderers](/plain-javascript/custom-field-renderers).
 
 For the Formulate 5 extension points and code samples, see the [extending docs on GitHub](https://github.com/Nicholas-Westby/formulate/blob/v5/main/docs/extending.md).
 

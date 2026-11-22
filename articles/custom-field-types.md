@@ -3,7 +3,7 @@ layout: page
 title: Creating Custom Formulate Field Types with Plain JavaScript
 ---
 
-**Formulate 3 and Formulate 5.** The back office directive and the C# field type on this page apply to Formulate 3 only. The front-end renderer (the `window["formulate-plain-js-fields"]` hook) works the same in Formulate 5. For extending Formulate 5, see the [extending docs](https://github.com/Nicholas-Westby/formulate/blob/v5/main/docs/extending.md).
+**Formulate 3 and Formulate 5.** The back office directive and the C# field type on this page apply to Formulate 3 only. The front-end renderer (the `window["formulate-plain-js-fields"]` hook) works the same in Formulate 5. For a custom field in Formulate 5, see [Custom Field Renderers](/plain-javascript/custom-field-renderers), which covers the renderer and the C# side. For the rest of Formulate 5, see the [extending docs](https://github.com/Nicholas-Westby/formulate/blob/v5/main/docs/extending.md).
 
 
 # Plain JavaScript or AngularJS?
