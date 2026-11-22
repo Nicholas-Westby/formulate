@@ -1,14 +1,7 @@
 import type { FormFieldDefinitionModel } from '../../../api/index.js';
+import { FORMULATE_KIND_IDS } from '../../../core/field-kind-ids.js';
 import { isSameKind } from '../../../core/kind-id.js';
 import type { FormulatePickableField } from '../../../core/pickers/form-field-kinds.js';
-
-/** The kinds the Send Data handler treats on their own, by the server's kind IDs. */
-export const FORMULATE_KIND_IDS = {
-	/** TextConstantFieldDefinition.Constants.KindId. */
-	textConstant: 'd9b1a60a-1186-4440-887b-93195c760b5e',
-	/** UploadFieldDefinition.Constants.KindId. */
-	upload: 'dfefa5ec-0200-4806-a2ab-0ab22058021d',
-} as const;
 
 /**
  * Whether the Send Data handler sends a value for a field that a mapping names, as the server decides it: a

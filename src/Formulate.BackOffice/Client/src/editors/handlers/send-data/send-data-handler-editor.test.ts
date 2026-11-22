@@ -2,6 +2,7 @@ import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { FormFieldDefinitionModel } from '../../../api/index.js';
 import { FormulateDefinitionsContext } from '../../../core/definitions.context.js';
+import { FORMULATE_KIND_IDS } from '../../../core/field-kind-ids.js';
 import { isSameKind } from '../../../core/kind-id.js';
 import type { FormulatePickFieldsModalData } from '../../../core/pickers/pick-fields-modal.token.js';
 import { fakeApi, jsonResponse } from '../../../test/fake-api.js';
@@ -14,7 +15,7 @@ import { createTestHost } from '../../../test/test-host.js';
 import { click, press, typeInto, valuesOf } from '../../../test/ui.js';
 import { FormulateFieldMappingsInputElement } from './field-mappings-input.element.js';
 import { FormulateSendDataHandlerEditorElement } from './send-data-handler-editor.element.js';
-import { FORMULATE_KIND_IDS, isAddedByAddAll, sendsValue } from './send-data-fields.js';
+import { isAddedByAddAll, sendsValue } from './send-data-fields.js';
 import { FORMULATE_TRANSMISSION_FORMATS } from './transmission-formats.js';
 
 // The kinds as the definitions endpoint gives them, with the flags each definition has on the server.
