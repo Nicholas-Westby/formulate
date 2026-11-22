@@ -26,6 +26,8 @@ describe('Formulate built-in kind editors', () => {
 			['formulateFieldEditor', 'formulate-rich-text-field', 'Formulate.FieldEditor.RichText'],
 			['formulateFieldEditor', 'formulate-text-constant-field', 'Formulate.FieldEditor.TextConstant'],
 			['formulateHandlerEditor', 'formulate-store-data-handler', 'Formulate.HandlerEditor.StoreData'],
+			['formulateHandlerEditor', 'formulate-send-email-handler', 'Formulate.HandlerEditor.SendEmail'],
+			['formulateHandlerEditor', 'formulate-designed-email-handler', 'Formulate.HandlerEditor.DesignedEmail'],
 		]);
 	});
 

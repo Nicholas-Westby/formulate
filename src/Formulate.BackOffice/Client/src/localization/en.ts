@@ -110,6 +110,48 @@ export default {
 		textConstantDescription:
 			'The value the server adds to each submission of the form. Visitors do not see it, and their browsers do not send it.',
 		richTextDescription: 'The formatted text the form shows.',
+		fieldNotFound: 'Field not found',
+		recipientPosition: (position: number) => `Email address ${position}`,
+		addRecipient: 'Add recipient',
+		noFieldsToPick: 'The form has no fields to choose from.',
+		fieldAndAlias: (name: string, alias: string) => (alias ? `${name} (${alias})` : name),
+		senderEmail: 'Sender email',
+		senderEmailDescription:
+			"The address the email is sent from, such as forms@example.com. Leave it blank to send from the site's address (Umbraco:CMS:Global:Smtp:From).",
+		recipients: 'Recipients',
+		recipientsDescription:
+			'The addresses the email is sent to. Each can have a name, such as Sales <sales@example.com>, or list several addresses separated by commas.',
+		recipientFields: 'Recipient fields',
+		recipientFieldsDescription: "Fields whose values are addresses to send the email to too, such as the visitor's own email.",
+		deliveryType: 'Delivery',
+		deliveryTypeDescription: "How the recipients get the email. With Bcc, they do not see each other's addresses.",
+		deliveryTo: 'To',
+		deliveryCc: 'Cc',
+		deliveryBcc: 'Bcc',
+		emailSubject: 'Subject',
+		emailSubjectDescription: "The email's subject.",
+		emailMessage: 'Message',
+		emailMessageDescription: 'The text at the start of the email.',
+		appendFields: 'Append fields',
+		appendFieldsDescription: 'Adds the submitted values below the message, and attaches the files that were sent.',
+		includeHiddenFields: 'Include hidden fields',
+		includeHiddenFieldsDescription: 'With Append fields, adds the values of Hidden fields too.',
+		excludeFieldLabels: 'Exclude field labels',
+		excludeFieldLabelsDescription: 'With Append fields, adds the values without the names of their fields.',
+		appendPayload: 'Append payload',
+		appendPayloadDescription: 'With Append fields, adds the URL and name of the page the form was sent from, before the values.',
+		fieldsToInclude: 'Fields to include',
+		fieldsToIncludeDescription:
+			"With Append fields, the fields whose values are added, in the form's order. Choose none to add them all. A Text Constant field adds its text.",
+		subjectView: 'Subject view',
+		subjectViewDescription: (path: string) =>
+			'The view that writes the subject, such as `' + path + '`. Leave it blank to use the subject above.',
+		htmlView: 'HTML view',
+		htmlViewDescription: (path: string) =>
+			'The view that writes the email, such as `' + path + '`. When this and the text view are blank, that sample is used.',
+		textView: 'Text view',
+		textViewDescription: (path: string) =>
+			'The view that writes a plain text email, such as `' + path + '`. It is used only when there is no HTML view.',
 		storeDataDescription:
 			'Stores each submission of this form in the Umbraco database: the values of its fields, the page it was sent from and the files sent with it. There is nothing to set here.',
 	},
