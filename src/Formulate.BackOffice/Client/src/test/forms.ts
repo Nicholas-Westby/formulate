@@ -98,6 +98,8 @@ export const CONFIG: FormulateConfigResponseModel = {
 		{ group: 'Personal', kind: 'Contact' },
 		{ group: 'Marketing', kind: 'Consent' },
 	],
+	// As a site with no reCAPTCHA keys, such as the dev site, says.
+	recaptchaConfigured: false,
 };
 
 /** A form as the API gives it, with a Text field and a Store Data handler. */

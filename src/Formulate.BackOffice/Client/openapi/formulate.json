@@ -3914,7 +3914,8 @@
       "FormulateConfigResponseModel": {
         "required": [
           "buttonKinds",
-          "fieldCategories"
+          "fieldCategories",
+          "recaptchaConfigured"
         ],
         "type": "object",
         "properties": {
@@ -3933,6 +3934,9 @@
                 }
               ]
             }
+          },
+          "recaptchaConfigured": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

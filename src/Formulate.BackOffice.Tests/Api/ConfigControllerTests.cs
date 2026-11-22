@@ -12,7 +12,12 @@ public class ConfigControllerTests
     [Fact]
     public void Config_endpoint_returns_the_config()
     {
-        var config = new FormulateConfigResponseModel { ButtonKinds = new[] { "Next" }, FieldCategories = Array.Empty<FieldCategoryModel>() };
+        var config = new FormulateConfigResponseModel
+        {
+            ButtonKinds = new[] { "Next" },
+            FieldCategories = Array.Empty<FieldCategoryModel>(),
+            RecaptchaConfigured = true,
+        };
         var service = new Mock<IConfigApiService>();
         service.Setup(x => x.Get()).Returns(config);
 

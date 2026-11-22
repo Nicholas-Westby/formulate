@@ -55,6 +55,7 @@ const TEMPLATES: Array<TemplateDefinitionModel> = [
 const CONFIG: FormulateConfigResponseModel = {
 	buttonKinds: ['Submit', 'Next', 'Previous'],
 	fieldCategories: [{ group: 'Personal', kind: 'Text' }],
+	recaptchaConfigured: true,
 };
 
 const RESPONSES: Record<string, unknown> = {

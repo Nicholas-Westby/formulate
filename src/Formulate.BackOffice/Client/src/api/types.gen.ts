@@ -144,6 +144,7 @@ export type FormResponseModel = {
 export type FormulateConfigResponseModel = {
     buttonKinds: Array<string>;
     fieldCategories: Array<FieldCategoryModel>;
+    recaptchaConfigured: boolean;
 };
 
 export type FormulateItemResponseModel = {
