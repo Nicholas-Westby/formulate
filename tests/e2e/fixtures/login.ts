@@ -17,10 +17,21 @@ export async function logIn(page: Page) {
 
 /**
  * Tests that start signed in to the back office. Each worker signs in once and saves the browser's
- * cookies and storage, which every test in that worker then starts from.
+ * cookies and storage. Each test starts from the saved session and saves the one it ends with for the
+ * next test, because the back office trades its refresh token for a new one every time it starts, and
+ * Umbraco ends the whole session when a traded token comes back after a short grace period (it takes it
+ * for a replay). When every test started from the sign-in's token, the session ended partway through a run.
  */
-export const test = base.extend<object, { signedInState: string }>({
+export const test = base.extend<{ passSessionOn: void }, { signedInState: string }>({
 	storageState: ({ signedInState }, use) => use(signedInState),
+
+	passSessionOn: [
+		async ({ context, signedInState }, use) => {
+			await use();
+			await context.storageState({ path: signedInState });
+		},
+		{ auto: true },
+	],
 
 	signedInState: [
 		async ({ browser }, use, workerInfo) => {
