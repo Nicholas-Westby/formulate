@@ -4,9 +4,9 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { FieldRendererBase, setData } from "../utils/field";
-import { checkTextValidity } from "../utils/validation";
+} from "../types.js";
+import { FieldRendererBase, setData } from "../utils/field.js";
+import { checkTextValidity } from "../utils/validation.js";
 
 /** Renders a multi-line text field. */
 export class RenderTextarea extends FieldRendererBase<HTMLTextAreaElement> {

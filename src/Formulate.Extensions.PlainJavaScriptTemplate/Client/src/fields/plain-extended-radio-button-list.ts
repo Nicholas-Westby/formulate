@@ -1,5 +1,5 @@
-import type { FieldItem, FieldRendererRegistration } from "../types";
-import { RenderRadioList } from "./plain-radio-button-list";
+import type { FieldItem, FieldRendererRegistration } from "../types.js";
+import { RenderRadioList } from "./plain-radio-button-list.js";
 
 /**
  * Renders a list of radio buttons where each item shows its label and its

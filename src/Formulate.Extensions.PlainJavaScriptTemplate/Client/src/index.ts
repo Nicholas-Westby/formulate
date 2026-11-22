@@ -1,14 +1,16 @@
 /*
- * The entry point of formulate.js, the visitor-side renderer for forms that use
- * the Plain JavaScript template. Once DOMContentLoaded has fired, it renders the
- * forms the Razor view queued on window["formulate-plain-js-forms"], and it
- * renders any form pushed onto that array later. Register custom fields on
- * window["formulate-plain-js-fields"] and custom validators on
- * window["formulate-plain-js-validators"] before DOMContentLoaded (a deferred
- * script is early enough, even one after formulate.js).
+ * The entry point of the visitor-side renderer for forms that use the Plain
+ * JavaScript template. The build makes it formulate.js (readable) and
+ * formulate.min.js (minified, which the Razor view loads as a module script).
+ * Once DOMContentLoaded has fired, it renders the forms the view queued on
+ * window["formulate-plain-js-forms"], and it renders any form pushed onto that
+ * array later. Register custom fields on window["formulate-plain-js-fields"]
+ * and custom validators on window["formulate-plain-js-validators"] before
+ * DOMContentLoaded (a module or deferred script is early enough, even one after
+ * formulate.min.js).
  */
-import { listenForForms } from "./steps/get-form-data";
-import { renderForm, renderForms } from "./steps/render-forms";
+import { listenForForms } from "./steps/get-form-data.js";
+import { renderForm, renderForms } from "./steps/render-forms.js";
 
 if (window.formulatePlainJs) {
   console.warn("Formulate: the plain JavaScript renderer was loaded more than once, so this copy does nothing.");
@@ -19,9 +21,10 @@ if (window.formulatePlainJs) {
 
 /**
  * Runs the callback once DOMContentLoaded has fired (straight away if it already
- * has). The view loads formulate.js with defer, and deferred scripts run before
- * DOMContentLoaded (while readyState is already "interactive"), so waiting for
- * the event lets the scripts deferred after formulate.js register their fields.
+ * has). The view loads formulate.min.js as a module script, and module scripts,
+ * like deferred scripts, run before DOMContentLoaded (while readyState is
+ * already "interactive"), so waiting for the event lets the module and deferred
+ * scripts after formulate.min.js register their fields.
  */
 function whenDomContentLoaded(callback: () => void): void {
   if (hasDomContentLoadedFired()) {

@@ -4,7 +4,7 @@ import type {
   FieldRenderOptions,
   FieldValidatorMap,
   FormulateField,
-} from "../types";
+} from "../types.js";
 
 /**
  * Renders a field with the renderer registered for its field type. Returns

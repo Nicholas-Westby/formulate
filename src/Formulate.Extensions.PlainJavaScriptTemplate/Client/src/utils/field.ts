@@ -6,10 +6,10 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { addClasses } from "./add-classes";
-import { generateId } from "./generate-id";
-import { prepareValidators, type PreparedValidator } from "./validation";
+} from "../types.js";
+import { addClasses } from "./add-classes.js";
+import { generateId } from "./generate-id.js";
+import { prepareValidators, type PreparedValidator } from "./validation.js";
 
 /**
  * Adds a field's value to the FormData (keyed by field ID) or, when

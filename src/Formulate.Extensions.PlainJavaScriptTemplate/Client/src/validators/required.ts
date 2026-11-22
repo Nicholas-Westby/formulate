@@ -1,4 +1,4 @@
-import type { FieldValidator, FieldValidatorRegistration } from "../types";
+import type { FieldValidator, FieldValidatorRegistration } from "../types.js";
 
 /** Checks that a field has a value. Text that is only whitespace counts as empty, as it does on the server. */
 export class RequiredValidator implements FieldValidator {

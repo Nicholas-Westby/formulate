@@ -1,4 +1,4 @@
-import type { FormulateForm } from "../types";
+import type { FormulateForm } from "../types.js";
 
 const formsKey = "formulate-plain-js-forms";
 

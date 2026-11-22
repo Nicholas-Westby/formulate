@@ -5,10 +5,10 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { FieldRendererBase, setData } from "../utils/field";
-import { generateId } from "../utils/generate-id";
-import { checkTextValidity } from "../utils/validation";
+} from "../types.js";
+import { FieldRendererBase, setData } from "../utils/field.js";
+import { generateId } from "../utils/generate-id.js";
+import { checkTextValidity } from "../utils/validation.js";
 
 /** Renders a list of radio buttons in a fieldset. The chosen value is posted under the field's ID. */
 export class RenderRadioList extends FieldRendererBase<HTMLInputElement> {

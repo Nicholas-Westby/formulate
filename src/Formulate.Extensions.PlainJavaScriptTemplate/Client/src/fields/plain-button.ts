@@ -1,6 +1,6 @@
-import type { FieldRenderOptions, FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types";
-import { dispatchFormEvent, FormulateEvents } from "../utils/events";
-import { FieldRendererBase } from "../utils/field";
+import type { FieldRenderOptions, FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types.js";
+import { dispatchFormEvent, FormulateEvents } from "../utils/events.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 /**
  * Renders a button. "Next" and "Previous" buttons move between the steps of a

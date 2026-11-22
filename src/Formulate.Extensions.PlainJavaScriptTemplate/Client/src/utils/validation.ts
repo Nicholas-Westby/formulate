@@ -5,8 +5,8 @@ import type {
   FieldValidatorMap,
   FormulateValidation,
   ValidationResult,
-} from "../types";
-import { generateId } from "./generate-id";
+} from "../types.js";
+import { generateId } from "./generate-id.js";
 
 /** A validator created for one of a field's validations. */
 export interface PreparedValidator {

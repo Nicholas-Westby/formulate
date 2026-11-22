@@ -4,9 +4,9 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { FieldRendererBase, getInitialValues, setData } from "../utils/field";
-import { checkTextValidity } from "../utils/validation";
+} from "../types.js";
+import { FieldRendererBase, getInitialValues, setData } from "../utils/field.js";
+import { checkTextValidity } from "../utils/validation.js";
 
 /**
  * Renders a hidden field. Its value is the initial value the server sends (the

@@ -5,9 +5,9 @@ import type {
   FormulateFormData,
   SubmissionResponse,
   SubmissionValidationError,
-} from "../types";
-import { postFormData } from "../utils/ajax";
-import { dispatchFormEvent, FormulateEvents } from "../utils/events";
+} from "../types.js";
+import { postFormData } from "../utils/ajax.js";
+import { dispatchFormEvent, FormulateEvents } from "../utils/events.js";
 import {
   removeFormAlert,
   removeValidationSummary,
@@ -16,10 +16,10 @@ import {
   showFormAlert,
   showValidationSummary,
   type FieldValidity,
-} from "../utils/validation";
-import { getFieldRenderers } from "./get-field-renderers";
-import { getFieldValidators } from "./get-field-validators";
-import { renderFormContents, type RenderedField } from "./render-form";
+} from "../utils/validation.js";
+import { getFieldRenderers } from "./get-field-renderers.js";
+import { getFieldValidators } from "./get-field-validators.js";
+import { renderFormContents, type RenderedField } from "./render-form.js";
 
 type Payload = FormulateFormData["payload"];
 

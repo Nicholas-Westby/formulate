@@ -1,6 +1,6 @@
-import type { FieldValidatorMap, FieldValidatorRegistration } from "../types";
-import regex from "../validators/regex";
-import required from "../validators/required";
+import type { FieldValidatorMap, FieldValidatorRegistration } from "../types.js";
+import regex from "../validators/regex.js";
+import required from "../validators/required.js";
 
 const builtInValidators: readonly FieldValidatorRegistration[] = [regex, required];
 

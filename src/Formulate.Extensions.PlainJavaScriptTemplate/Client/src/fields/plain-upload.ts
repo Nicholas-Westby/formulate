@@ -4,9 +4,9 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { FieldRendererBase, setData } from "../utils/field";
-import { checkFileValidity } from "../utils/validation";
+} from "../types.js";
+import { FieldRendererBase, setData } from "../utils/field.js";
+import { checkFileValidity } from "../utils/validation.js";
 
 /**
  * Renders a file upload. Once a file is chosen, its name and a "Deselect File"

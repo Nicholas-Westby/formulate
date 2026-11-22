@@ -9,13 +9,16 @@
         <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
         <Title>Formulate.Extensions.PlainJavaScriptTemplate</Title>
         <Description>A plain JavaScript template extension for Formulate, an advanced form builder for Umbraco.</Description>
-        <!-- Serve wwwroot at the site root, so the script is at /App_Plugins/Formulate/PlainJavaScript/formulate.js (not under /_content). -->
+        <!-- Serve wwwroot at the site root, so the script is at /App_Plugins/Formulate/PlainJavaScript/formulate.min.js (not under /_content). -->
         <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
-        <!-- "dotnet build" runs the renderer's npm build (see src/Directory.Build.targets). -->
+        <!--
+          "dotnet build" runs the renderer's npm build (see src/Directory.Build.targets). It writes each module as a
+          file of its own, and modules.json (the list of them) last.
+        -->
         <FormulateClientDirectory>Client</FormulateClientDirectory>
-        <FormulateClientOutput>wwwroot/App_Plugins/Formulate/PlainJavaScript/formulate.js</FormulateClientOutput>
+        <FormulateClientOutput>wwwroot/App_Plugins/Formulate/PlainJavaScript/modules.json</FormulateClientOutput>
         <FormulateClientOutputDirectory>wwwroot/App_Plugins/Formulate/PlainJavaScript</FormulateClientOutputDirectory>
-        <FormulateClientExtraInputs>themes/**</FormulateClientExtraInputs>
+        <FormulateClientExtraInputs>themes/**;scripts/**;tsconfig.build.json</FormulateClientExtraInputs>
     </PropertyGroup>
 
     <ItemGroup>

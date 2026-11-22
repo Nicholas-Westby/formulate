@@ -1,0 +1,15 @@
+{
+  // Compiles src to the readable modules and their type declarations (scripts/build-modules.mjs runs it with
+  // the output folder). The comments are kept, and there are no source maps.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "noEmitOnError": true,
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

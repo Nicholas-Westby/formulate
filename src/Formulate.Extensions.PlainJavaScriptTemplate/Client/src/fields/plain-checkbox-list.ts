@@ -4,9 +4,9 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { FieldRendererBase, setData } from "../utils/field";
-import { checkTextArrayValidity } from "../utils/validation";
+} from "../types.js";
+import { FieldRendererBase, setData } from "../utils/field.js";
+import { checkTextArrayValidity } from "../utils/validation.js";
 
 /**
  * Renders a list of checkboxes in a fieldset. Each checked value is posted

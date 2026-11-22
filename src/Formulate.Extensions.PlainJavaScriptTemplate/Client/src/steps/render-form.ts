@@ -4,12 +4,12 @@ import type {
   FieldValidatorMap,
   FormulateField,
   FormulateForm,
-} from "../types";
-import { getInitialValues } from "../utils/field";
-import { mapFieldsById } from "../utils/map-fields-by-id";
-import { renderCell } from "./render-cell";
-import { renderField } from "./render-field";
-import { renderRow } from "./render-row";
+} from "../types.js";
+import { getInitialValues } from "../utils/field.js";
+import { mapFieldsById } from "../utils/map-fields-by-id.js";
+import { renderCell } from "./render-cell.js";
+import { renderField } from "./render-field.js";
+import { renderRow } from "./render-row.js";
 
 /** A field that was rendered, with its data and the index of its step. */
 export interface RenderedField {

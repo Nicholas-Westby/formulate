@@ -5,11 +5,11 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { addClasses } from "../utils/add-classes";
-import { FormulateEvents } from "../utils/events";
-import { FieldRendererBase, setData } from "../utils/field";
-import { checkTextValidity, prepareValidators } from "../utils/validation";
+} from "../types.js";
+import { addClasses } from "../utils/add-classes.js";
+import { FormulateEvents } from "../utils/events.js";
+import { FieldRendererBase, setData } from "../utils/field.js";
+import { checkTextValidity, prepareValidators } from "../utils/validation.js";
 
 const readyCallbackName = "formulatePlainJsRecaptchaReady";
 const googleScriptUrl = `https://www.google.com/recaptcha/api.js?render=explicit&onload=${readyCallbackName}`;

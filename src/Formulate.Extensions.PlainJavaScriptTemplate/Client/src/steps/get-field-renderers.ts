@@ -1,18 +1,18 @@
-import plainButton from "../fields/plain-button";
-import plainCheckbox from "../fields/plain-checkbox";
-import plainCheckboxList from "../fields/plain-checkbox-list";
-import plainDate from "../fields/plain-date";
-import plainExtendedRadioButtonList from "../fields/plain-extended-radio-button-list";
-import plainHeader from "../fields/plain-header";
-import plainHidden from "../fields/plain-hidden";
-import plainRadioButtonList from "../fields/plain-radio-button-list";
-import plainRecaptcha from "../fields/plain-recaptcha";
-import plainRichText from "../fields/plain-rich-text";
-import plainSelect from "../fields/plain-select";
-import plainText from "../fields/plain-text";
-import plainTextarea from "../fields/plain-textarea";
-import plainUpload from "../fields/plain-upload";
-import type { FieldRendererConstructor, FieldRendererRegistration } from "../types";
+import plainButton from "../fields/plain-button.js";
+import plainCheckbox from "../fields/plain-checkbox.js";
+import plainCheckboxList from "../fields/plain-checkbox-list.js";
+import plainDate from "../fields/plain-date.js";
+import plainExtendedRadioButtonList from "../fields/plain-extended-radio-button-list.js";
+import plainHeader from "../fields/plain-header.js";
+import plainHidden from "../fields/plain-hidden.js";
+import plainRadioButtonList from "../fields/plain-radio-button-list.js";
+import plainRecaptcha from "../fields/plain-recaptcha.js";
+import plainRichText from "../fields/plain-rich-text.js";
+import plainSelect from "../fields/plain-select.js";
+import plainText from "../fields/plain-text.js";
+import plainTextarea from "../fields/plain-textarea.js";
+import plainUpload from "../fields/plain-upload.js";
+import type { FieldRendererConstructor, FieldRendererRegistration } from "../types.js";
 
 const builtInRenderers: readonly FieldRendererRegistration[] = [
   plainText,

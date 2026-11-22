@@ -1,5 +1,5 @@
-import type { FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types";
-import { FieldRendererBase } from "../utils/field";
+import type { FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 /**
  * Renders rich text. The text is HTML written in the back office's rich text

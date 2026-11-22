@@ -1,5 +1,5 @@
-import type { FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types";
-import { FieldRendererBase } from "../utils/field";
+import type { FieldRendererRegistration, FieldValidatorMap, FormulateField } from "../types.js";
+import { FieldRendererBase } from "../utils/field.js";
 
 /** Renders a header (an h2). Its text is inserted as text, never as HTML. */
 export class RenderHeader extends FieldRendererBase<HTMLHeadingElement> {

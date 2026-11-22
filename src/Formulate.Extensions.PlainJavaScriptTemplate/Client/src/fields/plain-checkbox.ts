@@ -4,9 +4,9 @@ import type {
   FieldValidatorMap,
   FormulateField,
   SetDataOptions,
-} from "../types";
-import { FieldRendererBase, setData } from "../utils/field";
-import { checkBoolValidity } from "../utils/validation";
+} from "../types.js";
+import { FieldRendererBase, setData } from "../utils/field.js";
+import { checkBoolValidity } from "../utils/validation.js";
 
 /** Renders a single checkbox. It posts "true" or "false". */
 export class RenderCheckbox extends FieldRendererBase<HTMLInputElement> {

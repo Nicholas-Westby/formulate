@@ -1,4 +1,4 @@
-import type { FieldValidator, FieldValidatorRegistration, ValidationConfiguration } from "../types";
+import type { FieldValidator, FieldValidatorRegistration, ValidationConfiguration } from "../types.js";
 
 /**
  * Checks that a field's value matches the configured pattern. Empty values are

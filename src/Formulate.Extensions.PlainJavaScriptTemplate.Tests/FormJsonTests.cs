@@ -170,7 +170,7 @@ public sealed class FormJsonTests
         var none = new FormJsonHarness { PathBase = "/site" }.Build()["assets"]!;
         var basic = new FormJsonHarness { Theme = "Basic", PathBase = "/site" }.Build()["assets"]!;
 
-        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=HASH", none["script"]!.Value<string>());
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/formulate.min.js?v=HASH", none["script"]!.Value<string>());
         Assert.Equal(JTokenType.Null, none["theme"]!.Type);
         Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css?v=HASH", basic["theme"]!.Value<string>());
     }
@@ -199,8 +199,8 @@ public sealed class FormJsonTests
 
         var script = harness.Build()["assets"]!["script"]!.Value<string>()!;
 
-        Assert.StartsWith("/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=", script);
-        Assert.NotEqual("/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=", script);
+        Assert.StartsWith("/App_Plugins/Formulate/PlainJavaScript/formulate.min.js?v=", script);
+        Assert.NotEqual("/App_Plugins/Formulate/PlainJavaScript/formulate.min.js?v=", script);
     }
 
     // The real provider, as asp-append-version uses it, with the site under a path base.
@@ -210,7 +210,7 @@ public sealed class FormJsonTests
         var webRoot = Path.Combine(Path.GetTempPath(), "formulate-" + Guid.NewGuid().ToString("N"));
         var scriptFolder = Path.Combine(webRoot, "App_Plugins", "Formulate", "PlainJavaScript");
         Directory.CreateDirectory(scriptFolder);
-        File.WriteAllText(Path.Combine(scriptFolder, "formulate.js"), "console.log(1);");
+        File.WriteAllText(Path.Combine(scriptFolder, "formulate.min.js"), "console.log(1);");
 
         try
         {
@@ -229,7 +229,7 @@ public sealed class FormJsonTests
 
             var url = assets.GetScriptUrl(new PathString("/site"));
 
-            Assert.Matches(@"^/site/App_Plugins/Formulate/PlainJavaScript/formulate\.js\?v=[A-Za-z0-9_-]{20,}$", url);
+            Assert.Matches(@"^/site/App_Plugins/Formulate/PlainJavaScript/formulate\.min\.js\?v=[A-Za-z0-9_-]{20,}$", url);
         }
         finally
         {
@@ -251,7 +251,7 @@ public sealed class FormJsonTests
         var second = assets.TakePageAssets(request);
         var other = assets.TakePageAssets(otherRequest);
 
-        Assert.EndsWith("formulate.js?v=HASH", first.ScriptUrl);
+        Assert.EndsWith("/formulate.min.js?v=HASH", first.ScriptUrl);
         Assert.EndsWith("themes/basic.min.css?v=HASH", first.ThemeUrl);
         Assert.Null(second.ScriptUrl);
         Assert.Null(second.ThemeUrl);

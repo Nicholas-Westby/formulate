@@ -8,7 +8,7 @@ namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
 
     public sealed class PlainJavaScriptAssets : IPlainJavaScriptAssets
     {
-        private const string ScriptPath = "/App_Plugins/Formulate/PlainJavaScript/formulate.js";
+        private const string ScriptPath = "/App_Plugins/Formulate/PlainJavaScript/formulate.min.js";
         private const string BasicThemePath = "/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css";
         private const string RequestItemKey = "Formulate.PlainJavaScript.AssetsAdded";
 
