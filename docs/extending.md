@@ -263,9 +263,61 @@ builder.TemplateDefinitions().Append<MyTemplateDefinition>();
 
 ## Back office editors
 
-<!-- pass 2: the editor contract. Describe the kind editor extension types in TypeScript, how a definition's EditorAlias selects the editor, how the editor receives and saves configuration, manifests, and a worked example for a custom field. Source: Plan C Task 3's kind-editor contract and src/Formulate.BackOffice/Client/src/core/kind-editor.ts and extension-types.ts. -->
+Each definition names a back office editor with its `EditorAlias`. The back office is built with Umbraco's own UI elements, and an editor for a custom kind is an Umbraco extension: a manifest, and an element that shows the kind's settings. This part of the guide describes the contract between Formulate and such an editor.
 
-Each definition names a back office editor with its `EditorAlias`. The new back office is built with Umbraco's own UI elements, and custom editors for custom kinds are written as Umbraco extensions. For a field, see [an editor for the field's settings](#an-editor-for-the-fields-settings). The rest of this part of the guide comes with the back office documentation.
+### Three manifest types, and how an editor is found
+
+| Extension type | Edits the settings of | Shown in |
+| --- | --- | --- |
+| `formulateFieldEditor` | a form field kind | the dialog of a field |
+| `formulateHandlerEditor` | a form handler kind | the dialog of a handler |
+| `formulateLayoutEditor` | a layout kind | the Design view of a layout, under the template |
+
+Validations and data values have the same kind of editor (`formulateValidationEditor` and `formulateDataValuesEditor`), shown on the page of the validation or data values item. They work the same way, apart from `context`, which they do not get.
+
+A manifest's `meta.editorAlias` must be the `EditorAlias` of the definitions it edits. The back office reads each definition's `EditorAlias` from the definitions endpoints, then shows the editor of the same extension type whose `meta.editorAlias` matches. Several kinds can share one editor by giving the same `EditorAlias`: Formulate's Drop Down and Checkbox List do.
+
+- When two editors of a type have the same alias, the one with the highest `weight` is used. An editor can replace another with `overwrites`, as with any Umbraco extension.
+- Editors that arrive later, such as from a package that loads after Formulate, are shown when they arrive.
+- When no editor matches, or the definition has no `EditorAlias`, the dialog or view shows "This kind has no settings." and leaves the stored configuration as it is. Kinds that store nothing, such as Checkbox and Date, rely on this.
+- When an editor matches but cannot be shown (its element fails to load, or its conditions do not allow it), the back office says "The editor for this kind is not available, so its settings cannot be changed here.", logs the reason to the browser console, and still leaves the configuration alone.
+- A kind that is not installed has no definition, so it has no editor. Its configuration is kept as it is.
+
+### The element
+
+An editor is a custom element. Register it with the manifest's `element` (the path of a JavaScript module whose default export is the element class, or an `import()` function) and, if you need them, `weight`, `overwrites` and `conditions`. Formulate sets these properties on it:
+
+| Property | What it is |
+| --- | --- |
+| `value` | The kind's configuration, exactly as the API stores it: whatever JSON your definition reads, or `undefined` (or `null`) when the item has none yet. |
+| `context` | Where the editor is shown: `{ formFields, formId }`. `formFields` are the fields of the form being edited (a handler editor can offer them to pick from). `formId` is the form's id, and is missing while the form is new and not yet saved. A layout always has a form. Validation and data values editors get no `context`. |
+| `readonly` | `true` when nothing may be changed. |
+| `manifest` | The editor's own manifest, so one element can serve several aliases and read its `meta`. |
+
+The back office sets `value`, `context` and `readonly` again whenever they change, so the element shows what it is given each time.
+
+To save a change, the element sets `value` to the new configuration and then dispatches a `change` event from itself. Formulate takes the element's `value` as the new configuration. It listens only for the `change` event that comes from the element itself, so an input inside your element can fire its own `change` without Formulate taking it for a save. While `readonly` is `true`, Formulate takes no change and gives the element its old `value` back.
+
+Two rules keep configuration safe:
+
+- **Never store on first render.** Do not set `value` or dispatch `change` when the element appears or is given a value, even to fill in defaults. It would count as a change by the user, so merely opening an item would mark it changed and could save settings nobody chose. Show defaults in the interface, and store them only when the user changes something.
+- **Keep the keys you do not edit.** Build each new value from the old one, as in `{ ...this.value, autocomplete: input.value }`. A configuration made by a newer version of your definition, or by hand, can have keys your editor does not know, and they must survive a save. Make a new object for each change. Do not change the old one: Umbraco freezes the data its workspaces hold, so the value an editor is given can be frozen.
+
+### The contract is duck-typed for now
+
+Formulate publishes no import map and no TypeScript types for these extension types yet. An editor is therefore a plain custom element that imports nothing from Formulate: it needs only the properties and the `change` event above. The built-in editors extend a base class inside Formulate's own bundle (`FormulateKindEditorElementBase`, whose `updateValue` sets `value` and dispatches the event), which another package cannot import. A plain element does the same two steps by hand. If you use Lit or Umbraco's own base classes, take them from Umbraco as usual.
+
+### An editor for a field or a handler
+
+The worked example is under [an editor for the field's settings](#an-editor-for-the-fields-settings), in the guide to a custom field. It registers a `formulateFieldEditor`, edits one setting, keeps the others, and stores nothing until the user changes the input. Formulate runs the same element in its own tests (`src/Formulate.BackOffice/Client/src/core/plain-element-kind-editor.test.ts`), so the example is kept in one place.
+
+A handler editor is written the same way, with the type `formulateHandlerEditor` and the handler definition's `EditorAlias`. It can read `context.formFields` to offer the form's fields.
+
+### An editor for a custom layout
+
+A custom layout kind gets its editor the same way: implement `ILayoutDefinition`, give it an `EditorAlias`, and register a `formulateLayoutEditor` whose `meta.editorAlias` is that alias. Its `value` is the layout's configuration, whatever JSON your definition reads. A new layout starts with the configuration `GetDefaultConfiguration()` gives (see [Layouts and templates](#layouts-and-templates)). `context` is `{ formFields, formId }` for the layout's form, so the editor can lay out those fields. The template choice is above your editor and is not yours to draw. Formulate's Basic layout editor is the built-in example (`src/Formulate.BackOffice/Client/src/editors/layouts/basic`).
+
+### The Management API
 
 The back office talks to the server through the Umbraco Management API, at `/umbraco/management/api/v1/formulate/...`. The OpenAPI document is named `formulate`. Formulate's package does not register Swagger or any OpenAPI library, so it does not conflict with the one Umbraco uses on 17 (Swashbuckle) and on 18 and later (`Microsoft.AspNetCore.OpenApi`). Formulate's section alias is `Formulate.Section`. Calls need a signed in back office user. Changing anything needs the Formulate section.
 

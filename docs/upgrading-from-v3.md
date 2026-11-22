@@ -45,7 +45,13 @@ Formulate 4 was never released, so there is nothing to upgrade from there.
 
 11. Turn on the theme if you want the Basic theme (see below), and send a test submission on every form.
 
-<!-- pass 2: add the back office steps for steps 7 to 9 with screenshots. -->
+### Steps 7 to 9 in the back office
+
+- **Step 7, check each form.** In the Formulate section, open Forms and expand the tree. Open a form and look at its Fields and Handlers tabs. A field or handler of a kind that is not installed shows as "Not installed". Its name, alias and settings are kept as they are, and nothing is lost by saving the form. Open a few fields to check their settings, and the Send Data handlers (see below).
+- **Step 8, add a layout.** Open the form's menu in the tree and choose Create to make a layout, then choose its Template (Plain JavaScript). A new Basic layout starts with Auto Populate on, so it shows every field one under another. Turn Auto Populate off to arrange the fields in rows, cells and steps in the layout designer. To skip the layout step on new forms, create them as Form with Basic Layout. The [README](../README.md#in-the-back-office) walks through the layout designer.
+- **Step 9, re-create the form picker.** In Settings, create a data type with the property editor Formulate Form Layout Picker. Add a property that uses it to each document type that had Formulate 3's picker. Then open each page, choose Choose, pick the form's layout and save and publish. Remove the old property when no page needs it. The steps for the whole route, from a new form to a picked layout, are in the [README](../README.md#in-the-back-office).
+
+Saving a migrated Send Data handler in the back office removes Formulate 3's `resultHandler` from it. Formulate 5 ignores that setting (use `SentDataNotification` instead), and until it is removed the log has a warning once for each such handler after each start of the site. The back office does not show the setting, so saving the form is enough: the form is saved without it.
 
 ## Layouts
 
@@ -103,7 +109,7 @@ Check the whitelist when you move it. Formulate 3 checked addresses only when `E
 
 ## What changed for editors and site builders
 
-- **A new back office.** The old back office was built with AngularJS, which Umbraco removed in version 14. Every screen is rebuilt with Umbraco's own UI elements. <!-- pass 2: link to the back office guide and screenshots. -->
+- **A new back office.** The old back office was built with AngularJS, which Umbraco removed in version 14. Every screen is rebuilt with Umbraco's own UI elements. See [Show a form on a page](../README.md#in-the-back-office) for the steps.
 - **The JSON files are in `App_Data`, in the content root.** This is where Formulate 3 kept them too. Formulate 5 never reads them from `wwwroot`.
 - **Formulate Pro is part of Formulate.** Designed Email (the handler that renders emails from Razor views) and the Basic theme come with `Umbraco.Community.Formulate`. Remove `Formulate.Pro`. Its usage tracker is gone. Formulate sends no telemetry at all.
 - **The Basic theme** is a setting now:
@@ -115,6 +121,7 @@ Check the whitelist when you move it. Formulate 3 checked addresses only when `E
   See [the Basic theme](plain-javascript-theme.md).
 - **Designed Email views** from Formulate Pro were MVC 5 Razor. Update them to ASP.NET Core Razor. A handler that points at one of Pro's `Formulate Pro Sample (...)` views uses the built-in sample instead. The built-in samples are at `~/Views/Formulate/Email/Sample (HTML|Text|Subject).cshtml`. A view in your site at the same path replaces the sample.
 - **Email** sends through Umbraco's email sender. A mail server failure is logged and does not fail the visitor's submission. Each email has one body: Email sends HTML, and Designed Email sends its HTML view or, with none, its text view. Only the first value of a recipient field is used.
+- **Rich Text** fields are edited with Umbraco's default rich text editor. Text that Formulate 3 stored is shown as stored and is kept as it is until someone edits it. When it is edited, the editor simplifies markup it cannot keep, such as some embeds and `font` tags. On the page, links to content pages and images from the media library are resolved to their current URLs, as Umbraco does for its own rich text. A `<script>` in the text does not run, so an embed that needs its own script does not work. To add an image, use the editor's media picker. Pasting or dropping an image is not supported.
 - **Query string values fill fields by alias** (`?source=newsletter`).
 - **Uploads** are accepted only for Upload fields. Each file is checked against `Formulate:Submissions:MaxUploadBytes` (10 MB by default). Store Data keeps its own limit, `Formulate:StoreData:MaxUploadBytes`. Uploaded files go to a folder outside the web root, with sanitized names.
 - **Store Data** has a new table, `FormulateSubmissions`. Formulate 3's submissions stay in the `FormulateSubmission` table, and their files in `App_Data/Formulate/FileStorage/Files`. Formulate 5 leaves them where they are. It does not show or export them. Keep them if you need them, or move them yourself.
@@ -128,7 +135,7 @@ Check the whitelist when you move it. Formulate 3 checked addresses only when `E
 - **Events became notifications.** Formulate 3's events (for example `SendingData` and `SerializingJson`) are now Umbraco notifications. Use `FormSubmittingNotification`, `SendingDataNotification` and `SentDataNotification`. `SentDataNotification` replaces Send Data's `resultHandler`, which was a type name created by reflection.
 - **The renderer is ES modules.** The Plain JavaScript template loads `/App_Plugins/Formulate/PlainJavaScript/formulate.min.js` with `<script type="module">`, after a `<link rel="modulepreload">` for each of its modules. If you load the renderer yourself (`Formulate:PlainJavaScript:IncludeScript` set to `false`), load it with `<script type="module">`, once per page, and write the preload links from `IPlainJavaScriptAssets.GetModuleUrls`. See [Loading the renderer yourself](extending.md#loading-the-renderer-yourself).
 - **Custom field renderers** registered on `window["formulate-plain-js-fields"]` keep working. New ones can import the API (`api.min.js`) and extend a built-in renderer, such as a phone field built on the text field. See [Changing how forms render in the browser](extending.md#changing-how-forms-render-in-the-browser).
-- **Back office editors** are written for the new back office. Custom AngularJS directives do not run. <!-- pass 2: link to the editor contract in extending.md. -->
+- **Back office editors** are written for the new back office. Custom AngularJS directives do not run. See [Back office editors](extending.md#back-office-editors) for how to write one.
 - **The back office API** is the Umbraco Management API under `/umbraco/management/api/v1/formulate/`. Calls need a signed in back office user.
 - **Notification constructors and interfaces changed.** `EntitySavingNotification<T>` and `EntitySavedNotification<T>` take an `isNew` argument. `IHaveDirective` is now `IHaveEditor`. `IGetDataValuesItemsUtility.GetValues` takes a `fieldId`. `IEntityRepository<T>` and `IRepositoryUtility<T>` have `GetAll()`. `ISubmitFormSubmissionRequest.SubmitAsync` returns a result object. `IValidateFormSubmissionRequest.Validate` and `IVerifyFormSubmissionRequest.VerifyAsync` take the built fields.
 - **Compatibility across Umbraco versions.** Read [the rules](extending.md#compatibility-rules) before you compile an extension for 17 and run it on 18.
