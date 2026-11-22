@@ -48,9 +48,10 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
     internal static readonly Guid PageKey = new("5d3a0b0e-6a43-4a4f-9a3c-1f6f7b0f2a03");
 
     // The template shows the picked form. The property is empty until a form is picked, and the
-    // component needs a value to be called with, so the call is left out then. Formulate has no
-    // built-in success message, so the page shows its own when the form's success event arrives
-    // (the event bubbles from the form's wrapper to the document).
+    // component needs a value to be called with, so the call is left out then. With the form comes the
+    // renderer of the sample Phone field (SampleFields). Formulate has no built-in success message, so
+    // the page shows its own when the form's success event arrives (the event bubbles from the form's
+    // wrapper to the document).
     private const string TemplateContent = """
         @using Umbraco.Extensions
         @inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
@@ -69,6 +70,7 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
             @if (form is not null)
             {
                 @await Component.InvokeAsync("FormulateForm", form)
+                <script type="module" src="/scripts/phone-field.js"></script>
             }
             <p id="thank-you" role="status" hidden>Thank you, your message was sent.</p>
             <script>
