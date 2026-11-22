@@ -51,6 +51,10 @@ export const FORMULATE_FORMS_FOLDER_REPOSITORY_ALIAS = 'Formulate.Repository.Fol
 export const FORMULATE_DATA_VALUES_FOLDER_REPOSITORY_ALIAS = 'Formulate.Repository.Folder.DataValues';
 export const FORMULATE_VALIDATIONS_FOLDER_REPOSITORY_ALIAS = 'Formulate.Repository.Folder.Validations';
 export const FORMULATE_FOLDER_STORE_ALIAS = 'Formulate.Store.Folder';
+// Picking a tree's root opens the root's workspace, which lists what is at the top of the tree.
+export const FORMULATE_FORMS_ROOT_WORKSPACE_ALIAS = 'Formulate.Workspace.FormsRoot';
+export const FORMULATE_DATA_VALUES_ROOT_WORKSPACE_ALIAS = 'Formulate.Workspace.DataValuesRoot';
+export const FORMULATE_VALIDATIONS_ROOT_WORKSPACE_ALIAS = 'Formulate.Workspace.ValidationsRoot';
 // Picking a folder in a tree opens it in its tree's folder workspace, where it can be renamed.
 export const FORMULATE_FORMS_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.Forms';
 export const FORMULATE_DATA_VALUES_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.DataValues';

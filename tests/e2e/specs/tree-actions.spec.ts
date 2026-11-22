@@ -238,6 +238,24 @@ for (const tree of TREES) {
 	});
 }
 
+for (const tree of TREES) {
+	test(`the top of ${tree.label} and its folders list what is in them, as Umbraco's trees do`, async ({ page }) => {
+		await page.goto('/umbraco/section/formulate');
+		const outerId = await createFolder(page, tree.apiAlias, 'Outer');
+		await createFolder(page, tree.apiAlias, 'Inner', outerId);
+		const workspace = page.locator('umb-workspace-editor');
+		const children = workspace.locator('umb-tree-workspace-view umb-tree');
+
+		await page.goto(`/umbraco/section/formulate/workspace/${tree.rootEntityType}`);
+		await expect(treeItem(children, 'Outer')).toBeVisible();
+		await expect(workspace.getByText('Not found')).toHaveCount(0);
+
+		await page.goto(`/umbraco/section/formulate/workspace/${tree.folderEntityType}/edit/${outerId}`);
+		await expect(treeItem(children, 'Inner')).toBeVisible();
+		await expect(workspace.getByText('Not found')).toHaveCount(0);
+	});
+}
+
 test('a kind picked in the create dialog opens the create route of its workspace', async ({ page }) => {
 	const formKindId = await (async () => {
 		await page.goto('/umbraco/section/formulate');

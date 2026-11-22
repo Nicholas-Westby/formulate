@@ -20,6 +20,9 @@ export interface FormulateTreeDefinition {
 	/** The alias of the repository of the tree's folders. */
 	readonly folderRepositoryAlias: string;
 
+	/** The alias of the workspace that opens the tree's root. */
+	readonly rootWorkspaceAlias: string;
+
 	/** The alias of the workspace that opens the tree's folders. */
 	readonly folderWorkspaceAlias: string;
 

@@ -189,6 +189,30 @@ function workspaceStructure(
 	];
 }
 
+/**
+ * Lists what is at the top of a tree, or in one of its folders, in the root's and the folders' workspaces,
+ * as Umbraco's own trees do (the Children view). Without a view, such a workspace shows only "Not found".
+ * @param tree The tree.
+ * @param name The tree's name in the alias, such as DataValues.
+ * @returns The workspace view.
+ */
+function childrenView(tree: FormulateTreeDefinition, name: string): UmbExtensionManifest {
+	return {
+		type: 'workspaceView',
+		kind: 'tree',
+		alias: `Formulate.WorkspaceView.Children.${name}`,
+		name: `Formulate ${name} Children Workspace View`,
+		meta: { label: '#tree_children', pathname: 'children', icon: 'icon-bulleted-list', treeAlias: tree.alias },
+		conditions: [{ alias: UMB_WORKSPACE_CONDITION_ALIAS, oneOf: [tree.rootWorkspaceAlias, tree.folderWorkspaceAlias] }],
+	};
+}
+
+const childrenViews: Array<UmbExtensionManifest> = [
+	childrenView(FORMULATE_FORMS_TREE, 'Forms'),
+	childrenView(FORMULATE_DATA_VALUES_TREE, 'DataValues'),
+	childrenView(FORMULATE_VALIDATIONS_TREE, 'Validations'),
+];
+
 const workspaceStructures: Array<UmbExtensionManifest> = [
 	...workspaceStructure(FORMULATE_FORMS_TREE, 'Forms', () =>
 		import('./menu-structure.context.js').then((module) => ({ api: module.FormulateFormsMenuStructureWorkspaceContext })),
@@ -210,21 +234,21 @@ const rootWorkspaces: Array<UmbExtensionManifest> = [
 	{
 		type: 'workspace',
 		kind: 'default',
-		alias: 'Formulate.Workspace.FormsRoot',
+		alias: FORMULATE_FORMS_TREE.rootWorkspaceAlias,
 		name: 'Formulate Forms Root Workspace',
 		meta: { entityType: FORMULATE_FORMS_ROOT_ENTITY_TYPE, headline: FORMULATE_FORMS_TREE.rootName },
 	},
 	{
 		type: 'workspace',
 		kind: 'default',
-		alias: 'Formulate.Workspace.DataValuesRoot',
+		alias: FORMULATE_DATA_VALUES_TREE.rootWorkspaceAlias,
 		name: 'Formulate Data Values Root Workspace',
 		meta: { entityType: FORMULATE_DATA_VALUES_ROOT_ENTITY_TYPE, headline: FORMULATE_DATA_VALUES_TREE.rootName },
 	},
 	{
 		type: 'workspace',
 		kind: 'default',
-		alias: 'Formulate.Workspace.ValidationsRoot',
+		alias: FORMULATE_VALIDATIONS_TREE.rootWorkspaceAlias,
 		name: 'Formulate Validations Root Workspace',
 		meta: { entityType: FORMULATE_VALIDATIONS_ROOT_ENTITY_TYPE, headline: FORMULATE_VALIDATIONS_TREE.rootName },
 	},
@@ -256,5 +280,6 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...menuItems,
 	...rootWorkspaces,
 	...workspaceStructures,
+	...childrenViews,
 	...entityActions,
 ];

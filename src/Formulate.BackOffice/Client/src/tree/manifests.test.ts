@@ -8,18 +8,21 @@ const TREES = [
 		alias: 'Formulate.Tree.Forms',
 		workspaces: 'FORMULATE_FORMS_TREE_WORKSPACE_ALIASES',
 		folderWorkspace: 'Formulate.Workspace.Folder.Forms',
+		rootWorkspace: 'Formulate.Workspace.FormsRoot',
 		structureApi: 'FormulateFormsMenuStructureWorkspaceContext',
 	},
 	{
 		alias: 'Formulate.Tree.DataValues',
 		workspaces: 'FORMULATE_DATA_VALUES_TREE_WORKSPACE_ALIASES',
 		folderWorkspace: 'Formulate.Workspace.Folder.DataValues',
+		rootWorkspace: 'Formulate.Workspace.DataValuesRoot',
 		structureApi: 'FormulateDataValuesMenuStructureWorkspaceContext',
 	},
 	{
 		alias: 'Formulate.Tree.Validations',
 		workspaces: 'FORMULATE_VALIDATIONS_TREE_WORKSPACE_ALIASES',
 		folderWorkspace: 'Formulate.Workspace.Folder.Validations',
+		rootWorkspace: 'Formulate.Workspace.ValidationsRoot',
 		structureApi: 'FormulateValidationsMenuStructureWorkspaceContext',
 	},
 ];
@@ -28,7 +31,7 @@ interface Manifest {
 	type: string;
 	alias: string;
 	kind?: string;
-	meta?: { treeAlias?: string; menuItemAlias?: string };
+	meta?: { treeAlias?: string; menuItemAlias?: string; label?: string; pathname?: string; icon?: string };
 	conditions?: unknown;
 	api?: () => Promise<{ api: { name: string } }>;
 }
@@ -74,5 +77,17 @@ describe('Formulate tree manifests', () => {
 		);
 		// Each tree's folder workspace is on its tree's list.
 		expect(TREES.map((tree) => lists[tree.workspaces]?.includes(tree.folderWorkspace))).toStrictEqual([true, true, true]);
+	});
+
+	it("list what is in each tree's root and folders in their workspaces, as Umbraco's trees do", () => {
+		const views = (manifests as Array<Manifest>).filter((manifest) => manifest.type === 'workspaceView');
+
+		expect(views.map((view) => [view.kind, view.meta, view.conditions])).toStrictEqual(
+			TREES.map((tree) => [
+				'tree',
+				{ label: '#tree_children', pathname: 'children', icon: 'icon-bulleted-list', treeAlias: tree.alias },
+				[{ alias: 'Umb.Condition.WorkspaceAlias', oneOf: [tree.rootWorkspace, tree.folderWorkspace] }],
+			]),
+		);
 	});
 });
