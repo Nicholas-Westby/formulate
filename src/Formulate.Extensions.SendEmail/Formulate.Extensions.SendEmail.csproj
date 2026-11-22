@@ -10,7 +10,20 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Umbraco's own email sender, to tell when it has no way to send. -->
+        <PackageReference Include="Umbraco.Cms.Infrastructure" />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="Formulate.Extensions.SendEmail.Tests" />
     </ItemGroup>
 
 </Project>

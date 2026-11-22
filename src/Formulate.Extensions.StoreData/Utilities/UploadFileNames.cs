@@ -1,7 +1,7 @@
 namespace Formulate.Extensions.StoreData.Utilities
 {
-    using System.Globalization;
     using System.Text;
+    using Formulate.Core.Submissions.Requests;
 
     /// <summary>
     /// Turns the file name a visitor sent into one that is safe to create on the server.
@@ -38,21 +38,17 @@ namespace Formulate.Extensions.StoreData.Utilities
         /// <param name="clientName">The name the client sent.</param>
         public static string Sanitize(string? clientName)
         {
-            var name = clientName ?? string.Empty;
-
-            // Drop any folder part. Path.GetFileName alone would keep "C:\x.dll" whole on Linux.
-            var lastSeparator = name.LastIndexOfAny(new[] { '/', '\\' });
-            name = name[(lastSeparator + 1)..];
+            // Drop any folder part and replace the characters that cannot be seen, as the email handlers do.
+            var name = UploadedFileNames.Clean(clientName ?? string.Empty, "_");
 
             var builder = new StringBuilder(name.Length);
             var invalid = Path.GetInvalidFileNameChars();
 
-            foreach (var rune in name.EnumerateRunes())
+            // The invalid characters are all ASCII, so a character of a surrogate pair never matches one.
+            foreach (var character in name)
             {
-                var replace = Rune.GetUnicodeCategory(rune) is UnicodeCategory.Format or UnicodeCategory.Control
-                    || (rune.IsBmp && (Array.IndexOf(invalid, (char)rune.Value) >= 0
-                        || Array.IndexOf(ExtraInvalidCharacters, (char)rune.Value) >= 0));
-                builder.Append(replace ? "_" : rune.ToString());
+                var replace = Array.IndexOf(invalid, character) >= 0 || Array.IndexOf(ExtraInvalidCharacters, character) >= 0;
+                builder.Append(replace ? '_' : character);
             }
 
             // Windows drops trailing dots and spaces, which would make "x.dll." mean "x.dll".
