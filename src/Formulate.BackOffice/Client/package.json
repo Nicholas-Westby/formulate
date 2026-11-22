@@ -1,0 +1,27 @@
+{
+  "name": "formulate-backoffice",
+  "version": "5.0.0",
+  "private": true,
+  "description": "The Formulate section of the Umbraco back office (forms, data values and validations).",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15",
+    "npm": ">=11"
+  },
+  "scripts": {
+    "build": "tsc && vite build",
+    "watch": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc",
+    "generate-client": "npm ci --prefix scripts --no-audit --no-fund && node scripts/generate-client.mjs"
+  },
+  "devDependencies": {
+    "@umbraco-cms/backoffice": "17.8.2",
+    "jsdom": "31.0.1",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "id": "Formulate",
+  "name": "Formulate",
+  "version": "5.0.0",
+  "allowTelemetry": false,
+  "allowPackageTelemetry": false,
+  "extensions": [
+    {
+      "type": "bundle",
+      "alias": "Formulate.Bundle",
+      "name": "Formulate Bundle",
+      "js": "/App_Plugins/Formulate/formulate.js"
+    }
+  ]
+}

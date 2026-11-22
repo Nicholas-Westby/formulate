@@ -7,6 +7,10 @@
     <Title>Formulate.BackOffice</Title>
     <Description>Backoffice functionality for Formulate, an advanced form builder for Umbraco.</Description>
     <StaticWebAssetBasePath>/</StaticWebAssetBasePath>
+    <!-- "dotnet build" runs the back office client's npm build (see src/Directory.Build.targets). -->
+    <FormulateClientDirectory>Client</FormulateClientDirectory>
+    <FormulateClientOutput>wwwroot/App_Plugins/Formulate/formulate.js</FormulateClientOutput>
+    <FormulateClientOutputDirectory>wwwroot/App_Plugins/Formulate</FormulateClientOutputDirectory>
   </PropertyGroup>
 
   <ItemGroup>

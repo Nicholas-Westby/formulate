@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+
+    /* Lit decorators, as in Umbraco's own code: properties stay on the prototype. */
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+
+    /* The global UmbExtensionManifest type. */
+    "types": ["@umbraco-cms/backoffice/extension-types"]
+  },
+  "include": ["src", "vite.config.ts", "vitest.config.ts"]
+}

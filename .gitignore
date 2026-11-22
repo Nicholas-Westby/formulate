@@ -25,3 +25,11 @@ artifacts/
 **/Website/obj/
 **/Website/Umbraco/
 **/Website/App_Data/Formulate/
+
+# The built back office client (built from src/Formulate.BackOffice/Client by "dotnet build" or "npm run build").
+src/Formulate.BackOffice/wwwroot/App_Plugins/
+
+# Playwright end-to-end test output.
+tests/e2e/screenshots/
+tests/e2e/test-results/
+tests/e2e/playwright-report/

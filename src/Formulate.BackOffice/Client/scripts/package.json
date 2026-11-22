@@ -1,0 +1,16 @@
+{
+  "name": "formulate-backoffice-client-generator",
+  "version": "5.0.0",
+  "private": true,
+  "description": "Generates src/api from openapi/formulate.json. Separate from the client because the generator needs the TypeScript compiler API, which TypeScript 7 (used by the client) does not ship.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24.13",
+    "npm": ">=11"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "typescript": "5.9.3"
+  }
+}
