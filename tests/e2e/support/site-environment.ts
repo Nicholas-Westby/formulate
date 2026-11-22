@@ -50,18 +50,20 @@ export function siteAddresses(e2ePort: string | undefined): SiteAddresses {
 }
 
 /**
- * The folders in a run's folder that the site writes to for the specs to read: the emails it sends (as .eml files,
- * through Umbraco's pickup folder) and what the dev site's echo receives (src/Website/Composers/DevEchoComposer.cs).
+ * The folders in a run's folder that the site writes to: the emails it sends (as .eml files, through Umbraco's
+ * pickup folder) and what the dev site's echo receives (src/Website/Composers/DevEchoComposer.cs), for the specs to
+ * read, and the files visitors upload with the forms that store their submissions.
  * @param runFolder The run's folder (see playwright.config.ts).
  */
 export function runFolderPaths(runFolder: string) {
-	return { email: join(runFolder, 'Email'), echo: join(runFolder, 'Echo') };
+	return { email: join(runFolder, 'Email'), echo: join(runFolder, 'Echo'), uploads: join(runFolder, 'Uploads') };
 }
 
 /**
  * The environment the dev site starts with for a run: Development, on a new database and Formulate folder in
  * the run's folder, with the run's own log, installing itself with the E2E user. It listens on both of the run's
- * addresses, and writes its email and its echo's records in the run's folder. Every name matches SHELL_NAME.
+ * addresses, and writes its email, its echo's records and the files visitors upload in the run's folder. Every name
+ * matches SHELL_NAME.
  * @param options.origin The site's address, such as https://localhost:44331.
  * @param options.plainOrigin The site's plain http address, such as http://localhost:45331.
  * @param options.runFolder The run's folder (see playwright.config.ts).
@@ -93,6 +95,8 @@ export function siteEnvironment(options: SiteAddresses & { runFolder: string }):
 		Umbraco__CMS__Global__Smtp__PickupDirectoryLocation: folders.email,
 		// What the dev site's echo receives, for the Send Data specs to read.
 		DevEcho__Folder: folders.echo,
+		// Store Data keeps uploaded files in the run's folder too, not in the dev site's App_Data.
+		Formulate__StoreData__UploadsFolderPath: folders.uploads,
 		// Leave no MSBuild or compiler server running after the build that "dotnet run" does.
 		MSBUILDDISABLENODEREUSE: '1',
 		UseSharedCompilation: 'false',

@@ -71,13 +71,17 @@ test("the site opens the run's database as the dev site opens its own, without a
 	assert.equal(ENVIRONMENT.ConnectionStrings__umbracoDbDSN_ProviderName, own.umbracoDbDSN_ProviderName);
 });
 
-test("the site writes its email and the echo's records in the run's folder", () => {
+test("the site writes its email, the echo's records and the files visitors upload in the run's folder", () => {
 	assert.deepEqual(runFolderPaths('/tmp/formulate-e2e-1'), {
 		email: join('/tmp/formulate-e2e-1', 'Email'),
 		echo: join('/tmp/formulate-e2e-1', 'Echo'),
+		uploads: join('/tmp/formulate-e2e-1', 'Uploads'),
 	});
 	assert.equal(ENVIRONMENT.Umbraco__CMS__Global__Smtp__PickupDirectoryLocation, join('/tmp/formulate-e2e-1', 'Email'));
 	assert.equal(ENVIRONMENT.DevEcho__Folder, join('/tmp/formulate-e2e-1', 'Echo'));
+	// Store Data's setting (StoreDataSettings.UploadsFolderPath), which is otherwise App_Data/Formulate/Uploads in the
+	// dev site's own folder.
+	assert.equal(ENVIRONMENT.Formulate__StoreData__UploadsFolderPath, join('/tmp/formulate-e2e-1', 'Uploads'));
 });
 
 test("the dev site's Development settings give an address to send from, and leave where email goes to the site", () => {
