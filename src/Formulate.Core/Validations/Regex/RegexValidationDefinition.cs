@@ -1,4 +1,7 @@
-﻿using Formulate.Core.Utilities;
+﻿using Formulate.Core.Configuration;
+using Formulate.Core.Utilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 
 namespace Formulate.Core.Validations.Regex
@@ -34,9 +37,15 @@ namespace Formulate.Core.Validations.Regex
             public const string EditorAlias = "formulate-regex-validation";
         }
 
-        public RegexValidationDefinition(IJsonUtility jsonUtility)
+        private readonly IOptions<FormulateSubmissionsOptions> _options;
+
+        private readonly ILogger<RegexValidation> _logger;
+
+        public RegexValidationDefinition(IJsonUtility jsonUtility, IOptions<FormulateSubmissionsOptions> options, ILogger<RegexValidation> logger)
         {
             _jsonUtility = jsonUtility;
+            _options = options;
+            _logger = logger;
         }
 
         /// <inheritdoc />
@@ -56,7 +65,7 @@ namespace Formulate.Core.Validations.Regex
         {
             var config = _jsonUtility.Deserialize<RegexValidationConfiguration>(entity.Data) ?? new RegexValidationConfiguration();
 
-            return new RegexValidation(entity, config);
+            return new RegexValidation(entity, config, _options.Value.EnableServerSideValidation, _logger);
         }
 
         /// <inheritdoc />

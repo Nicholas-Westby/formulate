@@ -3,6 +3,7 @@ using Formulate.BackOffice.Api.Models.Tree;
 using Formulate.BackOffice.Api.Services;
 using Formulate.BackOffice.Definitions.Forms;
 using Formulate.BackOffice.Tests.TestSupport;
+using Formulate.Core.Configuration;
 using Formulate.Core.DataValues;
 using Formulate.Core.DataValues.Legacy;
 using Formulate.Core.DataValues.List;
@@ -14,6 +15,8 @@ using Formulate.Core.Layouts.Basic;
 using Formulate.Core.Validations;
 using Formulate.Core.Validations.Mandatory;
 using Formulate.Core.Validations.Regex;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using ApiEntityTypes = Formulate.BackOffice.Api.EntityTypes;
@@ -39,7 +42,10 @@ public class CreateOptionsApiServiceTests
         }),
         new ValidationDefinitionCollection(() => new IValidationDefinition[]
         {
-            new RegexValidationDefinition(_harness.JsonUtility),
+            new RegexValidationDefinition(
+                _harness.JsonUtility,
+                Options.Create(new FormulateSubmissionsOptions()),
+                NullLogger<RegexValidation>.Instance),
             new MandatoryValidationDefinition(_harness.JsonUtility),
         }));
 
