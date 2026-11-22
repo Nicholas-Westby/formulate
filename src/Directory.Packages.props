@@ -10,6 +10,7 @@
     <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoVersionRange)" />
     <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersionRange)" />
     <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Persistence.SqlServer" Version="$(UmbracoVersionRange)" />
     <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersionRange)" />
     <PackageVersion Include="Umbraco.Cms.Web.Website" Version="$(UmbracoVersionRange)" />
   </ItemGroup>
