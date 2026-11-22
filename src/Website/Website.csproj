@@ -30,9 +30,10 @@
     Each pack needs a version of its own (such as 5.0.0-local.g1a2b3c4.20261122093000): NuGet keeps the first
     copy of a version it extracts, and would never see a new pack with the same version. In this mode, restore
     reads only FormulateFromPackages.nuget.config (artifacts/packages for Formulate, nuget.org for the rest),
-    extracts packages into obj/FormulatePackages instead of NuGet's global packages folder, and leaves NuGet's
-    HTTP cache alone, so it changes nothing outside this project. At start-up, the site logs which Formulate
-    it loaded (Composers/LoadedFormulateComposer.cs).
+    extracts packages into obj/FormulatePackages instead of NuGet's global packages folder, and downloads them
+    without NuGet's HTTP cache, so no package from this mode lands in NuGet's shared folders. (NuGet still
+    refreshes nuget.org's service index, signing and vulnerability files in its HTTP cache, as every restore
+    does.) At start-up, the site logs which Formulate it loaded (Composers/LoadedFormulateComposer.cs).
   -->
   <PropertyGroup Condition="'$(FormulateFromPackages)' == 'true'">
     <RestoreConfigFile>$(MSBuildProjectDirectory)/FormulateFromPackages.nuget.config</RestoreConfigFile>
