@@ -39,7 +39,8 @@ namespace Formulate.BackOffice.NotificationHandlers
         {
             var entity = notification.Entity;
 
-            if (entity is null)
+            // Saving an existing form must not add another layout, so only a creation counts.
+            if (entity is null || !notification.IsNew)
             {
                 return;
             }

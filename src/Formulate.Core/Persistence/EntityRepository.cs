@@ -39,11 +39,14 @@ namespace Formulate.Core.Persistence
         {
             using (var scope = _coreScopeProvider.CreateCoreScope())
             {
-                var savingNotification = new EntitySavingNotification<TPersistedEntity>(entity);
+                // An entity with no stored copy is being created, and handlers that only react to
+                // creation (such as generating a basic layout) rely on this.
+                var isNew = _repositoryUtility.Get(entity.Id) is null;
+                var savingNotification = new EntitySavingNotification<TPersistedEntity>(entity, isNew);
                 scope.Notifications.Publish(savingNotification);
 
                 var savedEntity = _repositoryUtility.Save(entity);
-                var savedNotification = new EntitySavedNotification<TPersistedEntity>(savedEntity);
+                var savedNotification = new EntitySavedNotification<TPersistedEntity>(savedEntity, isNew);
                 
                 scope.Notifications.Publish(savedNotification);
                 scope.Complete();
