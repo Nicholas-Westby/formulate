@@ -12,7 +12,7 @@ namespace Formulate.Extensions.SendData.Notifications
     {
         public SentDataNotification(
             FormSubmissionRequest request, Guid handlerId, string? handlerName, string url, HttpStatusCode? statusCode,
-            string? responseBody, Exception? error)
+            string? responseBody, Exception? error, bool isBodyTruncated = false)
         {
             Request = request;
             HandlerId = handlerId;
@@ -21,6 +21,7 @@ namespace Formulate.Extensions.SendData.Notifications
             StatusCode = statusCode;
             ResponseBody = responseBody;
             Error = error;
+            IsBodyTruncated = isBodyTruncated;
         }
 
         /// <summary>
@@ -52,6 +53,13 @@ namespace Formulate.Extensions.SendData.Notifications
         /// Gets the response's body, or null when there was no response.
         /// </summary>
         public string? ResponseBody { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the response had more than 1 MiB (1,048,576 bytes) of body, of which
+        /// <see cref="ResponseBody"/> has the first 1 MiB. The limit keeps a receiver that answers with an enormous
+        /// body from filling the site's memory.
+        /// </summary>
+        public bool IsBodyTruncated { get; }
 
         /// <summary>
         /// Gets the failure when the request failed (a connection error or a timeout), or null.

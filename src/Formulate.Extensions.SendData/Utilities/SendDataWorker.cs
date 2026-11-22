@@ -1,6 +1,7 @@
 namespace Formulate.Extensions.SendData.Utilities
 {
     using System.Net;
+    using System.Text;
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Extensions.SendData.FormHandlers;
@@ -19,6 +20,11 @@ namespace Formulate.Extensions.SendData.Utilities
     /// </remarks>
     internal sealed class SendDataWorker
     {
+        /// <summary>
+        /// The most of a response's body that is kept for <see cref="SentDataNotification"/>: 1 MiB.
+        /// </summary>
+        internal const int MaxResponseBodyBytes = 1_048_576;
+
         private readonly IHttpClientFactory _httpClientFactory;
 
         private readonly IEventAggregator _events;
@@ -101,16 +107,22 @@ namespace Formulate.Extensions.SendData.Utilities
             var data = sending.Data.ToArray();
             HttpStatusCode? status = null;
             string? body = null;
+            var truncated = false;
             Exception? error = null;
 
             try
             {
                 using var request = _payload.CreateRequest(uri, configuration.Method!, format, data, submission, sending.Headers, context);
 
-                // Handlers run without a cancellation token: the client's timeout is what ends a slow request.
-                using var response = await _httpClientFactory.CreateClient(Constants.HttpClientName).SendAsync(request, CancellationToken.None);
+                // The time limit covers the whole exchange, the body included: HttpClient.Timeout ends at the
+                // response headers when the body is read afterwards.
+                using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                limit.CancelAfter(SendDataServiceCollectionExtensions.RequestTimeout);
+
+                using var response = await _httpClientFactory.CreateClient(Constants.HttpClientName)
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, limit.Token);
                 status = response.StatusCode;
-                body = await response.Content.ReadAsStringAsync(CancellationToken.None);
+                (body, truncated) = await ReadBodyAsync(response.Content, limit.Token);
             }
             catch (Exception ex)
             {
@@ -118,7 +130,48 @@ namespace Formulate.Extensions.SendData.Utilities
             }
 
             Log(context, logUrl, status, error);
-            await PublishSentAsync(new SentDataNotification(submission, context.HandlerId, context.HandlerName, logUrl, status, body, error), context, logUrl);
+            await PublishSentAsync(new SentDataNotification(submission, context.HandlerId, context.HandlerName, logUrl, status, body, error, truncated), context, logUrl);
+        }
+
+        /// <summary>
+        /// Reads at most <see cref="MaxResponseBodyBytes"/> of the body, decoded by its charset (UTF-8 when it has none).
+        /// </summary>
+        private static async Task<(string Body, bool Truncated)> ReadBodyAsync(HttpContent content, CancellationToken cancellationToken)
+        {
+            await using var stream = await content.ReadAsStreamAsync(cancellationToken);
+            var buffer = new byte[MaxResponseBodyBytes + 1];
+            var length = 0;
+
+            while (length < buffer.Length)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken);
+
+                if (read == 0)
+                {
+                    break;
+                }
+
+                length += read;
+            }
+
+            var truncated = length > MaxResponseBodyBytes;
+
+            return (GetEncoding(content).GetString(buffer, 0, Math.Min(length, MaxResponseBodyBytes)), truncated);
+        }
+
+        private static Encoding GetEncoding(HttpContent content)
+        {
+            var charset = content.Headers.ContentType?.CharSet?.Trim('"', ' ');
+
+            try
+            {
+                return string.IsNullOrEmpty(charset) ? Encoding.UTF8 : Encoding.GetEncoding(charset);
+            }
+            catch (ArgumentException)
+            {
+                // A charset the runtime does not know.
+                return Encoding.UTF8;
+            }
         }
 
         private void Log(HandlerContext context, string url, HttpStatusCode? status, Exception? error)

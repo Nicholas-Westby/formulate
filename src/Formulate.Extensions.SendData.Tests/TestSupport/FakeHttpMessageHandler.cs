@@ -25,6 +25,11 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
     public string ResponseBody { get; set; } = "ok";
 
     /// <summary>
+    /// Gets or sets the encoding of the body, which is also its charset.
+    /// </summary>
+    public Encoding ResponseEncoding { get; set; } = Encoding.UTF8;
+
+    /// <summary>
     /// Gets or sets a failure to throw instead of answering.
     /// </summary>
     public Exception? Failure { get; set; }
@@ -47,7 +52,7 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
             throw Failure;
         }
 
-        return new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, Encoding.UTF8, "text/plain") };
+        return new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, ResponseEncoding, "text/plain") };
     }
 }
 

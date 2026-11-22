@@ -123,4 +123,49 @@ public sealed class SendDataNotificationTests
         Assert.Empty(services.Network.Requests);
         Assert.Contains("Send to the CRM", Assert.Single(services.Logs.Errors).Message);
     }
+
+    [Fact]
+    public async Task Sent_notification_keeps_at_most_one_mebibyte_of_the_body_and_says_so()
+    {
+        SentDataNotification? seen = null;
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => seen = n)));
+        services.Network.ResponseBody = new string('a', 1_048_576 + 100);
+
+        await services.SendAsync(Config, Submission());
+
+        Assert.NotNull(seen);
+        Assert.Equal(HttpStatusCode.OK, seen.StatusCode);
+        Assert.Equal(1_048_576, seen.ResponseBody!.Length);
+        Assert.True(seen.IsBodyTruncated);
+    }
+
+    [Fact]
+    public async Task Sent_notification_with_a_body_of_exactly_the_limit_is_not_truncated()
+    {
+        SentDataNotification? seen = null;
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => seen = n)));
+        services.Network.ResponseBody = new string('a', 1_048_576);
+
+        await services.SendAsync(Config, Submission());
+
+        Assert.NotNull(seen);
+        Assert.Equal(1_048_576, seen.ResponseBody!.Length);
+        Assert.False(seen.IsBodyTruncated);
+    }
+
+    [Fact]
+    public async Task Sent_notification_decodes_the_body_by_its_charset()
+    {
+        SentDataNotification? seen = null;
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => seen = n)));
+        services.Network.ResponseBody = "caf\u00e9";
+        services.Network.ResponseEncoding = System.Text.Encoding.Latin1;
+
+        await services.SendAsync(Config, Submission());
+
+        Assert.Equal("caf\u00e9", seen!.ResponseBody);
+    }
 }
