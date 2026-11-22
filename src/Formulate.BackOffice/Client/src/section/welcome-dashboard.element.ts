@@ -1,7 +1,9 @@
 import { css, customElement, html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
-import umbracoPackage from '../../public/umbraco-package.json';
+
+// The package's version, such as 5.0.0-rc.1, which the build writes in (define, in vite.config.ts).
+declare const __FORMULATE_VERSION__: string;
 
 /** The Formulate section's dashboard: what each tree is for, and the installed version. */
 @customElement('formulate-welcome-dashboard')
@@ -10,7 +12,7 @@ export class FormulateWelcomeDashboardElement extends UmbLitElement {
 		return html`
 			<uui-box headline=${this.localize.term('formulate_welcomeHeadline')}>
 				<span slot="header-actions" id="version">
-					${this.localize.term('formulate_version', umbracoPackage.version)}
+					${this.localize.term('formulate_version', __FORMULATE_VERSION__)}
 				</span>
 				<p>${this.localize.term('formulate_welcomeIntroduction')}</p>
 				<ul>

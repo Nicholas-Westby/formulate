@@ -16,6 +16,8 @@
                                       (for example themes/**). They are added to FormulateClientInputs.
       FormulateClientInputs           Replaces the default list of watched files (relative to the client directory):
                                       src/**;public/**;package.json;package-lock.json;vite.config.ts;tsconfig.json
+      FormulateClientUsesVersion      true when the client shows the package's version, such as 5.0.0-rc.1. The npm
+                                      build gets it as FORMULATE_VERSION, and runs again whenever it changes.
       SkipClientBuild                 Pass -p:SkipClientBuild=true on the command line to skip the npm build.
 
     The client directory is left out of the project's default items, so package.json, node_modules and the tests never
@@ -38,6 +40,11 @@
 
   <PropertyGroup>
     <_FormulateClientActive Condition="'$(FormulateClientDirectory)' != '' and '$(FormulateClientOutput)' != '' and '$(DesignTimeBuild)' != 'true'">true</_FormulateClientActive>
+    <!--
+      Holds the version the client was last built with, for FormulateClientUsesVersion. It sits in obj itself, not in a
+      configuration's folder, because every configuration shares the one client output.
+    -->
+    <_FormulateClientVersionStamp Condition="'$(FormulateClientUsesVersion)' == 'true'">$(BaseIntermediateOutputPath)formulate-client-version.txt</_FormulateClientVersionStamp>
   </PropertyGroup>
 
   <!-- Installs the npm packages when the lock file changes (npm writes node_modules/.package-lock.json on install). -->
@@ -49,15 +56,28 @@
     <Exec Command="npm ci" WorkingDirectory="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(FormulateClientDirectory)'))" />
   </Target>
 
-  <!-- Runs the npm build when a client source is newer than the built file. -->
+  <!--
+    Writes the package version to the stamp file, but only when it differs from the one there. As one of the npm
+    build's inputs, the stamp then makes a build with another version (such as -p:Version=5.0.0-rc.1) build the
+    client again, and the next build without one too.
+  -->
+  <Target Name="FormulateStampClientVersion"
+          Condition="'$(_FormulateClientActive)' == 'true' and '$(SkipClientBuild)' != 'true' and '$(_FormulateClientVersionStamp)' != ''">
+    <WriteLinesToFile File="$(_FormulateClientVersionStamp)" Lines="$(PackageVersion)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <!-- Runs the npm build when a client source (or the version stamp) is newer than the built file. -->
   <Target Name="FormulateBuildClient"
-          DependsOnTargets="FormulateRestoreClient"
+          DependsOnTargets="FormulateRestoreClient;FormulateStampClientVersion"
           BeforeTargets="AssignTargetPaths;ResolveStaticWebAssetsInputs"
           Condition="'$(_FormulateClientActive)' == 'true' and '$(SkipClientBuild)' != 'true'"
-          Inputs="@(FormulateClientInput)"
+          Inputs="@(FormulateClientInput);$(_FormulateClientVersionStamp)"
           Outputs="$(FormulateClientOutput)">
+    <PropertyGroup>
+      <_FormulateClientEnvironment Condition="'$(_FormulateClientVersionStamp)' != ''">FORMULATE_VERSION=$(PackageVersion)</_FormulateClientEnvironment>
+    </PropertyGroup>
     <Message Importance="high" Text="Building the client code in $(FormulateClientDirectory) (npm run build)." />
-    <Exec Command="npm run build" WorkingDirectory="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(FormulateClientDirectory)'))" />
+    <Exec Command="npm run build" WorkingDirectory="$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(FormulateClientDirectory)'))" EnvironmentVariables="$(_FormulateClientEnvironment)" />
   </Target>
 
   <!--

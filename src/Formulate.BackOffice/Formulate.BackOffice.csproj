@@ -11,6 +11,8 @@
     <FormulateClientDirectory>Client</FormulateClientDirectory>
     <FormulateClientOutput>wwwroot/App_Plugins/Formulate/formulate.js</FormulateClientOutput>
     <FormulateClientOutputDirectory>wwwroot/App_Plugins/Formulate</FormulateClientOutputDirectory>
+    <!-- umbraco-package.json and the welcome dashboard show the package's own version (see Client/vite.config.ts). -->
+    <FormulateClientUsesVersion>true</FormulateClientUsesVersion>
   </PropertyGroup>
 
   <ItemGroup>
