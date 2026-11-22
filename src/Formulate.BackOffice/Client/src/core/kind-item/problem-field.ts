@@ -5,6 +5,8 @@ const FIELD_PATHS: Readonly<Record<string, string>> = {
 	name: '$.name',
 	alias: '$.alias',
 	configuration: '$.configuration',
+	// A layout's template.
+	templateId: '$.templateId',
 };
 
 /** A problem the API reported for one field of an item. */

@@ -60,6 +60,11 @@ export default {
 		usStatesDataValues:
 			'The 50 states, Washington, D.C., American Samoa, Guam, the Northern Mariana Islands, Puerto Rico and the U.S. Virgin Islands, in alphabetical order. Visitors see each name, such as Alabama; its two-letter postal code, such as AL, is what is stored. Formulate makes these items itself, so there is nothing to set here.',
 		layoutNotFound: 'Layout not found',
+		template: 'Template',
+		templateDescription: 'The template that shows the form on a page.',
+		templateNotInstalled: (id: string) => `Not installed (${id})`,
+		layoutFormMissing:
+			'The form of this layout could not be read, so its fields cannot be laid out here. Its name, alias and template can still be changed.',
 		legacyDataValues:
 			'These data values were made by an older version of Formulate and can no longer be changed. Create new data values to use instead.',
 		fields: 'Fields',
