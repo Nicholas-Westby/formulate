@@ -56,6 +56,7 @@ export default {
 		dynamicDataValues: 'This kind makes its items itself, so there is nothing to set here.',
 		usStatesDataValues:
 			'The 50 states, Washington, D.C., American Samoa, Guam, the Northern Mariana Islands, Puerto Rico and the U.S. Virgin Islands, in alphabetical order. Visitors see each name, such as Alabama; its two-letter postal code, such as AL, is what is stored. Formulate makes these items itself, so there is nothing to set here.',
+		layoutNotFound: 'Layout not found',
 		legacyDataValues:
 			'These data values were made by an older version of Formulate and can no longer be changed. Create new data values to use instead.',
 	},

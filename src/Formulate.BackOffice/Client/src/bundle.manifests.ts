@@ -9,6 +9,7 @@ import { manifests as folders } from './folders/manifests.js';
 import { manifests as forms } from './forms/repository/manifests.js';
 import { manifests as layouts } from './layouts/repository/manifests.js';
 import { manifests as localization } from './localization/manifests.js';
+import { manifests as formLayoutPicker } from './property-editors/form-layout-picker/manifests.js';
 import { manifests as section } from './section/manifests.js';
 import { manifests as tree } from './tree/manifests.js';
 import { manifests as validations } from './validations/repository/manifests.js';
@@ -31,4 +32,5 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...dataValuesWorkspace,
 	...editors,
 	...entityActions,
+	...formLayoutPicker,
 ];
