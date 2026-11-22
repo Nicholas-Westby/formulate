@@ -83,7 +83,7 @@ it is likely you will want to render your field with the Responsive Bootstrap An
 When you install Formulate, you will find the JavaScript for this template in `~/App_Plugins/formulate/responsive.bootstrap.angular.js`.
 
 Rather than modify that file directly (it may be overwritten on upgrades), it is recommended that you
-register a field renderer in a separate file. Let's assume you have followed the [render form](/render-form)
+register a field renderer in a separate file. Let's assume you have followed the [render form](/angularjs/render-form)
 instructions and have this line of JavaScript somewhere in one of your CSHTML files:
 
 ```javascript
