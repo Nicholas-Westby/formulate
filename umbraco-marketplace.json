@@ -1,0 +1,19 @@
+{
+  "$schema": "https://marketplace.umbraco.com/umbraco-marketplace-schema.json",
+  "Title": "Formulate",
+  "Description": "A form builder for Umbraco. Build forms in the back office, lay them out, and add them to pages with a form picker. Handlers send email (including designed emails from Razor views), send data to other services, or store submissions.",
+  "Category": "Editor Tools",
+  "LicenseTypes": ["Free"],
+  "PackageType": "Package",
+  "Tags": ["forms", "form builder", "email", "submissions", "recaptcha"],
+  "AuthorDetails": {
+    "Name": "Nicholas Westby",
+    "Url": "https://github.com/Nicholas-Westby",
+    "ImageUrl": "https://github.com/Nicholas-Westby.png",
+    "Contributors": [
+      { "Name": "Jamie Pollock", "Url": "https://github.com/jamiepollock" }
+    ]
+  },
+  "DocumentationUrl": "https://www.formulate.rocks/",
+  "IssueTrackerUrl": "https://github.com/Nicholas-Westby/formulate/issues"
+}
