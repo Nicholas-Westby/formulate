@@ -14,6 +14,7 @@ import { manifests as layoutWorkspace } from './layouts/workspace/manifests.js';
 import { manifests as localization } from './localization/manifests.js';
 import { manifests as formLayoutPicker } from './property-editors/form-layout-picker/manifests.js';
 import { manifests as section } from './section/manifests.js';
+import { manifests as submissions } from './submissions/manifests.js';
 import { manifests as tree } from './tree/manifests.js';
 import { manifests as validations } from './validations/repository/manifests.js';
 import { manifests as validationWorkspace } from './validations/workspace/manifests.js';
@@ -30,6 +31,7 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...forms,
 	...formWorkspace,
 	...formModals,
+	...submissions,
 	...layouts,
 	...layoutWorkspace,
 	...validations,

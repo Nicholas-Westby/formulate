@@ -223,5 +223,23 @@ export default {
 		fieldNameSent: (name: string, position: number) => (name ? `Name sent for ${name}` : `Name sent for item ${position}`),
 		storeDataDescription:
 			'Stores each submission of this form in the Umbraco database: the values of its fields, the page it was sent from and the files sent with it. There is nothing to set here.',
+		submissions: 'Submissions',
+		noSubmissions: 'There are no submissions yet: a Store Data handler on this form keeps each one that visitors send.',
+		submissionsNotRead: 'The submissions could not be read.',
+		submissionCreated: 'Created',
+		submissionPage: 'Page',
+		submissionFiles: 'Files',
+		exportSubmissions: 'Export to CSV',
+		submissionsNotExported: 'The submissions could not be exported.',
+		openSubmission: (date: string) => `Open the submission from ${date}`,
+		submissionHeadline: (date: string) => `Submission from ${date}`,
+		deleteSubmission: (date: string) => `Delete the submission from ${date}`,
+		deleteSubmissionHeadline: 'Delete submission',
+		confirmDeleteSubmission: (date: string) =>
+			`Are you sure you want to delete the submission from ${date}? Its files are deleted with it.`,
+		submissionNotDeleted: 'The submission could not be deleted.',
+		fieldNoLongerOnForm: 'No longer on the form.',
+		downloadFile: (name: string) => `Download ${name}`,
+		fileNotDownloaded: (name: string) => `${name} could not be downloaded.`,
 	},
 } satisfies UmbLocalizationDictionary;
