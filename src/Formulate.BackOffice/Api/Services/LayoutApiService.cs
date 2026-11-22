@@ -61,6 +61,11 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<LayoutResponseModel> Create(CreateLayoutRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<LayoutResponseModel>();
+            }
+
             if (string.IsNullOrWhiteSpace(request.Name))
             {
                 return ServiceResult<LayoutResponseModel>.Invalid("name", "The name is required.");
@@ -68,9 +73,9 @@ namespace Formulate.BackOffice.Api.Services
 
             var definition = _layoutDefinitions.FirstOrDefault(request.KindId);
 
-            if (definition is null)
+            if (definition is null || definition.IsLegacy)
             {
-                return ServiceResult<LayoutResponseModel>.Invalid("kindId", $"{request.KindId} is not a layout kind.");
+                return ServiceResult<LayoutResponseModel>.Invalid("kindId", $"{request.KindId} is not a layout kind that can be created.");
             }
 
             var form = _formRepository.Get(request.FormId);
@@ -122,6 +127,11 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<LayoutResponseModel> Update(Guid id, UpdateLayoutRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<LayoutResponseModel>();
+            }
+
             var existing = _layoutRepository.Get(id);
 
             if (existing is null)
@@ -245,7 +255,7 @@ namespace Formulate.BackOffice.Api.Services
                     definition is null ? null : () => definition.GetBackOfficeConfiguration(layout),
                     layout.Data,
                     $"layout '{layout.Name}' ({layout.Id})",
-                    "its configuration"),
+                    item: null),
             };
         }
     }

@@ -46,11 +46,15 @@ namespace Formulate.BackOffice.Api.Services
 
         /// <inheritdoc />
         public ServiceResult<DataValuesResponseModel> Create(CreateDataValuesRequestModel request) =>
-            CreateItem(request.Id, request.ParentId, request.KindId, request.Name, request.Alias, request.Configuration);
+            request is null
+                ? RequestBody.Missing<DataValuesResponseModel>()
+                : CreateItem(request.Id, request.ParentId, request.KindId, request.Name, request.Alias, request.Configuration);
 
         /// <inheritdoc />
         public ServiceResult<DataValuesResponseModel> Update(Guid id, UpdateDataValuesRequestModel request) =>
-            UpdateItem(id, request.Name, request.Alias, request.Configuration);
+            request is null
+                ? RequestBody.Missing<DataValuesResponseModel>()
+                : UpdateItem(id, request.Name, request.Alias, request.Configuration);
 
         /// <inheritdoc />
         // A form that still uses the items is fine: the form is shown with no choices and a warning is logged.
@@ -110,7 +114,7 @@ namespace Formulate.BackOffice.Api.Services
                     definition is null ? null : () => definition.GetBackOfficeConfiguration(dataValues),
                     dataValues.Data,
                     $"data values '{dataValues.Name}' ({dataValues.Id})",
-                    "its configuration"),
+                    item: null),
             };
         }
     }

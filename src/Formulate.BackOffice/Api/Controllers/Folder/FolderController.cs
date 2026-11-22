@@ -85,6 +85,7 @@ namespace Formulate.BackOffice.Api.Controllers.Folder
         [HttpDelete("{id:guid}")]
         [ProducesResponseType<DeleteResponseModel>(StatusCodes.Status200OK)]
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
         public IActionResult Delete(Guid id)
         {
             var result = _service.Delete(id);
@@ -103,6 +104,12 @@ namespace Formulate.BackOffice.Api.Controllers.Folder
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public IActionResult Move(Guid id, MoveRequestModel request)
         {
+            // A missing body is refused, not read as a move to the top of the tree.
+            if (request is null)
+            {
+                return ProblemFor(RequestBody.Missing<bool>());
+            }
+
             var result = _moveService.Move<PersistedFolder>(id, request.TargetId);
 
             return result.Status == ServiceStatus.Success ? Ok() : ProblemFor(result);

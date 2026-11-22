@@ -121,6 +121,17 @@ public class DataValuesApiServiceTests
     }
 
     [Fact]
+    public void A_missing_body_is_refused_naming_the_request()
+    {
+        var service = CreateService();
+        var existing = _tree.AddDataValues();
+
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Create(null!)));
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Update(existing.Id, null!)));
+        Assert.Equal("Data values", Assert.Single(_tree.Repositories.DataValuesStore.GetAll()).Name);
+    }
+
+    [Fact]
     public void Create_and_update_refuse_list_items_sent_as_plain_strings()
     {
         // The configuration the Task 6 live run stored, which then broke the public page.

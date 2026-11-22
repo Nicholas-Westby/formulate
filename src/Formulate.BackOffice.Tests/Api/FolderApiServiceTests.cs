@@ -212,7 +212,19 @@ public class FolderApiServiceTests
 
         Assert.Equal(ServiceStatus.NotFound, service.Get(id).Status);
         Assert.Equal(ServiceStatus.NotFound, service.Update(id, new UpdateFolderRequestModel { Name = "x" }).Status);
+        Assert.Equal(ServiceStatus.NotFound, service.Delete(id).Status);
         Assert.Equal("Stray", _tree.Repositories.Folders.Get(id).Name);
+    }
+
+    [Fact]
+    public void A_missing_body_is_refused_naming_the_request()
+    {
+        var service = CreateService();
+        var folder = _tree.AddFolder(FormConstantsRoot.Forms);
+
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Create(null!)));
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Update(folder.Id, null!)));
+        Assert.Equal("Folder", Assert.Single(_tree.Repositories.FolderStore.GetAll()).Name);
     }
 
     [Fact]

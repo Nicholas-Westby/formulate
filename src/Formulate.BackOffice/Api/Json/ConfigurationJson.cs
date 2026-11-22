@@ -31,12 +31,12 @@ namespace Formulate.BackOffice.Api.Json
         /// </summary>
         /// <param name="stored">The stored configuration.</param>
         /// <param name="entity">What the configuration belongs to, such as the form, for the warning.</param>
-        /// <param name="item">The item within that entity, such as a field, for the warning.</param>
+        /// <param name="item">The item within that entity, such as a field, for the warning; null when the configuration is the entity's own.</param>
         /// <returns>
         /// The parsed JSON. Stored text that is not JSON comes back as a JSON string value, so reading
         /// never fails because of it, and a warning is logged. Nothing stored gives null.
         /// </returns>
-        public JsonElement? FromStored(string? stored, string entity, string item)
+        public JsonElement? FromStored(string? stored, string entity, string? item)
         {
             if (string.IsNullOrWhiteSpace(stored))
             {
@@ -51,7 +51,14 @@ namespace Formulate.BackOffice.Api.Json
             }
             catch (JsonException)
             {
-                _logger.LogWarning("The stored configuration of {Item} on {Entity} is not valid JSON, so it is returned as a string.", item, entity);
+                if (item is null)
+                {
+                    _logger.LogWarning("The stored configuration of {Entity} is not valid JSON, so it is returned as a string.", entity);
+                }
+                else
+                {
+                    _logger.LogWarning("The stored configuration of {Item} on {Entity} is not valid JSON, so it is returned as a string.", item, entity);
+                }
 
                 return JsonSerializer.SerializeToElement(stored);
             }
@@ -63,8 +70,8 @@ namespace Formulate.BackOffice.Api.Json
         /// <param name="fromDefinition">Asks the definition for its back office configuration, or null when there is no definition.</param>
         /// <param name="stored">The stored configuration, used when there is no definition, when the definition gives nothing or when it fails.</param>
         /// <param name="entity">What the configuration belongs to, for warnings.</param>
-        /// <param name="item">The item within that entity, for warnings.</param>
-        public JsonElement? FromDefinition(Func<object?>? fromDefinition, string? stored, string entity, string item)
+        /// <param name="item">The item within that entity, for warnings; null when the configuration is the entity's own.</param>
+        public JsonElement? FromDefinition(Func<object?>? fromDefinition, string? stored, string entity, string? item)
         {
             if (fromDefinition is not null)
             {
@@ -81,7 +88,14 @@ namespace Formulate.BackOffice.Api.Json
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "The definition could not read the configuration of {Item} on {Entity}, so the stored configuration is returned.", item, entity);
+                    if (item is null)
+                    {
+                        _logger.LogWarning(ex, "The definition could not read the configuration of {Entity}, so the stored configuration is returned.", entity);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(ex, "The definition could not read the configuration of {Item} on {Entity}, so the stored configuration is returned.", item, entity);
+                    }
                 }
             }
 

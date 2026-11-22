@@ -41,6 +41,9 @@ public class FormApiServiceTests
     /// <summary>Handler kinds added to the service's definitions, beside the mocked handler.</summary>
     private readonly List<IFormHandlerDefinition> _extraHandlers = new();
 
+    /// <summary>Form kinds added to the harness's form kinds.</summary>
+    private readonly List<IFormDefinition> _extraForms = new();
+
     private FormApiService CreateService()
     {
         var textField = new Mock<IFormFieldDefinition>();
@@ -54,7 +57,7 @@ public class FormApiServiceTests
             _harness.Forms,
             _harness.Layouts,
             new TreeEntityRepository(_harness.Forms, _harness.Layouts, _harness.Folders, _harness.DataValues, _harness.Validations),
-            _harness.FormDefinitions,
+            new FormDefinitionCollection(() => _harness.FormDefinitions.Concat(_extraForms)),
             new FormFieldDefinitionCollection(() => new[] { textField.Object }.Concat(_extraFields)),
             new FormHandlerDefinitionCollection(() => new[] { handler.Object }.Concat(_extraHandlers)),
             new ConfigurationJson(_harness.JsonUtility, _logger),
@@ -557,6 +560,76 @@ public class FormApiServiceTests
         Assert.Equal(ServiceStatus.Success, readable.Status);
         Assert.Equal(2, _harness.FormStore.GetAll().Count);
         Assert.Equal("Contact", _harness.Forms.Get(existing.Id).Name);
+    }
+
+    [Fact]
+    public void A_missing_body_or_missing_fields_or_handlers_are_refused_naming_them_and_nothing_changes()
+    {
+        var service = CreateService();
+        var existing = CreateRequest(fields: new[] { new FormFieldModel { Id = Guid.NewGuid(), KindId = TextKind, Name = "Email" } });
+        Ok(service.Create(existing));
+
+        var results = new[]
+        {
+            (service.Create(null!), "request"),
+            (service.Update(existing.Id, null!), "request"),
+            (service.Duplicate(existing.Id, null!), "request"),
+            (service.Create(new CreateFormRequestModel { Id = Guid.NewGuid(), KindId = PlainFormKind, Name = "x", Fields = null!, Handlers = Array.Empty<FormHandlerModel>() }), "fields"),
+            (service.Create(new CreateFormRequestModel { Id = Guid.NewGuid(), KindId = PlainFormKind, Name = "x", Fields = Array.Empty<FormFieldModel>(), Handlers = null! }), "handlers"),
+            (service.Update(existing.Id, new UpdateFormRequestModel { Name = "Changed", Fields = null!, Handlers = Array.Empty<FormHandlerModel>() }), "fields"),
+            (service.Update(existing.Id, new UpdateFormRequestModel { Name = "Changed", Fields = Array.Empty<FormFieldModel>(), Handlers = null! }), "handlers"),
+        };
+
+        foreach (var (result, field) in results)
+        {
+            Assert.Equal((ServiceStatus.Invalid, field), (result.Status, result.Field));
+        }
+
+        // Null never means "no fields": the form keeps its field and its name.
+        var stored = Assert.Single(_harness.FormStore.GetAll());
+        Assert.Equal(("Contact", 1), (stored.Name, stored.Fields.Length));
+    }
+
+    [Fact]
+    public void Create_refuses_a_legacy_form_kind()
+    {
+        var legacy = new Mock<IFormDefinition>();
+        legacy.SetupGet(x => x.KindId).Returns(Guid.Parse("44444444-4444-4444-4444-444444444444"));
+        legacy.SetupGet(x => x.Name).Returns("Old form");
+        legacy.SetupGet(x => x.IsLegacy).Returns(true);
+        _extraForms.Add(legacy.Object);
+
+        var result = CreateService().Create(CreateRequest(kind: legacy.Object.KindId));
+
+        Assert.Equal((ServiceStatus.Invalid, "kindId"), (result.Status, result.Field));
+        Assert.Empty(_harness.FormStore.GetAll());
+    }
+
+    [Fact]
+    public void Fields_and_handlers_without_a_kind_are_refused_naming_the_item_but_unknown_kinds_are_kept()
+    {
+        var service = CreateService();
+        var existing = CreateRequest();
+        Ok(service.Create(existing));
+        var fields = new[]
+        {
+            new FormFieldModel { Id = Guid.NewGuid(), KindId = UnknownKind, Name = "From an uninstalled extension" },
+            new FormFieldModel { Id = Guid.NewGuid(), KindId = Guid.Empty, Name = "No kind" },
+        };
+        var handlers = new[] { new FormHandlerModel { Id = Guid.NewGuid(), KindId = Guid.Empty, Name = "No kind" } };
+
+        var fieldOnCreate = service.Create(CreateRequest(fields: fields));
+        var fieldOnUpdate = service.Update(existing.Id, new UpdateFormRequestModel { Name = "Contact", Fields = fields });
+        var handlerOnCreate = service.Create(CreateRequest(handlers: handlers));
+        var handlerOnUpdate = service.Update(existing.Id, new UpdateFormRequestModel { Name = "Contact", Handlers = handlers });
+        var unknownKept = service.Update(existing.Id, new UpdateFormRequestModel { Name = "Contact", Fields = fields.Take(1).ToArray() });
+
+        Assert.Equal((ServiceStatus.Invalid, "fields[1].kindId"), (fieldOnCreate.Status, fieldOnCreate.Field));
+        Assert.Equal((ServiceStatus.Invalid, "fields[1].kindId"), (fieldOnUpdate.Status, fieldOnUpdate.Field));
+        Assert.Equal((ServiceStatus.Invalid, "handlers[0].kindId"), (handlerOnCreate.Status, handlerOnCreate.Field));
+        Assert.Equal((ServiceStatus.Invalid, "handlers[0].kindId"), (handlerOnUpdate.Status, handlerOnUpdate.Field));
+        Assert.Equal(UnknownKind, Assert.Single(Ok(unknownKept).Fields).KindId);
+        Assert.Single(_harness.FormStore.GetAll());
     }
 
     [Fact]

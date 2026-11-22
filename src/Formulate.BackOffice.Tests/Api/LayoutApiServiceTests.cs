@@ -271,5 +271,34 @@ public class LayoutApiServiceTests
         Assert.Equal("[1]", updated.Configuration!.Value.GetRawText());
     }
 
+    [Fact]
+    public void A_missing_body_is_refused_naming_the_request()
+    {
+        var form = AddForm();
+        var service = CreateService();
+        var id = Guid.NewGuid();
+        Ok(service.Create(new CreateLayoutRequestModel { Id = id, FormId = form.Id, KindId = BasicKind, Name = "Main" }));
+
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Create(null!)));
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Update(id, null!)));
+        Assert.Equal("Main", Assert.Single(_harness.LayoutStore.GetAll()).Name);
+    }
+
+    [Fact]
+    public void Create_refuses_a_legacy_layout_kind()
+    {
+        var form = AddForm();
+        var legacy = new Mock<ILayoutDefinition>();
+        legacy.SetupGet(x => x.KindId).Returns(Guid.Parse("55555555-5555-5555-5555-555555555555"));
+        legacy.SetupGet(x => x.Name).Returns("Old layout");
+        legacy.SetupGet(x => x.IsLegacy).Returns(true);
+        _extraLayouts.Add(legacy.Object);
+
+        var result = CreateService().Create(new CreateLayoutRequestModel { Id = Guid.NewGuid(), FormId = form.Id, KindId = legacy.Object.KindId, Name = "Old" });
+
+        Assert.Equal((ServiceStatus.Invalid, "kindId"), Tuple(result));
+        Assert.Empty(_harness.LayoutStore.GetAll());
+    }
+
     private static (ServiceStatus, string?) Tuple<T>(ServiceResult<T> result) => (result.Status, result.Field);
 }

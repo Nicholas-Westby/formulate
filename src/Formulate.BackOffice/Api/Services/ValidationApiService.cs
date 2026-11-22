@@ -46,11 +46,15 @@ namespace Formulate.BackOffice.Api.Services
 
         /// <inheritdoc />
         public ServiceResult<ValidationResponseModel> Create(CreateValidationRequestModel request) =>
-            CreateItem(request.Id, request.ParentId, request.KindId, request.Name, request.Alias, request.Configuration);
+            request is null
+                ? RequestBody.Missing<ValidationResponseModel>()
+                : CreateItem(request.Id, request.ParentId, request.KindId, request.Name, request.Alias, request.Configuration);
 
         /// <inheritdoc />
         public ServiceResult<ValidationResponseModel> Update(Guid id, UpdateValidationRequestModel request) =>
-            UpdateItem(id, request.Name, request.Alias, request.Configuration);
+            request is null
+                ? RequestBody.Missing<ValidationResponseModel>()
+                : UpdateItem(id, request.Name, request.Alias, request.Configuration);
 
         /// <inheritdoc />
         // A form that still uses the validation is fine: rendering skips validations that are missing.
@@ -97,7 +101,7 @@ namespace Formulate.BackOffice.Api.Services
                     definition is null ? null : () => definition.GetBackOfficeConfiguration(validation),
                     validation.Data,
                     $"validation '{validation.Name}' ({validation.Id})",
-                    "its configuration"),
+                    item: null),
             };
         }
     }

@@ -58,11 +58,11 @@ namespace Formulate.BackOffice.Api.Services
                 return ServiceResult<IReadOnlyList<CreateOptionModel>>.Invalid("treeAlias", $"'{treeAlias}' is not a Formulate tree. Use forms, data-values or validations.");
             }
 
-            // The top of a tree is the same place whether the client leaves the parent out or names the tree's root.
-            var atTop = parentId is null || parentId == _treeRepository.GetRootId(tree);
-            var parent = atTop ? null : _treeRepository.Get(parentId);
+            // Null means the top of the tree, as it does for create and move. A tree's root ID is not an item,
+            // so it is not found, as it is not a parent for create or a target for move either.
+            var parent = parentId is null ? null : _treeRepository.Get(parentId);
 
-            if (!atTop && (parent is null || TreeEntities.GetTree(parent) != tree))
+            if (parentId is not null && (parent is null || TreeEntities.GetTree(parent) != tree))
             {
                 return ServiceResult<IReadOnlyList<CreateOptionModel>>.NotFound($"The item {parentId} does not exist in the {treeAlias} tree.");
             }

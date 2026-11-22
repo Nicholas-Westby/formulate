@@ -75,14 +75,21 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<FormResponseModel> Create(CreateFormRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<FormResponseModel>();
+            }
+
             if (string.IsNullOrWhiteSpace(request.Name))
             {
                 return ServiceResult<FormResponseModel>.Invalid("name", "The name is required.");
             }
 
-            if (_formDefinitions.FirstOrDefault(request.KindId) is null)
+            var definition = _formDefinitions.FirstOrDefault(request.KindId);
+
+            if (definition is null || definition.IsLegacy)
             {
-                return ServiceResult<FormResponseModel>.Invalid("kindId", $"{request.KindId} is not a form kind.");
+                return ServiceResult<FormResponseModel>.Invalid("kindId", $"{request.KindId} is not a form kind that can be created.");
             }
 
             // The ID must be new to every kind of item, not only to forms: lookups by ID search them all.
@@ -93,11 +100,11 @@ namespace Formulate.BackOffice.Api.Services
                 return placement;
             }
 
-            var duplicate = FindDuplicateIds(request.Fields, request.Handlers);
+            var itemProblem = CheckItems(request.Fields, request.Handlers);
 
-            if (duplicate is not null)
+            if (itemProblem is not null)
             {
-                return duplicate;
+                return itemProblem;
             }
 
             var form = new PersistedForm
@@ -125,6 +132,11 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<FormResponseModel> Update(Guid id, UpdateFormRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<FormResponseModel>();
+            }
+
             var existing = _formRepository.Get(id);
 
             if (existing is null)
@@ -137,11 +149,12 @@ namespace Formulate.BackOffice.Api.Services
                 return ServiceResult<FormResponseModel>.Invalid("name", "The name is required.");
             }
 
-            var duplicate = FindDuplicateIds(request.Fields, request.Handlers);
+            // Missing fields or handlers are refused, never read as "none": that would wipe the form.
+            var itemProblem = CheckItems(request.Fields, request.Handlers);
 
-            if (duplicate is not null)
+            if (itemProblem is not null)
             {
-                return duplicate;
+                return itemProblem;
             }
 
             var form = new PersistedForm
@@ -193,6 +206,11 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<FormResponseModel> Duplicate(Guid id, DuplicateFormRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<FormResponseModel>();
+            }
+
             var source = _formRepository.Get(id);
 
             if (source is null)
@@ -281,6 +299,52 @@ namespace Formulate.BackOffice.Api.Services
             }
 
             return ServiceResult<FormResponseModel>.Success(ToResponse(copy));
+        }
+
+        /// <summary>
+        /// Checks the fields and handlers sent: both lists are there, each item is there and has a kind, and
+        /// no ID is used twice. A kind that is not installed is fine, so a form whose extension was removed
+        /// can still be saved.
+        /// </summary>
+        private static ServiceResult<FormResponseModel>? CheckItems(FormFieldModel[]? fields, FormHandlerModel[]? handlers)
+        {
+            if (fields is null)
+            {
+                return ServiceResult<FormResponseModel>.Invalid("fields", "The fields are required. Send an empty list for a form without fields.");
+            }
+
+            if (handlers is null)
+            {
+                return ServiceResult<FormResponseModel>.Invalid("handlers", "The handlers are required. Send an empty list for a form without handlers.");
+            }
+
+            for (var i = 0; i < fields.Length; i++)
+            {
+                if (fields[i] is null)
+                {
+                    return ServiceResult<FormResponseModel>.Invalid($"fields[{i}]", "A field is required here, not null.");
+                }
+
+                if (fields[i].KindId == Guid.Empty)
+                {
+                    return ServiceResult<FormResponseModel>.Invalid($"fields[{i}].kindId", "The field's kind is required.");
+                }
+            }
+
+            for (var i = 0; i < handlers.Length; i++)
+            {
+                if (handlers[i] is null)
+                {
+                    return ServiceResult<FormResponseModel>.Invalid($"handlers[{i}]", "A handler is required here, not null.");
+                }
+
+                if (handlers[i].KindId == Guid.Empty)
+                {
+                    return ServiceResult<FormResponseModel>.Invalid($"handlers[{i}].kindId", "The handler's kind is required.");
+                }
+            }
+
+            return FindDuplicateIds(fields, handlers);
         }
 
         /// <summary>

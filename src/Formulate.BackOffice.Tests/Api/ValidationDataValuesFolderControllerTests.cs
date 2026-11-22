@@ -108,4 +108,30 @@ public class ValidationDataValuesFolderControllerTests
         Assert.Same(deleted, Assert.IsType<OkObjectResult>(controller.Delete(id)).Value);
         Assert.Equal("targetId", AssertProblem(controller.Move(id, new MoveRequestModel { TargetId = Guid.NewGuid() }), 400).Extensions["field"]);
     }
+
+    [Fact]
+    public void A_move_without_a_body_is_refused_rather_than_moving_to_the_top()
+    {
+        var id = Guid.NewGuid();
+        var results = new[]
+        {
+            new ValidationController(Mock.Of<IValidationApiService>(), _move.Object).Move(id, null!),
+            new DataValuesController(Mock.Of<IDataValuesApiService>(), _move.Object).Move(id, null!),
+            new FolderController(Mock.Of<IFolderApiService>(), _move.Object).Move(id, null!),
+        };
+
+        Assert.All(results, result => Assert.Equal("request", AssertProblem(result, 400).Extensions["field"]));
+        _move.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public void Folder_delete_declares_the_conflict_a_cascade_delete_can_return()
+    {
+        var statuses = typeof(FolderController).GetMethod(nameof(FolderController.Delete))!
+            .GetCustomAttributes(typeof(ProducesResponseTypeAttribute), false)
+            .Cast<ProducesResponseTypeAttribute>()
+            .Select(x => x.StatusCode);
+
+        Assert.Equal(new[] { 200, 404, 409 }, statuses.Order());
+    }
 }

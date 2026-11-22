@@ -41,6 +41,15 @@ public class FormControllerTests
     }
 
     [Fact]
+    public void A_move_without_a_body_is_refused_rather_than_moving_to_the_top()
+    {
+        var result = new FormController(_forms.Object, _move.Object).Move(Guid.NewGuid(), null!);
+
+        Assert.Equal("request", AssertProblem(result, 400).Extensions["field"]);
+        _move.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public void Statuses_map_to_problem_details_and_name_the_field()
     {
         var controller = new FormController(_forms.Object, _move.Object);

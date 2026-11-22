@@ -21,6 +21,23 @@ public class ConfigurationJsonTests
     }
 
     [Fact]
+    public void Warnings_about_an_item_with_no_parts_name_it_once()
+    {
+        var json = Create();
+
+        json.FromStored("<<oops", "data values 'Colors' (1)", null);
+        json.FromDefinition(() => throw new InvalidOperationException("boom"), "{}", "layout 'Main' (2)", null);
+
+        Assert.Equal(
+            new[]
+            {
+                "The stored configuration of data values 'Colors' (1) is not valid JSON, so it is returned as a string.",
+                "The definition could not read the configuration of layout 'Main' (2), so the stored configuration is returned.",
+            },
+            _logger.Entries.Select(x => x.Message));
+    }
+
+    [Fact]
     public void A_kind_that_reads_the_configuration_without_failing_can_read_it()
     {
         Assert.True(Create().CanRead(() => { }, "Basic Layout", "layout 'Main'"));

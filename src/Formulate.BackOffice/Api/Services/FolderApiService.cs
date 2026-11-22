@@ -58,6 +58,11 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<FolderResponseModel> Create(CreateFolderRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<FolderResponseModel>();
+            }
+
             if (string.IsNullOrWhiteSpace(request.Name))
             {
                 return ServiceResult<FolderResponseModel>.Invalid("name", "The name is required.");
@@ -90,6 +95,11 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<FolderResponseModel> Update(Guid id, UpdateFolderRequestModel request)
         {
+            if (request is null)
+            {
+                return RequestBody.Missing<FolderResponseModel>();
+            }
+
             var existing = _folderRepository.Get(id);
 
             if (existing is null || IsOutsideTrees(existing))
@@ -117,7 +127,10 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public ServiceResult<DeleteResponseModel> Delete(Guid id)
         {
-            if (_folderRepository.Get(id) is null)
+            var folder = _folderRepository.Get(id);
+
+            // A folder outside the three trees is not found, as it is for get, update and move.
+            if (folder is null || IsOutsideTrees(folder))
             {
                 return ServiceResult<DeleteResponseModel>.NotFound($"The folder {id} does not exist.");
             }

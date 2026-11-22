@@ -123,14 +123,24 @@ public class CreateOptionsApiServiceTests
         Assert.Equal(ApiEntityTypes.FormFolder, options[0].EntityType);
     }
 
-    [Fact]
-    public void Naming_the_tree_root_is_the_same_as_leaving_the_parent_out()
+    [Theory]
+    [InlineData(TreeAliases.Forms)]
+    [InlineData(TreeAliases.DataValues)]
+    [InlineData(TreeAliases.Validations)]
+    public void A_tree_root_id_is_not_a_parent_because_null_means_the_root(string treeAlias)
     {
-        var service = CreateService();
+        // Create and move refuse a root ID as the parent too; only null means the top of a tree.
+        var root = treeAlias switch
+        {
+            TreeAliases.Forms => FormConstantsRoot.Forms,
+            TreeAliases.DataValues => FormConstantsRoot.DataValues,
+            _ => FormConstantsRoot.Validations,
+        };
 
-        Assert.Equal(
-            Ok(service.GetCreateOptions(TreeAliases.Validations, null)).Select(x => x.Name),
-            Ok(service.GetCreateOptions(TreeAliases.Validations, FormConstantsRoot.Validations)).Select(x => x.Name));
+        var result = CreateService().GetCreateOptions(treeAlias, root);
+
+        Assert.Equal(ServiceStatus.NotFound, result.Status);
+        Assert.NotEmpty(Ok(CreateService().GetCreateOptions(treeAlias, null)));
     }
 
     [Fact]

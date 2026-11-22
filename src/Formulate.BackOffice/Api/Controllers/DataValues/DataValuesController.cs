@@ -104,6 +104,12 @@ namespace Formulate.BackOffice.Api.Controllers.DataValues
         [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public IActionResult Move(Guid id, MoveRequestModel request)
         {
+            // A missing body is refused, not read as a move to the top of the tree.
+            if (request is null)
+            {
+                return ProblemFor(RequestBody.Missing<bool>());
+            }
+
             var result = _moveService.Move<PersistedDataValues>(id, request.TargetId);
 
             return result.Status == ServiceStatus.Success ? Ok() : ProblemFor(result);

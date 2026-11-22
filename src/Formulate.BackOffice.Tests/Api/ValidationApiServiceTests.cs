@@ -104,6 +104,17 @@ public class ValidationApiServiceTests
     }
 
     [Fact]
+    public void A_missing_body_is_refused_naming_the_request()
+    {
+        var service = CreateService();
+        var existing = _tree.AddValidation();
+
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Create(null!)));
+        Assert.Equal((ServiceStatus.Invalid, "request"), Tuple(service.Update(existing.Id, null!)));
+        Assert.Equal("Validation", Assert.Single(_tree.Repositories.ValidationStore.GetAll()).Name);
+    }
+
+    [Fact]
     public void Update_rejects_an_empty_name_and_unknown_items_are_not_found()
     {
         var service = CreateService();
