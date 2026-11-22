@@ -134,15 +134,40 @@ public class ValidationApiServiceTests
     [Theory]
     [InlineData("""[1,"a",{"b":null}]""")]
     [InlineData("\"just text\"")]
-    public void Configuration_that_is_not_an_object_roundtrips(string configuration)
+    public void Configuration_that_is_not_an_object_roundtrips_when_the_kind_is_not_installed(string configuration)
     {
-        var service = CreateService();
+        // Only a kind with no installed definition keeps its configuration exactly as sent.
         var id = Guid.NewGuid();
-        Ok(service.Create(new CreateValidationRequestModel { Id = id, KindId = MandatoryKind, Name = "Odd", Configuration = Json(configuration) }));
+        _tree.Repositories.Validations.Save(new PersistedValidation { Id = id, Name = "Odd", KindId = Guid.NewGuid(), Path = new[] { FormConstantsRoot.Validations, id } });
+        var service = CreateService();
 
+        Ok(service.Update(id, new UpdateValidationRequestModel { Name = "Odd", Configuration = Json(configuration) }));
         var got = Ok(service.Get(id));
 
         Assert.Equal(configuration, got.Configuration!.Value.GetRawText());
+    }
+
+    [Theory]
+    [InlineData("""[1,"a",{"b":null}]""")]
+    [InlineData("\"just text\"")]
+    public void Create_and_update_refuse_a_configuration_the_kind_cannot_read(string configuration)
+    {
+        var service = CreateService();
+        var id = Guid.NewGuid();
+        Ok(service.Create(new CreateValidationRequestModel { Id = id, KindId = MandatoryKind, Name = "Required" }));
+
+        var created = service.Create(new CreateValidationRequestModel { Id = Guid.NewGuid(), KindId = MandatoryKind, Name = "Odd", Configuration = Json(configuration) });
+        var updated = service.Update(id, new UpdateValidationRequestModel { Name = "Renamed", Configuration = Json(configuration) });
+
+        foreach (var result in new[] { created, updated })
+        {
+            Assert.Equal((ServiceStatus.Invalid, "configuration"), Tuple(result));
+            Assert.Contains(MandatoryValidationDefinition.Constants.Name, result.Message);
+            Assert.DoesNotContain("deserialize", result.Message);
+        }
+
+        var stored = Assert.Single(_tree.Repositories.ValidationStore.GetAll());
+        Assert.Equal("Required", stored.Name);
     }
 
     [Fact]

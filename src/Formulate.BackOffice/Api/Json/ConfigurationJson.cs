@@ -118,6 +118,33 @@ namespace Formulate.BackOffice.Api.Json
         }
 
         /// <summary>
+        /// Checks that a kind can read a configuration, by running the code the kind runs when the site builds the item.
+        /// </summary>
+        /// <param name="read">Runs the kind's code on the configuration.</param>
+        /// <param name="kind">The kind's name, for the debug message.</param>
+        /// <param name="item">What the configuration belongs to, for the debug message.</param>
+        /// <returns>False when the kind's code fails.</returns>
+        /// <remarks>
+        /// The failure is logged at debug level only: it describes what a client sent, not a fault of the
+        /// site, and its message (such as a type name from the definition) is not for the client.
+        /// </remarks>
+        public bool CanRead(Action read, string kind, string item)
+        {
+            try
+            {
+                read();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "The {Kind} kind can not read the configuration of {Item}.", kind, item);
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Gets the text to store for a configuration sent to the API.
         /// </summary>
         /// <param name="configuration">The configuration; null (or JSON null) stores nothing.</param>

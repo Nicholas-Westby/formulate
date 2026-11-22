@@ -2,10 +2,19 @@ using System.Text.Json;
 using Formulate.BackOffice.Api.Json;
 using Formulate.BackOffice.Api.Models.Layout;
 using Formulate.BackOffice.Api.Services;
+using Formulate.BackOffice.Configuration;
+using Formulate.BackOffice.Persistence;
 using Formulate.BackOffice.Tests.TestSupport;
+using Formulate.BackOffice.Utilities;
+using Formulate.Core.DataValues;
+using Formulate.Core.Folders;
 using Formulate.Core.Forms;
 using Formulate.Core.Layouts;
 using Formulate.Core.Layouts.Basic;
+using Formulate.Core.Templates;
+using Formulate.Core.Validations;
+using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace Formulate.BackOffice.Tests.Api;
@@ -13,15 +22,35 @@ namespace Formulate.BackOffice.Tests.Api;
 public class LayoutApiServiceTests
 {
     private static readonly Guid BasicKind = Guid.Parse(BasicLayoutDefinition.Constants.KindId);
+    private static readonly Guid DefaultTemplate = Guid.Parse("00000000-0000-0000-0000-0000000000aa");
+    private static readonly Guid OtherTemplate = Guid.Parse("00000000-0000-0000-0000-0000000000bb");
 
     private readonly RepositoryHarness _harness = new();
     private readonly CapturingLogger<ConfigurationJson> _logger = new();
+    private readonly List<ILayoutDefinition> _extraLayouts = new();
+    private readonly List<ITemplateDefinition> _templates = new() { Template(DefaultTemplate, "Plain JavaScript"), Template(OtherTemplate, "Other") };
 
-    private LayoutApiService CreateService() => new(
-        _harness.Layouts,
-        _harness.Forms,
-        new LayoutDefinitionCollection(() => new ILayoutDefinition[] { new BasicLayoutDefinition(_harness.Forms, _harness.JsonUtility) }),
-        new ConfigurationJson(_harness.JsonUtility, _logger));
+    private LayoutApiService CreateService()
+    {
+        var templates = new TemplateDefinitionCollection(() => _templates);
+
+        return new(
+            _harness.Layouts,
+            _harness.Forms,
+            new TreeEntityRepository(_harness.Forms, _harness.Layouts, _harness.Folders, _harness.DataValues, _harness.Validations),
+            new LayoutDefinitionCollection(() => new ILayoutDefinition[] { new BasicLayoutDefinition(_harness.Forms, _harness.JsonUtility) }.Concat(_extraLayouts)),
+            templates,
+            new GetDefaultTemplateId(templates, Options.Create(new FormulateBackOfficeOptions())),
+            new ConfigurationJson(_harness.JsonUtility, _logger));
+    }
+
+    private static ITemplateDefinition Template(Guid id, string name)
+    {
+        var template = new Mock<ITemplateDefinition>();
+        template.SetupGet(x => x.KindId).Returns(id);
+        template.SetupGet(x => x.Name).Returns(name);
+        return template.Object;
+    }
 
     private PersistedForm AddForm()
     {
@@ -44,7 +73,7 @@ public class LayoutApiServiceTests
     {
         var form = AddForm();
         var service = CreateService();
-        var template = Guid.NewGuid();
+        var template = OtherTemplate;
         var id = Guid.NewGuid();
 
         Ok(service.Create(new CreateLayoutRequestModel { Id = id, FormId = form.Id, KindId = BasicKind, Name = "Main", Alias = "main", TemplateId = template, Configuration = Json("""{"autoPopulate":false,"rows":[]}""") }));
@@ -137,6 +166,109 @@ public class LayoutApiServiceTests
 
         Assert.Equal("<<oops", got.Configuration!.Value.GetString());
         Assert.Contains(_logger.Entries, x => x.Level == Microsoft.Extensions.Logging.LogLevel.Warning && x.Message.Contains("Odd layout"));
+    }
+
+    [Fact]
+    public void Create_with_the_id_of_a_folder_validation_or_data_values_is_a_conflict_and_writes_nothing()
+    {
+        var form = AddForm();
+        var service = CreateService();
+        var folderId = Guid.NewGuid();
+        _harness.Folders.Save(new PersistedFolder { Id = folderId, Name = "f", Path = new[] { RepositoryHarness.FormsRoot, folderId } });
+        var validationId = Guid.NewGuid();
+        _harness.Validations.Save(new PersistedValidation { Id = validationId, Name = "v", Path = new[] { Guid.Parse(ValidationConstants.RootId), validationId } });
+        var dataValuesId = Guid.NewGuid();
+        _harness.DataValues.Save(new PersistedDataValues { Id = dataValuesId, Name = "d", Path = new[] { Guid.Parse(DataValuesConstants.RootId), dataValuesId } });
+
+        foreach (var id in new[] { folderId, validationId, dataValuesId })
+        {
+            Assert.Equal((ServiceStatus.Conflict, "id"), Tuple(service.Create(new CreateLayoutRequestModel { Id = id, FormId = form.Id, KindId = BasicKind, Name = "Clash" })));
+        }
+
+        Assert.Empty(_harness.LayoutStore.GetAll());
+    }
+
+    [Fact]
+    public void Create_and_update_without_a_template_use_the_default_template()
+    {
+        var form = AddForm();
+        var service = CreateService();
+        var id = Guid.NewGuid();
+
+        var created = Ok(service.Create(new CreateLayoutRequestModel { Id = id, FormId = form.Id, KindId = BasicKind, Name = "Main" }));
+        Assert.Equal(DefaultTemplate, created.TemplateId);
+        Assert.Equal(DefaultTemplate, _harness.Layouts.Get(id).TemplateId);
+
+        Ok(service.Update(id, new UpdateLayoutRequestModel { Name = "Main", TemplateId = OtherTemplate }));
+        Assert.Equal(OtherTemplate, _harness.Layouts.Get(id).TemplateId);
+        var updated = Ok(service.Update(id, new UpdateLayoutRequestModel { Name = "Main" }));
+
+        Assert.Equal(DefaultTemplate, updated.TemplateId);
+        Assert.Equal(DefaultTemplate, _harness.Layouts.Get(id).TemplateId);
+    }
+
+    [Fact]
+    public void A_template_that_is_not_installed_is_refused_on_create_and_update_naming_the_field()
+    {
+        var form = AddForm();
+        var service = CreateService();
+        var id = Guid.NewGuid();
+        Ok(service.Create(new CreateLayoutRequestModel { Id = id, FormId = form.Id, KindId = BasicKind, Name = "Main", TemplateId = OtherTemplate }));
+        var unknown = Guid.NewGuid();
+
+        var created = service.Create(new CreateLayoutRequestModel { Id = Guid.NewGuid(), FormId = form.Id, KindId = BasicKind, Name = "Second", TemplateId = unknown });
+        var updated = service.Update(id, new UpdateLayoutRequestModel { Name = "Renamed", TemplateId = unknown });
+
+        Assert.Equal((ServiceStatus.Invalid, "templateId"), Tuple(created));
+        Assert.Equal((ServiceStatus.Invalid, "templateId"), Tuple(updated));
+        var stored = Assert.Single(_harness.LayoutStore.GetAll());
+        Assert.Equal(("Main", OtherTemplate), (stored.Name, stored.TemplateId));
+    }
+
+    [Fact]
+    public void Without_an_installed_template_a_layout_is_refused_rather_than_stored_without_one()
+    {
+        _templates.Clear();
+        var form = AddForm();
+
+        var result = CreateService().Create(new CreateLayoutRequestModel { Id = Guid.NewGuid(), FormId = form.Id, KindId = BasicKind, Name = "Main" });
+
+        Assert.Equal((ServiceStatus.Invalid, "templateId"), Tuple(result));
+        Assert.Empty(_harness.LayoutStore.GetAll());
+    }
+
+    [Fact]
+    public void Create_and_update_refuse_a_configuration_the_kind_cannot_read()
+    {
+        var form = AddForm();
+        var service = CreateService();
+        var id = Guid.NewGuid();
+        Ok(service.Create(new CreateLayoutRequestModel { Id = id, FormId = form.Id, KindId = BasicKind, Name = "Main", Configuration = Json("""{"autoPopulate":false,"rows":[]}""") }));
+
+        var created = service.Create(new CreateLayoutRequestModel { Id = Guid.NewGuid(), FormId = form.Id, KindId = BasicKind, Name = "Second", Configuration = Json("[1]") });
+        var updated = service.Update(id, new UpdateLayoutRequestModel { Name = "Renamed", Configuration = Json("[1]") });
+
+        foreach (var result in new[] { created, updated })
+        {
+            Assert.Equal((ServiceStatus.Invalid, "configuration"), Tuple(result));
+            Assert.Contains(BasicLayoutDefinition.Constants.Name, result.Message);
+            Assert.DoesNotContain("deserialize", result.Message);
+        }
+
+        var stored = Assert.Single(_harness.LayoutStore.GetAll());
+        Assert.Equal("Main", stored.Name);
+    }
+
+    [Fact]
+    public void A_layout_whose_kind_is_not_installed_keeps_any_configuration()
+    {
+        var form = AddForm();
+        var id = Guid.NewGuid();
+        _harness.Layouts.Save(new PersistedLayout { Id = id, Name = "Orphan", KindId = Guid.NewGuid(), TemplateId = DefaultTemplate, Path = new[] { RepositoryHarness.FormsRoot, form.Id, id } });
+
+        var updated = Ok(CreateService().Update(id, new UpdateLayoutRequestModel { Name = "Orphan", Configuration = Json("[1]") }));
+
+        Assert.Equal("[1]", updated.Configuration!.Value.GetRawText());
     }
 
     private static (ServiceStatus, string?) Tuple<T>(ServiceResult<T> result) => (result.Status, result.Field);

@@ -121,6 +121,40 @@ public class DataValuesApiServiceTests
     }
 
     [Fact]
+    public void Create_and_update_refuse_list_items_sent_as_plain_strings()
+    {
+        // The configuration the Task 6 live run stored, which then broke the public page.
+        var service = CreateService();
+        var id = Guid.NewGuid();
+        Ok(service.Create(new CreateDataValuesRequestModel { Id = id, KindId = ListKind, Name = "Colors", Configuration = Json("""{"items":[{"value":"Red"}]}""") }));
+        var strings = Json("""{"items":["red","green"]}""");
+
+        var created = service.Create(new CreateDataValuesRequestModel { Id = Guid.NewGuid(), KindId = ListKind, Name = "Shades", Configuration = strings });
+        var updated = service.Update(id, new UpdateDataValuesRequestModel { Name = "Colors", Configuration = strings });
+
+        foreach (var result in new[] { created, updated })
+        {
+            Assert.Equal((ServiceStatus.Invalid, "configuration"), Tuple(result));
+            Assert.Contains(ListDataValuesDefinition.Constants.Name, result.Message);
+            Assert.DoesNotContain("Error converting", result.Message);
+        }
+
+        var stored = Assert.Single(_tree.Repositories.DataValuesStore.GetAll());
+        Assert.Contains("Red", stored.Data);
+    }
+
+    [Fact]
+    public void Data_values_whose_kind_is_not_installed_keep_any_configuration()
+    {
+        var id = Guid.NewGuid();
+        _tree.Repositories.DataValues.Save(new Formulate.Core.DataValues.PersistedDataValues { Id = id, Name = "Orphan", KindId = Guid.NewGuid(), Path = new[] { FormConstantsRoot.DataValues, id } });
+
+        var updated = Ok(CreateService().Update(id, new UpdateDataValuesRequestModel { Name = "Orphan", Configuration = Json("""{"items":["red","green"]}""") }));
+
+        Assert.Equal("""{"items":["red","green"]}""", updated.Configuration!.Value.GetRawText());
+    }
+
+    [Fact]
     public void Invalid_stored_configuration_is_returned_as_a_string_and_warned_about()
     {
         var id = Guid.NewGuid();

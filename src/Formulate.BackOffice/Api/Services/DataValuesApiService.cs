@@ -23,7 +23,7 @@ namespace Formulate.BackOffice.Api.Services
             ITreeEntityRepository treeRepository,
             DataValuesDefinitionCollection definitions,
             ConfigurationJson configurationJson)
-            : base(repository, treeRepository)
+            : base(repository, treeRepository, configurationJson)
         {
             _definitions = definitions;
             _configurationJson = configurationJson;
@@ -65,6 +65,21 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         private protected override PersistedDataValues CreateEntity(Guid id, Guid[] path, Guid kindId, string name, string? alias, string? data) =>
             new() { Id = id, Path = path, KindId = kindId, Name = name, Alias = alias, Data = data };
+
+        /// <inheritdoc />
+        // The call DataValuesFactory makes when a field that uses the items is shown, and what GET shows.
+        private protected override (string Kind, Action Read)? GetConfigurationReader(PersistedDataValues entity)
+        {
+            var definition = _definitions.FirstOrDefault(entity.KindId);
+
+            return definition is null
+                ? null
+                : (definition.Name, () =>
+                {
+                    definition.CreateDataValues(entity);
+                    definition.GetBackOfficeConfiguration(entity);
+                });
+        }
 
         /// <inheritdoc />
         private protected override ServiceResult<DataValuesResponseModel>? CheckUpdatable(PersistedDataValues entity)

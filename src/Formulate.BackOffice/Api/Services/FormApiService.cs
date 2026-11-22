@@ -7,7 +7,7 @@ namespace Formulate.BackOffice.Api.Services
     using Formulate.BackOffice.Api.Models.Form;
     using Formulate.BackOffice.Api.Models.Shared;
     using Formulate.BackOffice.Definitions.Forms;
-    using Formulate.Core.Folders;
+    using Formulate.BackOffice.Persistence;
     using Formulate.Core.FormFields;
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Forms;
@@ -22,11 +22,16 @@ namespace Formulate.BackOffice.Api.Services
     /// </summary>
     public sealed class FormApiService : IFormApiService
     {
+        /// <summary>
+        /// The name of the tree forms live in, for messages.
+        /// </summary>
+        private const string TreeLabel = "Forms";
+
         private readonly IFormEntityRepository _formRepository;
 
         private readonly ILayoutEntityRepository _layoutRepository;
 
-        private readonly IFolderEntityRepository _folderRepository;
+        private readonly ITreeEntityRepository _treeRepository;
 
         private readonly FormDefinitionCollection _formDefinitions;
 
@@ -42,7 +47,7 @@ namespace Formulate.BackOffice.Api.Services
         public FormApiService(
             IFormEntityRepository formRepository,
             ILayoutEntityRepository layoutRepository,
-            IFolderEntityRepository folderRepository,
+            ITreeEntityRepository treeRepository,
             FormDefinitionCollection formDefinitions,
             FormFieldDefinitionCollection fieldDefinitions,
             FormHandlerDefinitionCollection handlerDefinitions,
@@ -51,7 +56,7 @@ namespace Formulate.BackOffice.Api.Services
         {
             _formRepository = formRepository;
             _layoutRepository = layoutRepository;
-            _folderRepository = folderRepository;
+            _treeRepository = treeRepository;
             _formDefinitions = formDefinitions;
             _fieldDefinitions = fieldDefinitions;
             _handlerDefinitions = handlerDefinitions;
@@ -80,14 +85,12 @@ namespace Formulate.BackOffice.Api.Services
                 return ServiceResult<FormResponseModel>.Invalid("kindId", $"{request.KindId} is not a form kind.");
             }
 
-            if (request.Id == Guid.Empty)
-            {
-                return ServiceResult<FormResponseModel>.Invalid("id", "The ID is required.");
-            }
+            // The ID must be new to every kind of item, not only to forms: lookups by ID search them all.
+            var placement = CreatePlacement.Check<FormResponseModel>(_treeRepository, TreeTypes.Forms, TreeLabel, request.Id, request.ParentId, out var parentPath);
 
-            if (_formRepository.Get(request.Id) is not null || _layoutRepository.Get(request.Id) is not null)
+            if (placement is not null)
             {
-                return ServiceResult<FormResponseModel>.Conflict("id", $"Something with the ID {request.Id} already exists.");
+                return placement;
             }
 
             var duplicate = FindDuplicateIds(request.Fields, request.Handlers);
@@ -95,13 +98,6 @@ namespace Formulate.BackOffice.Api.Services
             if (duplicate is not null)
             {
                 return duplicate;
-            }
-
-            var parentPath = GetParentPath(request.ParentId, "parentId", out var problem);
-
-            if (parentPath is null)
-            {
-                return problem!;
             }
 
             var form = new PersistedForm
@@ -114,6 +110,13 @@ namespace Formulate.BackOffice.Api.Services
                 Fields = request.Fields.Select(ToPersisted).ToArray(),
                 Handlers = request.Handlers.Select(ToPersisted).ToArray(),
             };
+
+            var unreadable = FindUnreadableConfiguration(form);
+
+            if (unreadable is not null)
+            {
+                return unreadable;
+            }
 
             // The kind rides along on the new form so listeners, such as the one that generates a layout, can see it.
             return ServiceResult<FormResponseModel>.Success(ToResponse(_formRepository.Save(form)));
@@ -151,6 +154,13 @@ namespace Formulate.BackOffice.Api.Services
                 Fields = request.Fields.Select(ToPersisted).ToArray(),
                 Handlers = request.Handlers.Select(ToPersisted).ToArray(),
             };
+
+            var unreadable = FindUnreadableConfiguration(form);
+
+            if (unreadable is not null)
+            {
+                return unreadable;
+            }
 
             return ServiceResult<FormResponseModel>.Success(ToResponse(_formRepository.Save(form)));
         }
@@ -191,11 +201,11 @@ namespace Formulate.BackOffice.Api.Services
             }
 
             var parentId = request.ParentId ?? TreeEntities.GetParentId(source);
-            var parentPath = GetParentPath(parentId, "parentId", out var problem);
+            var parentPath = TreeEntities.GetParentPath(_treeRepository, TreeTypes.Forms, parentId);
 
             if (parentPath is null)
             {
-                return problem!;
+                return InvalidParent();
             }
 
             var newId = Guid.NewGuid();
@@ -292,32 +302,67 @@ namespace Formulate.BackOffice.Api.Services
                 : ServiceResult<FormResponseModel>.Invalid("handlers", $"The handler ID {handler.Key} is used more than once.");
         }
 
+        /// <summary>
+        /// Says which field or handler is unreadable, naming the kind and the item but not why: the
+        /// reason comes from the kind's code and is only logged.
+        /// </summary>
+        private static ServiceResult<FormResponseModel> Unreadable(string field, string kind, string noun, string? name) =>
+            ServiceResult<FormResponseModel>.Invalid(
+                field,
+                string.IsNullOrWhiteSpace(name)
+                    ? $"The {kind} kind can not read the configuration of this {noun}."
+                    : $"The {kind} kind can not read the configuration of {noun} '{name}'.");
+
         private static ServiceResult<FormResponseModel> NotFound(Guid id) =>
             ServiceResult<FormResponseModel>.NotFound($"The form {id} does not exist.");
 
+        private static ServiceResult<FormResponseModel> InvalidParent() =>
+            ServiceResult<FormResponseModel>.Invalid("parentId", $"The parent must be an existing folder in the {TreeLabel} tree.");
+
         /// <summary>
-        /// Gets the path of the place a form goes: the top of the Forms tree, or a Forms tree folder.
+        /// Finds a field or handler whose installed kind can not read its configuration, by running the code
+        /// the site runs when it shows the form (fields) or handles a submission (handlers). A kind that is
+        /// not installed keeps its configuration exactly as sent.
         /// </summary>
-        private Guid[]? GetParentPath(Guid? parentId, string field, out ServiceResult<FormResponseModel>? problem)
+        private ServiceResult<FormResponseModel>? FindUnreadableConfiguration(PersistedForm form)
         {
-            var root = Guid.Parse(FormConstants.RootId);
-            problem = null;
-
-            if (parentId is null)
+            for (var i = 0; i < form.Fields.Length; i++)
             {
-                return new[] { root };
+                var field = form.Fields[i];
+                var definition = _fieldDefinitions.FirstOrDefault(field.KindId);
+
+                if (definition is not null && !_configurationJson.CanRead(
+                    () =>
+                    {
+                        definition.CreateField(field);
+                        definition.GetBackOfficeConfiguration(field);
+                    },
+                    definition.Name,
+                    $"field '{field.Name}' ({field.Id}) on form '{form.Name}' ({form.Id})"))
+                {
+                    return Unreadable($"fields[{i}].configuration", definition.Name, "field", field.Name);
+                }
             }
 
-            var folder = _folderRepository.Get(parentId.Value);
-
-            if (folder is null || folder.Path.Length == 0 || folder.Path[0] != root)
+            for (var i = 0; i < form.Handlers.Length; i++)
             {
-                problem = ServiceResult<FormResponseModel>.Invalid(field, "The parent must be an existing folder in the Forms tree.");
+                var handler = form.Handlers[i];
+                var definition = _handlerDefinitions.FirstOrDefault(handler.KindId);
 
-                return null;
+                if (definition is not null && !_configurationJson.CanRead(
+                    () =>
+                    {
+                        definition.CreateHandler(handler);
+                        definition.GetBackOfficeConfiguration(handler);
+                    },
+                    definition.Name,
+                    $"handler '{handler.Name}' ({handler.Id}) on form '{form.Name}' ({form.Id})"))
+                {
+                    return Unreadable($"handlers[{i}].configuration", definition.Name, "handler", handler.Name);
+                }
             }
 
-            return folder.Path;
+            return null;
         }
 
         private PersistedFormField ToPersisted(FormFieldModel field) => new()

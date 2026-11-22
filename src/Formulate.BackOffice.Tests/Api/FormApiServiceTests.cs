@@ -3,13 +3,17 @@ using Formulate.BackOffice.Api.Json;
 using Formulate.BackOffice.Api.Models.Form;
 using Formulate.BackOffice.Api.Services;
 using Formulate.BackOffice.Definitions.Forms;
+using Formulate.BackOffice.Persistence;
 using Formulate.BackOffice.Tests.TestSupport;
+using Formulate.Core.DataValues;
 using Formulate.Core.Folders;
 using Formulate.Core.FormFields;
+using Formulate.Core.FormFields.Button;
 using Formulate.Core.FormHandlers;
 using Formulate.Core.Forms;
 using Formulate.Core.Layouts;
 using Formulate.Core.Layouts.Basic;
+using Formulate.Core.Validations;
 using Moq;
 using Umbraco.Cms.Core.Strings;
 using Xunit;
@@ -23,9 +27,19 @@ public class FormApiServiceTests
     private static readonly Guid TextKind = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid UnknownKind = Guid.Parse("99999999-9999-9999-9999-999999999999");
     private static readonly Guid HandlerKind = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid StrictHandlerKind = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid ButtonKind = Guid.Parse(ButtonFieldDefinition.Constants.KindId);
+    private static readonly Guid ValidationsRoot = Guid.Parse(ValidationConstants.RootId);
+    private static readonly Guid DataValuesRoot = Guid.Parse(DataValuesConstants.RootId);
 
     private readonly RepositoryHarness _harness = new();
     private readonly CapturingLogger<ConfigurationJson> _logger = new();
+
+    /// <summary>Field kinds added to the service's definitions, beside the mocked text field.</summary>
+    private readonly List<IFormFieldDefinition> _extraFields = new();
+
+    /// <summary>Handler kinds added to the service's definitions, beside the mocked handler.</summary>
+    private readonly List<IFormHandlerDefinition> _extraHandlers = new();
 
     private FormApiService CreateService()
     {
@@ -39,10 +53,10 @@ public class FormApiServiceTests
         return new FormApiService(
             _harness.Forms,
             _harness.Layouts,
-            _harness.Folders,
+            new TreeEntityRepository(_harness.Forms, _harness.Layouts, _harness.Folders, _harness.DataValues, _harness.Validations),
             _harness.FormDefinitions,
-            new FormFieldDefinitionCollection(() => new[] { textField.Object }),
-            new FormHandlerDefinitionCollection(() => new[] { handler.Object }),
+            new FormFieldDefinitionCollection(() => new[] { textField.Object }.Concat(_extraFields)),
+            new FormHandlerDefinitionCollection(() => new[] { handler.Object }.Concat(_extraHandlers)),
             new ConfigurationJson(_harness.JsonUtility, _logger),
             new DefaultShortStringHelper(new DefaultShortStringHelperConfig()));
     }
@@ -457,6 +471,91 @@ public class FormApiServiceTests
         Assert.Equal((ServiceStatus.Invalid, "fields"), (updateFields.Status, updateFields.Field));
         Assert.Equal((ServiceStatus.Invalid, "handlers"), (updateHandlers.Status, updateHandlers.Field));
         Assert.Single(_harness.FormStore.GetAll());
+        Assert.Equal("Contact", _harness.Forms.Get(existing.Id).Name);
+    }
+
+    [Fact]
+    public void Create_with_the_id_of_a_folder_validation_or_data_values_is_a_conflict_and_writes_nothing()
+    {
+        var service = CreateService();
+        var folder = AddFolder();
+        var validationId = Guid.NewGuid();
+        _harness.Validations.Save(new PersistedValidation { Id = validationId, Name = "v", Path = new[] { ValidationsRoot, validationId } });
+        var dataValuesId = Guid.NewGuid();
+        _harness.DataValues.Save(new PersistedDataValues { Id = dataValuesId, Name = "d", Path = new[] { DataValuesRoot, dataValuesId } });
+
+        foreach (var id in new[] { folder.Id, validationId, dataValuesId })
+        {
+            // A basic layout form would also write a layout, so this shows nothing at all is written.
+            var result = service.Create(CreateRequest(id: id, kind: BasicFormKind));
+
+            Assert.Equal((ServiceStatus.Conflict, "id"), (result.Status, result.Field));
+        }
+
+        Assert.Empty(_harness.FormStore.GetAll());
+        Assert.Empty(_harness.LayoutStore.GetAll());
+    }
+
+    [Fact]
+    public void Create_and_update_refuse_a_field_configuration_its_kind_cannot_read_naming_the_field()
+    {
+        _extraFields.Add(new ButtonFieldDefinition(_harness.JsonUtility));
+        var service = CreateService();
+        var existing = CreateRequest();
+        Ok(service.Create(existing));
+        var fields = new[]
+        {
+            new FormFieldModel { Id = Guid.NewGuid(), KindId = TextKind, Name = "Email" },
+            new FormFieldModel { Id = Guid.NewGuid(), KindId = UnknownKind, Name = "Orphan", Configuration = Json("\"opaque\"") },
+            new FormFieldModel { Id = Guid.NewGuid(), KindId = ButtonKind, Name = "Send", Configuration = Json("\"Submit\"") },
+        };
+
+        var created = service.Create(CreateRequest(fields: fields));
+        var updated = service.Update(existing.Id, new UpdateFormRequestModel { Name = "Changed", Fields = fields });
+
+        foreach (var result in new[] { created, updated })
+        {
+            Assert.Equal((ServiceStatus.Invalid, "fields[2].configuration"), (result.Status, result.Field));
+            Assert.Contains("'Send'", result.Message);
+            Assert.Contains(ButtonFieldDefinition.Constants.Name, result.Message);
+            Assert.DoesNotContain("Error converting", result.Message);
+        }
+
+        Assert.Single(_harness.FormStore.GetAll());
+        Assert.Equal("Contact", _harness.Forms.Get(existing.Id).Name);
+    }
+
+    [Fact]
+    public void Create_and_update_refuse_a_handler_configuration_its_kind_cannot_read_naming_the_handler()
+    {
+        var strict = new Mock<IFormHandlerDefinition>();
+        strict.SetupGet(x => x.KindId).Returns(StrictHandlerKind);
+        strict.SetupGet(x => x.Name).Returns("Strict handler");
+        strict.Setup(x => x.CreateHandler(It.IsAny<IFormHandlerSettings>()))
+            .Returns<IFormHandlerSettings>(settings => settings.Data == """{"ok":true}""" ? Mock.Of<IFormHandler>() : throw new InvalidOperationException("secret detail"));
+        _extraHandlers.Add(strict.Object);
+        var service = CreateService();
+        var existing = CreateRequest();
+        Ok(service.Create(existing));
+        var handlers = new[]
+        {
+            new FormHandlerModel { Id = Guid.NewGuid(), KindId = StrictHandlerKind, Name = "Notify", Configuration = Json("""{"ok":false}""") },
+        };
+
+        var created = service.Create(CreateRequest(handlers: handlers));
+        var updated = service.Update(existing.Id, new UpdateFormRequestModel { Name = "Changed", Handlers = handlers });
+        var readable = service.Create(CreateRequest(handlers: new[] { new FormHandlerModel { Id = Guid.NewGuid(), KindId = StrictHandlerKind, Name = "Notify", Configuration = Json("""{"ok":true}""") } }));
+
+        foreach (var result in new[] { created, updated })
+        {
+            Assert.Equal((ServiceStatus.Invalid, "handlers[0].configuration"), (result.Status, result.Field));
+            Assert.Contains("'Notify'", result.Message);
+            Assert.Contains("Strict handler", result.Message);
+            Assert.DoesNotContain("secret detail", result.Message);
+        }
+
+        Assert.Equal(ServiceStatus.Success, readable.Status);
+        Assert.Equal(2, _harness.FormStore.GetAll().Count);
         Assert.Equal("Contact", _harness.Forms.Get(existing.Id).Name);
     }
 

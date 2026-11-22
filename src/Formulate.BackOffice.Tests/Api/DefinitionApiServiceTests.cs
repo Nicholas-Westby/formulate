@@ -2,7 +2,10 @@ using Formulate.BackOffice.Api.Models.Definition;
 using System.Text.Json;
 using Formulate.BackOffice.Api.Json;
 using Formulate.BackOffice.Api.Services;
+using Formulate.BackOffice.Configuration;
 using Formulate.BackOffice.Tests.TestSupport;
+using Formulate.BackOffice.Utilities;
+using Microsoft.Extensions.Options;
 using Formulate.Core.DataValues;
 using Formulate.Core.DataValues.Legacy;
 using Formulate.Core.DataValues.List;
@@ -31,15 +34,22 @@ public class DefinitionApiServiceTests
     private readonly List<IDataValuesDefinition> _dataValues = new();
     private readonly List<ILayoutDefinition> _layouts = new();
     private readonly List<ITemplateDefinition> _templates = new();
+    private readonly FormulateBackOfficeOptions _backOfficeOptions = new();
 
-    private DefinitionApiService CreateService() => new(
-        new FormFieldDefinitionCollection(() => _fields),
-        new FormHandlerDefinitionCollection(() => _handlers),
-        new ValidationDefinitionCollection(() => _validations),
-        new DataValuesDefinitionCollection(() => _dataValues),
-        new LayoutDefinitionCollection(() => _layouts),
-        new TemplateDefinitionCollection(() => _templates),
-        new ConfigurationJson(_harness.JsonUtility, _logger));
+    private DefinitionApiService CreateService()
+    {
+        var templates = new TemplateDefinitionCollection(() => _templates);
+
+        return new(
+            new FormFieldDefinitionCollection(() => _fields),
+            new FormHandlerDefinitionCollection(() => _handlers),
+            new ValidationDefinitionCollection(() => _validations),
+            new DataValuesDefinitionCollection(() => _dataValues),
+            new LayoutDefinitionCollection(() => _layouts),
+            templates,
+            new GetDefaultTemplateId(templates, Options.Create(_backOfficeOptions)),
+            new ConfigurationJson(_harness.JsonUtility, _logger));
+    }
 
     private static IFormFieldDefinition LegacyField()
     {
@@ -182,7 +192,31 @@ public class DefinitionApiServiceTests
 
         var model = Assert.Single(CreateService().GetTemplates());
 
-        Assert.Equal((Guid.Parse("00000000-0000-0000-0000-0000000000bb"), "Plain JavaScript"), (model.Id, model.Name));
+        Assert.Equal((Guid.Parse("00000000-0000-0000-0000-0000000000bb"), "Plain JavaScript", true), (model.Id, model.Name, model.IsDefault));
+    }
+
+    [Fact]
+    public void Exactly_one_template_is_the_default_the_configured_one_when_it_is_installed()
+    {
+        var first = Guid.Parse("00000000-0000-0000-0000-0000000000b1");
+        var second = Guid.Parse("00000000-0000-0000-0000-0000000000b2");
+        foreach (var (id, name) in new[] { (first, "First"), (second, "Second") })
+        {
+            var template = new Mock<ITemplateDefinition>();
+            template.SetupGet(x => x.KindId).Returns(id);
+            template.SetupGet(x => x.Name).Returns(name);
+            _templates.Add(template.Object);
+        }
+
+        var byDefault = CreateService().GetTemplates();
+        _backOfficeOptions.DefaultTemplateId = second;
+        var configured = CreateService().GetTemplates();
+        _backOfficeOptions.DefaultTemplateId = Guid.NewGuid();
+        var notInstalled = CreateService().GetTemplates();
+
+        Assert.Equal(new[] { true, false }, byDefault.Select(x => x.IsDefault));
+        Assert.Equal(new[] { false, true }, configured.Select(x => x.IsDefault));
+        Assert.Equal(new[] { true, false }, notInstalled.Select(x => x.IsDefault));
     }
 
     [Fact]

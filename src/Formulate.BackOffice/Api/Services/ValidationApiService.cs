@@ -23,7 +23,7 @@ namespace Formulate.BackOffice.Api.Services
             ITreeEntityRepository treeRepository,
             ValidationDefinitionCollection definitions,
             ConfigurationJson configurationJson)
-            : base(repository, treeRepository)
+            : base(repository, treeRepository, configurationJson)
         {
             _definitions = definitions;
             _configurationJson = configurationJson;
@@ -65,6 +65,21 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         private protected override PersistedValidation CreateEntity(Guid id, Guid[] path, Guid kindId, string name, string? alias, string? data) =>
             new() { Id = id, Path = path, KindId = kindId, Name = name, Alias = alias, Data = data };
+
+        /// <inheritdoc />
+        // The same calls ValidationFactory makes when a form is shown.
+        private protected override (string Kind, Action Read)? GetConfigurationReader(PersistedValidation entity)
+        {
+            var definition = _definitions.FirstOrDefault(entity.KindId);
+
+            return definition is null
+                ? null
+                : (definition.Name, () =>
+                {
+                    definition.CreateValidation(entity);
+                    definition.GetBackOfficeConfiguration(entity);
+                });
+        }
 
         /// <inheritdoc />
         private protected override ValidationResponseModel ToResponse(PersistedValidation validation)

@@ -21,6 +21,26 @@ public class ConfigurationJsonTests
     }
 
     [Fact]
+    public void A_kind_that_reads_the_configuration_without_failing_can_read_it()
+    {
+        Assert.True(Create().CanRead(() => { }, "Basic Layout", "layout 'Main'"));
+        Assert.Empty(_logger.Entries);
+    }
+
+    [Fact]
+    public void A_kind_that_fails_cannot_read_the_configuration_and_the_reason_is_only_logged_for_debugging()
+    {
+        var canRead = Create().CanRead(() => throw new InvalidOperationException("detail"), "Basic Layout", "layout 'Main'");
+
+        Assert.False(canRead);
+        var entry = Assert.Single(_logger.Entries);
+        Assert.Equal(LogLevel.Debug, entry.Level);
+        Assert.Contains("Basic Layout", entry.Message);
+        Assert.Contains("layout 'Main'", entry.Message);
+        Assert.IsType<InvalidOperationException>(entry.Exception);
+    }
+
+    [Fact]
     public void A_typed_definition_object_is_serialized_through_the_json_utility_as_an_object()
     {
         var result = Create().FromDefinition(() => new TypedConfiguration(), "{\"ignored\":true}", "form 'x'", "field 'y'");

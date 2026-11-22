@@ -23,11 +23,14 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly ITreeEntityRepository _treeRepository;
 
+        private readonly ConfigurationJson _configurationJson;
+
         /// <inheritdoc cref="ConfiguredItemApiService{TEntity, TResponse}"/>
-        protected ConfiguredItemApiService(IEntityRepository<TEntity> repository, ITreeEntityRepository treeRepository)
+        protected ConfiguredItemApiService(IEntityRepository<TEntity> repository, ITreeEntityRepository treeRepository, ConfigurationJson configurationJson)
         {
             _repository = repository;
             _treeRepository = treeRepository;
+            _configurationJson = configurationJson;
         }
 
         /// <summary>
@@ -71,6 +74,12 @@ namespace Formulate.BackOffice.Api.Services
         private protected abstract TResponse ToResponse(TEntity entity);
 
         /// <summary>
+        /// Gets the code the site runs when it builds an item of the entity's kind from its configuration.
+        /// </summary>
+        /// <returns>The kind's name and that code; null when the kind is not installed, so the configuration stays as sent.</returns>
+        private protected abstract (string Kind, Action Read)? GetConfigurationReader(TEntity entity);
+
+        /// <summary>
         /// Checks an entity can be changed. Null means it can; a result says why not.
         /// </summary>
         private protected virtual ServiceResult<TResponse>? CheckUpdatable(TEntity entity) => null;
@@ -110,6 +119,12 @@ namespace Formulate.BackOffice.Api.Services
             }
 
             var entity = CreateEntity(id, parentPath.Append(id).ToArray(), kindId, name, alias, ConfigurationJson.ToStored(configuration));
+            var unreadable = CheckConfiguration(entity);
+
+            if (unreadable is not null)
+            {
+                return unreadable;
+            }
 
             return ServiceResult<TResponse>.Success(ToResponse(_repository.Save(entity)));
         }
@@ -139,6 +154,12 @@ namespace Formulate.BackOffice.Api.Services
             }
 
             var entity = CreateEntity(existing.Id, existing.Path, GetKindId(existing), name, alias, ConfigurationJson.ToStored(configuration));
+            var unreadable = CheckConfiguration(entity);
+
+            if (unreadable is not null)
+            {
+                return unreadable;
+            }
 
             return ServiceResult<TResponse>.Success(ToResponse(_repository.Save(entity)));
         }
@@ -160,5 +181,25 @@ namespace Formulate.BackOffice.Api.Services
 
         private ServiceResult<TResponse> NotFound(Guid id) =>
             ServiceResult<TResponse>.NotFound($"The {ItemNoun} {id} does not exist.");
+
+        /// <summary>
+        /// Checks the item's kind can read its configuration. A kind that is not installed keeps the
+        /// configuration exactly as sent.
+        /// </summary>
+        private ServiceResult<TResponse>? CheckConfiguration(TEntity entity)
+        {
+            var reader = GetConfigurationReader(entity);
+
+            if (reader is null)
+            {
+                return null;
+            }
+
+            var (kind, read) = reader.Value;
+
+            return _configurationJson.CanRead(read, kind, $"{ItemNoun} '{entity.Name}' ({entity.Id})")
+                ? null
+                : ServiceResult<TResponse>.Invalid("configuration", $"The {kind} kind can not read the configuration of {ItemNoun} '{entity.Name}'.");
+        }
     }
 }

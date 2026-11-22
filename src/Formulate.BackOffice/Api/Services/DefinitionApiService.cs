@@ -5,6 +5,7 @@ namespace Formulate.BackOffice.Api.Services
     using System.Linq;
     using Formulate.BackOffice.Api.Json;
     using Formulate.BackOffice.Api.Models.Definition;
+    using Formulate.BackOffice.Utilities;
     using Formulate.Core.DataValues;
     using Formulate.Core.FormFields;
     using Formulate.Core.FormHandlers;
@@ -34,6 +35,8 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly TemplateDefinitionCollection _templateDefinitions;
 
+        private readonly IGetDefaultTemplateId _defaultTemplateId;
+
         private readonly ConfigurationJson _configurationJson;
 
         /// <inheritdoc cref="DefinitionApiService"/>
@@ -44,6 +47,7 @@ namespace Formulate.BackOffice.Api.Services
             DataValuesDefinitionCollection dataValuesDefinitions,
             LayoutDefinitionCollection layoutDefinitions,
             TemplateDefinitionCollection templateDefinitions,
+            IGetDefaultTemplateId defaultTemplateId,
             ConfigurationJson configurationJson)
         {
             _fieldDefinitions = fieldDefinitions;
@@ -52,6 +56,7 @@ namespace Formulate.BackOffice.Api.Services
             _dataValuesDefinitions = dataValuesDefinitions;
             _layoutDefinitions = layoutDefinitions;
             _templateDefinitions = templateDefinitions;
+            _defaultTemplateId = defaultTemplateId;
             _configurationJson = configurationJson;
         }
 
@@ -123,8 +128,19 @@ namespace Formulate.BackOffice.Api.Services
         /// <inheritdoc />
         public IReadOnlyList<TemplateDefinitionModel> GetTemplates()
         {
+            // The template a layout saved without one gets. Only its first entry is marked, so exactly one
+            // template is the default whenever any is installed.
+            var defaultId = _defaultTemplateId.GetValue();
+            var marked = false;
+
             return _templateDefinitions
-                .Select(definition => new TemplateDefinitionModel { Id = definition.KindId, Name = definition.Name })
+                .Select(definition =>
+                {
+                    var isDefault = !marked && definition.KindId == defaultId;
+                    marked |= isDefault;
+
+                    return new TemplateDefinitionModel { Id = definition.KindId, Name = definition.Name, IsDefault = isDefault };
+                })
                 .ToArray();
         }
 
