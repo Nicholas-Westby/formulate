@@ -25,6 +25,8 @@ export interface PageState {
     apiReady: boolean;
     /** The reCAPTCHA fields rendered before the API was ready. */
     waitingFields: Set<{ renderWidget(): void }>;
+    /** Has a copy warned that a reCAPTCHA field has no site key? Once per page is enough. */
+    missingSiteKeyWarned: boolean;
   };
 }
 
@@ -38,7 +40,7 @@ export function getPageState(): PageState {
       lastId: 0,
       renderedFieldTypes: new Set(),
       renderedValidationTypes: new Set(),
-      recaptcha: { scriptRequested: false, apiReady: false, waitingFields: new Set() },
+      recaptcha: { scriptRequested: false, apiReady: false, waitingFields: new Set(), missingSiteKeyWarned: false },
     };
     holder[pageStateKey] = state;
   }

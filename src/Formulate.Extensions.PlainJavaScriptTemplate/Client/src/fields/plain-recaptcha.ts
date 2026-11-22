@@ -17,7 +17,9 @@ const googleScriptUrl = `https://www.google.com/recaptcha/api.js?render=explicit
 
 /**
  * Renders a reCAPTCHA (v2 checkbox). Google's script is added to the page the
- * first time a form with a reCAPTCHA field is rendered, and every widget is
+ * first time a form with a reCAPTCHA field that has a site key is rendered
+ * (without one, no script is added, the field is an empty wrapper, and the
+ * console gets one warning per page), and every widget is
  * rendered explicitly: the ones on the page when the API becomes ready, and
  * the ones in forms rendered later. That holds across the copies of the
  * renderer on the page (the readable and the minified files), which share
@@ -35,13 +37,13 @@ export class RenderRecaptcha extends FieldRendererBase<HTMLDivElement> {
     extraOptions: FieldRenderOptions,
   ) {
     super(fieldData, fieldValidators);
-    this.siteKey = fieldData.configuration?.siteKey ?? "";
-    if (!this.siteKey) {
-      console.warn("Formulate: the reCAPTCHA site key is not configured (Formulate:Recaptcha:SiteKey).");
-    }
+    this.siteKey = fieldData.configuration?.siteKey?.trim() ?? "";
     const element = document.createElement("div");
-    element.classList.add("g-recaptcha");
-    element.setAttribute("data-sitekey", this.siteKey);
+    if (this.siteKey) {
+      // Without a site key the element has neither, so a site that loads Google's script itself gets no empty widget.
+      element.classList.add("g-recaptcha");
+      element.setAttribute("data-sitekey", this.siteKey);
+    }
     addClasses(element, cssClasses);
     this.element = element;
     this.wrapper = element;
@@ -62,6 +64,12 @@ export class RenderRecaptcha extends FieldRendererBase<HTMLDivElement> {
 
     // A response token can only be checked once, so a failed post needs a new one.
     extraOptions.formElement.addEventListener(FormulateEvents.submitFailure, () => this.resetWidget());
+
+    if (!this.siteKey) {
+      // Without a site key the widget cannot show, so nothing is sent to Google. The server rejects the post.
+      warnAboutMissingSiteKey();
+      return;
+    }
 
     loadGoogleScript();
     // The form is on the page once the current rendering has finished.
@@ -104,6 +112,18 @@ export class RenderRecaptcha extends FieldRendererBase<HTMLDivElement> {
       window.grecaptcha?.reset(this.widgetId);
     }
   }
+}
+
+/** Warns (once per page, across the copies of the renderer) that a reCAPTCHA field has no site key. */
+function warnAboutMissingSiteKey(): void {
+  const recaptcha = getPageState().recaptcha;
+  if (recaptcha.missingSiteKeyWarned) {
+    return;
+  }
+  recaptcha.missingSiteKeyWarned = true;
+  console.warn(
+    "Formulate: a reCAPTCHA field has no site key, so Google's reCAPTCHA script is not loaded and the field shows no widget. Set Formulate:Recaptcha:SiteKey (and Formulate:Recaptcha:SecretKey).",
+  );
 }
 
 /** Adds Google's script (once), with a callback that renders the waiting widgets when the API is ready. */

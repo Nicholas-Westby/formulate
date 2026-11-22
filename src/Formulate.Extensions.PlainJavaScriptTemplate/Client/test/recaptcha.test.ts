@@ -145,4 +145,108 @@ describe("reCAPTCHA", () => {
 
     expect(api.reset).toHaveBeenCalledTimes(1);
   });
+
+  describe("without a site key", () => {
+    const warnings = (spy: { mock: { calls: unknown[][] } }) =>
+      spy.mock.calls.filter((call) => String(call[0]).includes("Formulate:Recaptcha:SiteKey"));
+
+    it.each([
+      ["blank", " "],
+      ["empty", ""],
+      ["null", null],
+      ["missing", undefined],
+    ])("adds no Google script and no widget when the site key is %s, and warns once per page", async (_name, key) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const render = await loadRenderer();
+      const api = stubGrecaptcha();
+      const forms = [recaptchaForm(), recaptchaForm()];
+      for (const form of forms) {
+        const configuration = form.data.fields.find((x) => x.fieldType === "recaptcha")!.configuration;
+        if (key === undefined) {
+          delete configuration.siteKey;
+        } else {
+          configuration.siteKey = key;
+        }
+        render(form);
+      }
+      await flush();
+
+      expect(googleScripts()).toHaveLength(0);
+      expect(window.formulatePlainJsRecaptchaReady).toBeUndefined();
+      expect(api.render).not.toHaveBeenCalled();
+      // The wrapper is still there, so the layout and the field's validation keep working.
+      const wrappers = document.querySelectorAll(".formulate__field--recaptcha");
+      expect(wrappers).toHaveLength(2);
+      // No g-recaptcha class and no data-sitekey: a site that loads Google's script itself gets no empty widget.
+      expect(wrappers[0].classList.contains("g-recaptcha")).toBe(false);
+      expect(wrappers[0].hasAttribute("data-sitekey")).toBe(false);
+      expect(wrappers[0].children).toHaveLength(0);
+      expect(warnings(warn)).toHaveLength(1);
+      expect(warn.mock.calls.every((call) => !String(call[0]).includes("error"))).toBe(true);
+      warn.mockRestore();
+    });
+
+    it("warns once in total when the module is loaded twice (two copies of the renderer)", async () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const keyless = () => {
+        const form = recaptchaForm();
+        form.data.fields.find((x) => x.fieldType === "recaptcha")!.configuration.siteKey = "";
+        return form;
+      };
+      const first = await loadRenderer();
+      const second = await loadRenderer();
+      first(keyless());
+      second(keyless());
+      expect(warnings(warn)).toHaveLength(1);
+      expect(googleScripts()).toHaveLength(0);
+      warn.mockRestore();
+    });
+
+    it("still warns once, and still works, when an older copy made the page state without missingSiteKeyWarned", async () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const holder = window as unknown as Record<symbol, unknown>;
+      holder[Symbol.for("Formulate.PlainJavaScript.pageState")] = {
+        lastId: 0,
+        renderedFieldTypes: new Set(),
+        renderedValidationTypes: new Set(),
+        recaptcha: { scriptRequested: false, apiReady: false, waitingFields: new Set() },
+      };
+      const render = await loadRenderer();
+      for (let i = 0; i < 2; i++) {
+        const form = recaptchaForm();
+        form.data.fields.find((x) => x.fieldType === "recaptcha")!.configuration.siteKey = "";
+        render(form);
+      }
+      expect(warnings(warn)).toHaveLength(1);
+      expect(googleScripts()).toHaveLength(0);
+
+      // A form with a key still loads the script on that page state.
+      render(recaptchaForm());
+      expect(googleScripts()).toHaveLength(1);
+      warn.mockRestore();
+    });
+
+    it("adds the script when a form with a key follows one without", async () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const render = await loadRenderer();
+      const keyless = recaptchaForm();
+      keyless.data.fields.find((x) => x.fieldType === "recaptcha")!.configuration.siteKey = "";
+      render(keyless);
+      expect(googleScripts()).toHaveLength(0);
+
+      render(recaptchaForm());
+
+      expect(googleScripts()).toHaveLength(1);
+      warn.mockRestore();
+    });
+  });
+
+  it("does not warn when a site key is set", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const render = await loadRenderer();
+    render(recaptchaForm());
+    await flush();
+    expect(warn.mock.calls.filter((call) => String(call[0]).includes("SiteKey"))).toHaveLength(0);
+    warn.mockRestore();
+  });
 });
