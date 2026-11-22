@@ -234,6 +234,8 @@ dotnet run --project src/Website
 
 Build the dev site on another Umbraco version with `-p:UmbracoSiteVersion=18.3.2`. The default is set in `src/Directory.Build.props`. Umbraco 19 needs the .NET 11 SDK.
 
+Unless you give it a mail server, the dev site sends no real email: it writes each email to an `.eml` file in `src/Website/umbraco/Data/Email`. To send through a server instead, such as smtp4dev or Mailpit, set `Umbraco:CMS:Global:Smtp:Host` (with its `Port`, and a `From` that the server accepts) in `src/Website/appsettings.Local.json`, which git ignores. The site's log says at start which way its email goes. The dev site also has somewhere to point a Send Data handler: it answers any request to `/dev/echo/` or below by writing the request to a file in `src/Website/umbraco/Data/Echo` (`DevEcho:Folder`). Use its plain http address for that, such as `http://localhost:5317/dev/echo/test`, so the handler needs no certificate. Both run only in the Development environment.
+
 Create the NuGet packages in `artifacts/packages`:
 
 ```
