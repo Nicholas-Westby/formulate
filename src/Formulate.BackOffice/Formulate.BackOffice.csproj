@@ -33,4 +33,28 @@
     <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
   </ItemGroup>
 
+  <!--
+    Checks every pack (local, CI and release): the umbraco-package.json inside the .nupkg must give the same version
+    as the package's nuspec, since Umbraco's list of installed packages shows that version. A client built for
+    another version, such as one left from -p:SkipClientBuild=true, fails the pack.
+  -->
+  <Target Name="FormulateCheckPackedVersion" AfterTargets="Pack" Condition="'$(IsPackable)' == 'true'">
+    <ItemGroup>
+      <_FormulatePackedPackage Include="@(NuGetPackOutput)" Condition="'%(Extension)' == '.nupkg'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_FormulatePackedCheckFolder>$(IntermediateOutputPath)packed-check/$(PackageVersion)/</_FormulatePackedCheckFolder>
+      <_FormulatePackedManifest>$(_FormulatePackedCheckFolder)staticwebassets/App_Plugins/Formulate/umbraco-package.json</_FormulatePackedManifest>
+      <_FormulatePackedNuspec>$(_FormulatePackedCheckFolder)$(PackageId).nuspec</_FormulatePackedNuspec>
+    </PropertyGroup>
+    <Unzip SourceFiles="@(_FormulatePackedPackage)" DestinationFolder="$(_FormulatePackedCheckFolder)" Include="$(PackageId).nuspec;staticwebassets/App_Plugins/Formulate/umbraco-package.json" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" />
+    <Error Condition="!Exists('$(_FormulatePackedManifest)') or !Exists('$(_FormulatePackedNuspec)')" Text="@(_FormulatePackedPackage) has no umbraco-package.json or no nuspec." />
+    <PropertyGroup>
+      <_FormulateNuspecVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_FormulatePackedNuspec)')), '&lt;version&gt;([^&lt;]+)&lt;/version&gt;').Groups[1].Value)</_FormulateNuspecVersion>
+      <_FormulateManifestVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(_FormulatePackedManifest)')), '"version"\s*:\s*"([^"]*)"').Groups[1].Value)</_FormulateManifestVersion>
+    </PropertyGroup>
+    <Error Condition="'$(_FormulateManifestVersion)' != '$(_FormulateNuspecVersion)'" Text="The packed umbraco-package.json gives version '$(_FormulateManifestVersion)', but the package is $(_FormulateNuspecVersion). Build the back office client for this version (without -p:SkipClientBuild=true) before packing." />
+    <Message Importance="high" Text="The packed umbraco-package.json gives $(_FormulateManifestVersion), the package's version." />
+  </Target>
+
 </Project>
