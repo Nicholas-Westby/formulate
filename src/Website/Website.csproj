@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web" InitialTargets="FormulateCheckPackageMode">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,8 +20,46 @@
   <ItemGroup>
     <PackageReference Include="Umbraco.Cms" />
     <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" />
+  </ItemGroup>
+
+  <!--
+    Formulate itself comes from the source projects, or with -p:FormulateFromPackages=true from the packed
+    packages, to check what is shipped. That needs -p:FormulatePackageVersion=, the version of a pack in
+    artifacts/packages. "npm run test:packages" in tests/e2e makes one and runs the browser tests on it.
+
+    Each pack needs a version of its own (such as 5.0.0-local.g1a2b3c4.20261122093000): NuGet keeps the first
+    copy of a version it extracts, and would never see a new pack with the same version. In this mode, restore
+    reads only FormulateFromPackages.nuget.config (artifacts/packages for Formulate, nuget.org for the rest),
+    extracts packages into obj/FormulatePackages instead of NuGet's global packages folder, and leaves NuGet's
+    HTTP cache alone, so it changes nothing outside this project. At start-up, the site logs which Formulate
+    it loaded (Composers/LoadedFormulateComposer.cs).
+  -->
+  <PropertyGroup Condition="'$(FormulateFromPackages)' == 'true'">
+    <RestoreConfigFile>$(MSBuildProjectDirectory)/FormulateFromPackages.nuget.config</RestoreConfigFile>
+    <RestorePackagesPath>$(MSBuildProjectDirectory)/obj/FormulatePackages/</RestorePackagesPath>
+    <RestoreNoHttpCache>true</RestoreNoHttpCache>
+    <!-- A Formulate package missing from the pack fails restore, rather than NuGet taking another version. -->
+    <WarningsAsErrors>$(WarningsAsErrors);NU1603</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(FormulateFromPackages)' == 'true'">
+    <PackageReference Include="Umbraco.Community.Formulate" VersionOverride="[$(FormulatePackageVersion)]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FormulateFromPackages)' != 'true'">
     <ProjectReference Include="..\Formulate\Formulate.csproj" />
   </ItemGroup>
+
+  <!-- Stops a mistyped switch from quietly building from source. Runs before restore and build. -->
+  <Target Name="FormulateCheckPackageMode">
+    <Error Condition="'$(FormulateFromPackages)' != '' and '$(FormulateFromPackages)' != 'true' and '$(FormulateFromPackages)' != 'false'"
+           Text="FormulateFromPackages is '$(FormulateFromPackages)'. Use -p:FormulateFromPackages=true, or leave it out to build from source." />
+    <Error Condition="'$(FormulateFromPackages)' == 'true' and '$(FormulatePackageVersion)' == ''"
+           Text="-p:FormulateFromPackages=true needs -p:FormulatePackageVersion=, the version of the packs in artifacts/packages to use. Run &quot;npm run test:packages&quot; in tests/e2e to pack a new one." />
+    <Error Condition="'$(FormulateFromPackages)' != 'true' and '$(FormulatePackageVersion)' != ''"
+           Text="-p:FormulatePackageVersion=$(FormulatePackageVersion) is only used with -p:FormulateFromPackages=true, which is missing, so the site would be built from source." />
+    <!-- A release version such as 5.0.0 could be an old pack in artifacts/packages, or one NuGet already extracted. -->
+    <Error Condition="'$(FormulateFromPackages)' == 'true' and '$(FormulatePackageVersion)' != '' and !$([System.Text.RegularExpressions.Regex]::IsMatch('$(FormulatePackageVersion)', '^\d+\.\d+\.\d+-[0-9A-Za-z][0-9A-Za-z.-]*$'))"
+           Text="-p:FormulatePackageVersion=$(FormulatePackageVersion) is not a version with a prerelease label, such as 5.0.0-local.g1a2b3c4. Every pack needs a version of its own: NuGet keeps the first copy of a version it extracts, so an old pack with the same version would be used instead. Run &quot;npm run pack:local&quot; in tests/e2e to pack one." />
+  </Target>
 
   <!--
     Composers/FormulateOpenApiComposer.cs uses Swashbuckle on Umbraco 17. Umbraco 18 and later build
@@ -34,6 +72,8 @@
   <ItemGroup>
     <!-- Developer-only overrides, loaded in Debug builds. Never published. -->
     <Content Update="appsettings.Local.json" CopyToPublishDirectory="Never" />
+    <!-- Read by restore with -p:FormulateFromPackages=true. Never published. -->
+    <Content Update="FormulateFromPackages.nuget.config" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <PropertyGroup>
