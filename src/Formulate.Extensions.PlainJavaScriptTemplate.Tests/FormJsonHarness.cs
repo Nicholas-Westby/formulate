@@ -6,7 +6,6 @@ using Formulate.Extensions.PlainJavaScriptTemplate.Core;
 using Formulate.Web.RenderModels;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -40,9 +39,6 @@ internal sealed class FormJsonHarness
 
     /// <summary>The logger the assets service writes to.</summary>
     public Mock<ILogger<PlainJavaScriptAssets>> Logger { get; } = new();
-
-    /// <summary>Replaces the file version provider (by default it appends ?v=hash).</summary>
-    public IFileVersionProvider FileVersionProvider { get; set; } = new HashingFileVersionProvider();
 
     public Guid FormId { get; } = Guid.NewGuid();
 
@@ -92,7 +88,6 @@ internal sealed class FormJsonHarness
 
         var assets = new PlainJavaScriptAssets(
             Options.Create(new PlainJavaScriptOptions { Theme = Theme, IncludeScript = IncludeScript }),
-            FileVersionProvider,
             Logger.Object);
         var builder = CreateBuilder(umbracoContextAccessor.Object, httpContext, antiforgery.Object, mapper.Object, idKeyMap.Object, assets);
 
@@ -120,14 +115,3 @@ internal sealed class FormJsonHarness
     }
 }
 
-/// <summary>A file version provider that always finds the file: it appends a fixed hash, like asp-append-version does.</summary>
-internal sealed class HashingFileVersionProvider : IFileVersionProvider
-{
-    public string AddFileVersionToPath(PathString requestPathBase, string path) => path + "?v=HASH";
-}
-
-/// <summary>A file version provider that cannot find the file, so it returns the path as given.</summary>
-internal sealed class MissingFileVersionProvider : IFileVersionProvider
-{
-    public string AddFileVersionToPath(PathString requestPathBase, string path) => path;
-}

@@ -8,12 +8,14 @@ namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
     public interface IPlainJavaScriptAssets
     {
         /// <summary>
-        /// Gets the URL of the renderer script, versioned by its content so a new build is never served stale.
+        /// Gets the URL of the renderer's entry module, formulate.min.js, which a page loads with
+        /// <c>&lt;script type="module"&gt;</c>. It has no version in it: the renderer's files keep their URLs, and are
+        /// sent with <c>Cache-Control: no-cache</c> so that browsers check for a newer copy.
         /// </summary>
         string GetScriptUrl(PathString pathBase);
 
         /// <summary>
-        /// Gets the URL of the theme stylesheet, or null when no theme is configured.
+        /// Gets the URL of the theme stylesheet (with no version in it either), or null when no theme is configured.
         /// </summary>
         string? GetThemeUrl(PathString pathBase);
 

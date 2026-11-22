@@ -170,9 +170,9 @@ public sealed class FormJsonTests
         var none = new FormJsonHarness { PathBase = "/site" }.Build()["assets"]!;
         var basic = new FormJsonHarness { Theme = "Basic", PathBase = "/site" }.Build()["assets"]!;
 
-        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/formulate.min.js?v=HASH", none["script"]!.Value<string>());
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/formulate.min.js", none["script"]!.Value<string>());
         Assert.Equal(JTokenType.Null, none["theme"]!.Type);
-        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css?v=HASH", basic["theme"]!.Value<string>());
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css", basic["theme"]!.Value<string>());
     }
 
     [Fact]
@@ -181,7 +181,6 @@ public sealed class FormJsonTests
         var logger = new Mock<ILogger<PlainJavaScriptAssets>>();
         var assets = new PlainJavaScriptAssets(
             Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { Theme = "fancy" }),
-            new HashingFileVersionProvider(),
             logger.Object);
 
         var urls = new[] { assets.GetThemeUrl(default), assets.GetThemeUrl(default), assets.TakePageAssets(new DefaultHttpContext()).ThemeUrl };
@@ -192,49 +191,16 @@ public sealed class FormJsonTests
             Times.Once);
     }
 
+    // Each file has one URL: the modules import each other by plain URLs, and a second URL for the same file
+    // would load a second copy of it. The files are sent with Cache-Control: no-cache instead (see
+    // PlainJavaScriptCachingTests), so browsers check for a newer copy.
     [Fact]
-    public void Script_url_falls_back_to_the_assembly_version_when_the_file_cannot_be_found()
+    public void Script_and_theme_urls_have_no_version_in_them()
     {
-        var harness = new FormJsonHarness { FileVersionProvider = new MissingFileVersionProvider() };
+        var assets = new FormJsonHarness { Theme = "basic", PathBase = "/site" }.Build()["assets"]!;
 
-        var script = harness.Build()["assets"]!["script"]!.Value<string>()!;
-
-        Assert.StartsWith("/App_Plugins/Formulate/PlainJavaScript/formulate.min.js?v=", script);
-        Assert.NotEqual("/App_Plugins/Formulate/PlainJavaScript/formulate.min.js?v=", script);
-    }
-
-    // The real provider, as asp-append-version uses it, with the site under a path base.
-    [Fact]
-    public void Script_url_carries_a_content_hash_under_a_path_base()
-    {
-        var webRoot = Path.Combine(Path.GetTempPath(), "formulate-" + Guid.NewGuid().ToString("N"));
-        var scriptFolder = Path.Combine(webRoot, "App_Plugins", "Formulate", "PlainJavaScript");
-        Directory.CreateDirectory(scriptFolder);
-        File.WriteAllText(Path.Combine(scriptFolder, "formulate.min.js"), "console.log(1);");
-
-        try
-        {
-            var environment = new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
-            environment.SetupGet(x => x.WebRootFileProvider).Returns(new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRoot));
-            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-            services.AddSingleton(environment.Object);
-            services.AddLogging();
-            services.AddMemoryCache();
-            services.AddControllersWithViews();
-            using var provider = services.BuildServiceProvider();
-            var assets = new PlainJavaScriptAssets(
-                Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions()),
-                provider.GetRequiredService<Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider>(),
-                Mock.Of<ILogger<PlainJavaScriptAssets>>());
-
-            var url = assets.GetScriptUrl(new PathString("/site"));
-
-            Assert.Matches(@"^/site/App_Plugins/Formulate/PlainJavaScript/formulate\.min\.js\?v=[A-Za-z0-9_-]{20,}$", url);
-        }
-        finally
-        {
-            Directory.Delete(webRoot, recursive: true);
-        }
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/formulate.min.js", assets["script"]!.Value<string>());
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css", assets["theme"]!.Value<string>());
     }
 
     [Fact]
@@ -242,7 +208,6 @@ public sealed class FormJsonTests
     {
         var assets = new PlainJavaScriptAssets(
             Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { Theme = "basic" }),
-            new HashingFileVersionProvider(),
             Mock.Of<ILogger<PlainJavaScriptAssets>>());
         var request = new DefaultHttpContext();
         var otherRequest = new DefaultHttpContext();
@@ -251,8 +216,8 @@ public sealed class FormJsonTests
         var second = assets.TakePageAssets(request);
         var other = assets.TakePageAssets(otherRequest);
 
-        Assert.EndsWith("/formulate.min.js?v=HASH", first.ScriptUrl);
-        Assert.EndsWith("themes/basic.min.css?v=HASH", first.ThemeUrl);
+        Assert.Equal("/App_Plugins/Formulate/PlainJavaScript/formulate.min.js", first.ScriptUrl);
+        Assert.Equal("/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css", first.ThemeUrl);
         Assert.Null(second.ScriptUrl);
         Assert.Null(second.ThemeUrl);
         Assert.Equal(first, other);
@@ -263,7 +228,6 @@ public sealed class FormJsonTests
     {
         var assets = new PlainJavaScriptAssets(
             Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { IncludeScript = false }),
-            new HashingFileVersionProvider(),
             Mock.Of<ILogger<PlainJavaScriptAssets>>());
 
         var page = assets.TakePageAssets(new DefaultHttpContext());

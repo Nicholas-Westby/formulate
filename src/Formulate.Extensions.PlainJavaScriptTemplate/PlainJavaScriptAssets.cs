@@ -1,27 +1,20 @@
 namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
 {
-    using System.Reflection;
     using Microsoft.AspNetCore.Http;
-    using Microsoft.AspNetCore.Mvc.ViewFeatures;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Options;
 
     public sealed class PlainJavaScriptAssets : IPlainJavaScriptAssets
     {
-        private const string ScriptPath = "/App_Plugins/Formulate/PlainJavaScript/formulate.min.js";
-        private const string BasicThemePath = "/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css";
+        private const string ScriptPath = PlainJavaScriptCaching.FolderPath + "/formulate.min.js";
+        private const string BasicThemePath = PlainJavaScriptCaching.FolderPath + "/themes/basic.min.css";
         private const string RequestItemKey = "Formulate.PlainJavaScript.AssetsAdded";
 
-        private static readonly string FallbackVersion = GetVersion();
-
-        private readonly IFileVersionProvider _fileVersionProvider;
         private readonly bool _includeScript;
         private readonly bool _includeBasicTheme;
 
-        public PlainJavaScriptAssets(IOptions<PlainJavaScriptOptions> options, IFileVersionProvider fileVersionProvider, ILogger<PlainJavaScriptAssets> logger)
+        public PlainJavaScriptAssets(IOptions<PlainJavaScriptOptions> options, ILogger<PlainJavaScriptAssets> logger)
         {
-            _fileVersionProvider = fileVersionProvider;
-
             var value = options.Value;
             _includeScript = value.IncludeScript;
 
@@ -40,9 +33,10 @@ namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
             }
         }
 
-        public string GetScriptUrl(PathString pathBase) => AddVersion(pathBase, ScriptPath);
+        // The URLs carry no version: each file has one URL, and PlainJavaScriptCaching makes browsers check it.
+        public string GetScriptUrl(PathString pathBase) => ToUrl(pathBase, ScriptPath);
 
-        public string? GetThemeUrl(PathString pathBase) => _includeBasicTheme ? AddVersion(pathBase, BasicThemePath) : null;
+        public string? GetThemeUrl(PathString pathBase) => _includeBasicTheme ? ToUrl(pathBase, BasicThemePath) : null;
 
         public PlainJavaScriptPageAssets TakePageAssets(HttpContext context)
         {
@@ -60,30 +54,6 @@ namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
                 GetThemeUrl(pathBase));
         }
 
-        private string AddVersion(PathString pathBase, string path)
-        {
-            // Same as asp-append-version: the URL gets a hash of the file's content as ?v=.
-            var url = pathBase.Add(path).Value ?? path;
-            var versioned = _fileVersionProvider.AddFileVersionToPath(pathBase, url);
-
-            // The file could not be found (a hosting setup that does not serve it through the web
-            // root), so fall back to the version of this assembly.
-            return versioned.Contains("?v=", StringComparison.Ordinal)
-                ? versioned
-                : url + "?v=" + Uri.EscapeDataString(FallbackVersion);
-        }
-
-        private static string GetVersion()
-        {
-            var assembly = typeof(PlainJavaScriptAssets).Assembly;
-            var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-                ?? assembly.GetName().Version?.ToString()
-                ?? "0";
-
-            // Drop the source revision that follows a "+".
-            var plus = version.IndexOf('+');
-
-            return plus >= 0 ? version[..plus] : version;
-        }
+        private static string ToUrl(PathString pathBase, string path) => pathBase.Add(path).Value ?? path;
     }
 }

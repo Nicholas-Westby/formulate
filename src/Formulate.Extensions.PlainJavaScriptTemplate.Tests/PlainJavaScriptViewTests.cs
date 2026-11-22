@@ -69,7 +69,6 @@ public sealed class PlainJavaScriptViewTests
         builder.Services.AddSingleton(Mock.Of<IBuildPlainJavaScriptJson>(x => x.Build(It.IsAny<FormLayoutRenderModel>(), It.IsAny<string>()) == "{}"));
         builder.Services.AddSingleton<IPlainJavaScriptAssets>(new PlainJavaScriptAssets(
             Options.Create(options),
-            new HashingFileVersionProvider(),
             Mock.Of<ILogger<PlainJavaScriptAssets>>()));
 
         await using var app = builder.Build();
