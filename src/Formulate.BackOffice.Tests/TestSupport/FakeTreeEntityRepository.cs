@@ -15,7 +15,6 @@ internal static class FormConstantsRoot
 }
 
 /// <summary>An in-memory stand-in for the repository, with the same tree rules as the real one.</summary>
-/// <summary>An in-memory stand-in for the repository, with the same tree rules as the real one.</summary>
 internal sealed class FakeTreeEntityRepository : ITreeEntityRepository
 {
     private readonly List<IPersistedEntity> _entities = new();
@@ -36,9 +35,6 @@ internal sealed class FakeTreeEntityRepository : ITreeEntityRepository
         return _entities.Where(x => x.Path.Length > 1 && x.Path[^2] == parentId).ToArray();
     }
 
-    public bool HasChildren(Guid parentId, Func<IPersistedEntity, bool>? filter = null) =>
-        filter is null ? GetChildren(parentId).Any() : GetChildren(parentId).Any(filter);
-
     public IReadOnlyCollection<Guid> GetParentIds(TreeTypes treeType, bool foldersOnly)
     {
         ParentListings++;
@@ -58,8 +54,6 @@ internal sealed class FakeTreeEntityRepository : ITreeEntityRepository
         TreeTypes.Validations => FormConstantsRoot.Validations,
         _ => Guid.Empty,
     };
-
-    public IReadOnlyCollection<Guid> Delete(IPersistedEntity entity) => throw new NotSupportedException();
 
     /// <summary>Gets how many descendant lookups ran.</summary>
     public int DescendantLookups { get; private set; }
@@ -82,6 +76,4 @@ internal sealed class FakeTreeEntityRepository : ITreeEntityRepository
         PathUpdates.Add((entity.Id, path));
         ((PersistedEntity)entity).Path = path;
     }
-
-    public Guid[] Move(IPersistedEntity entity, Guid[] parentPath) => throw new NotSupportedException();
 }

@@ -19,7 +19,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
-using ApiEntityTypes = Formulate.BackOffice.Api.EntityTypes;
 
 namespace Formulate.BackOffice.Tests.Api;
 
@@ -86,7 +85,7 @@ public class CreateOptionsApiServiceTests
         var options = Ok(CreateService().GetCreateOptions(TreeAliases.Forms, null));
 
         Assert.Equal(
-            new[] { ("Folder", ApiEntityTypes.FormFolder), ("Form", ApiEntityTypes.Form), ("Form with Basic Layout", ApiEntityTypes.Form) },
+            new[] { ("Folder", EntityTypes.FormFolder), ("Form", EntityTypes.Form), ("Form with Basic Layout", EntityTypes.Form) },
             options.Select(x => (x.Name, x.EntityType)));
         Assert.Null(options[0].KindId);
         Assert.Equal(new DefaultFormLayoutDefinition().KindId, options[1].KindId);
@@ -120,7 +119,7 @@ public class CreateOptionsApiServiceTests
         var options = Ok(CreateService().GetCreateOptions(TreeAliases.Forms, folder.Id));
 
         Assert.Equal(3, options.Count);
-        Assert.Equal(ApiEntityTypes.FormFolder, options[0].EntityType);
+        Assert.Equal(EntityTypes.FormFolder, options[0].EntityType);
     }
 
     [Theory]
@@ -155,7 +154,7 @@ public class CreateOptionsApiServiceTests
         Assert.Equal(new[] { "alpha layout", "Zebra layout" }, options.Select(x => x.Name));
         Assert.All(options, option =>
         {
-            Assert.Equal(ApiEntityTypes.Layout, option.EntityType);
+            Assert.Equal(EntityTypes.Layout, option.EntityType);
             Assert.NotNull(option.KindId);
             Assert.Equal(FormulateIcons.Layout, option.Icon);
         });
@@ -178,10 +177,10 @@ public class CreateOptionsApiServiceTests
     {
         var options = Ok(CreateService().GetCreateOptions(TreeAliases.DataValues, null));
 
-        Assert.Equal(("Folder", ApiEntityTypes.DataValuesFolder), (options[0].Name, options[0].EntityType));
+        Assert.Equal(("Folder", EntityTypes.DataValuesFolder), (options[0].Name, options[0].EntityType));
         var kinds = options.Skip(1).ToArray();
         Assert.Equal(new[] { ListDataValuesDefinition.Constants.Name, PairListDataValuesDefinition.Constants.Name }.OrderBy(x => x), kinds.Select(x => x.Name));
-        Assert.All(kinds, kind => Assert.Equal(ApiEntityTypes.DataValues, kind.EntityType));
+        Assert.All(kinds, kind => Assert.Equal(EntityTypes.DataValues, kind.EntityType));
         Assert.All(options, option => Assert.DoesNotContain("icon-formulate-", option.Icon));
     }
 
@@ -193,8 +192,8 @@ public class CreateOptionsApiServiceTests
         var options = Ok(CreateService().GetCreateOptions(TreeAliases.Validations, folder.Id));
 
         Assert.Equal(new[] { "Folder", MandatoryValidationDefinition.Constants.Name, RegexValidationDefinition.Constants.Name }, options.Select(x => x.Name));
-        Assert.Equal(ApiEntityTypes.ValidationFolder, options[0].EntityType);
-        Assert.All(options.Skip(1), option => Assert.Equal((ApiEntityTypes.Validation, FormulateIcons.Validation), (option.EntityType, option.Icon)));
+        Assert.Equal(EntityTypes.ValidationFolder, options[0].EntityType);
+        Assert.All(options.Skip(1), option => Assert.Equal((EntityTypes.Validation, FormulateIcons.Validation), (option.EntityType, option.Icon)));
     }
 
     [Fact]

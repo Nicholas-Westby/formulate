@@ -25,14 +25,6 @@
         IReadOnlyCollection<IPersistedEntity> GetChildren(Guid parentId);
 
         /// <summary>
-        /// Checks if a the entity ID has an children.
-        /// </summary>
-        /// <param name="parentId">The parent ID.</param>
-        /// <param name="filter">Optional filter to use when finding child nodes.</param>
-        /// <returns>A <see cref="bool"/>.</returns>
-        bool HasChildren(Guid parentId, Func<IPersistedEntity, bool>? filter = default);
-
-        /// <summary>
         /// Gets the root items for a given tree root type.
         /// </summary>
         /// <param name="treeRootType">The tree root type.</param>
@@ -47,20 +39,12 @@
         Guid GetRootId(TreeTypes treeRootType);
 
         /// <summary>
-        /// Deletes an entity.
-        /// </summary>
-        /// <param name="entity">The entity to delete.</param>
-        IReadOnlyCollection<Guid> Delete(IPersistedEntity entity);
-
-        /// <summary>
         /// Gets the IDs of every entity in a tree that has at least one child.
         /// </summary>
         /// <param name="treeType">The tree.</param>
         /// <param name="foldersOnly">True to count only folders as children.</param>
         /// <returns>The parent IDs. Each repository is read at most once.</returns>
         IReadOnlyCollection<Guid> GetParentIds(TreeTypes treeType, bool foldersOnly);
-
-        Guid[] Move(IPersistedEntity entity, Guid[] parentPath);
 
         /// <summary>
         /// Gets everything under an entity, at any depth, without the entity itself.

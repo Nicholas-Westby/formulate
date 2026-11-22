@@ -17,28 +17,31 @@ public class FormulateTreeControllerTests
 
     private FormulateTreeController CreateController() => new(_service.Object, Mock.Of<ICreateOptionsApiService>());
 
-    private static void AssertProblem(IActionResult result, int status)
+    private static ProblemDetails AssertProblem(IActionResult result, int status)
     {
         var objectResult = Assert.IsAssignableFrom<ObjectResult>(result);
         Assert.Equal(status, objectResult.StatusCode);
         var problem = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.False(string.IsNullOrEmpty(problem.Title));
+        return problem;
     }
 
     [Fact]
     public void Unknown_tree_alias_gives_400_problem_details_on_every_action()
     {
         _service.Setup(x => x.GetRoot("nope", false, 0, 100))
-            .Returns(FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree));
+            .Returns(ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>>.Invalid("treeAlias", "unknown"));
         _service.Setup(x => x.GetChildren("nope", It.IsAny<Guid>(), false, 0, 100))
-            .Returns(FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree));
+            .Returns(ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>>.Invalid("treeAlias", "unknown"));
         _service.Setup(x => x.GetAncestors("nope", It.IsAny<Guid>()))
-            .Returns(FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree));
+            .Returns(ServiceResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Invalid("treeAlias", "unknown"));
         var controller = CreateController();
 
-        AssertProblem(controller.Root("nope"), StatusCodes.Status400BadRequest);
-        AssertProblem(controller.Children("nope", Guid.NewGuid()), StatusCodes.Status400BadRequest);
-        AssertProblem(controller.Ancestors("nope", Guid.NewGuid()), StatusCodes.Status400BadRequest);
+        // The same shape as create-options in this controller: the 400 names the field.
+        foreach (var result in new[] { controller.Root("nope"), controller.Children("nope", Guid.NewGuid()), controller.Ancestors("nope", Guid.NewGuid()) })
+        {
+            Assert.Equal("treeAlias", AssertProblem(result, StatusCodes.Status400BadRequest).Extensions["field"]);
+        }
     }
 
     [Fact]
@@ -46,7 +49,7 @@ public class FormulateTreeControllerTests
     {
         var parentId = Guid.NewGuid();
         _service.Setup(x => x.GetChildren("forms", parentId, false, 0, 100))
-            .Returns(FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.NotFound));
+            .Returns(ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>>.NotFound("gone"));
 
         AssertProblem(CreateController().Children("forms", parentId), StatusCodes.Status404NotFound);
     }
@@ -56,7 +59,7 @@ public class FormulateTreeControllerTests
     {
         var descendantId = Guid.NewGuid();
         _service.Setup(x => x.GetAncestors("forms", descendantId))
-            .Returns(FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.NotFound));
+            .Returns(ServiceResult<IReadOnlyList<FormulateTreeItemResponseModel>>.NotFound("gone"));
 
         AssertProblem(CreateController().Ancestors("forms", descendantId), StatusCodes.Status404NotFound);
     }
@@ -65,7 +68,7 @@ public class FormulateTreeControllerTests
     public void Success_gives_200_with_the_page()
     {
         var page = new PagedViewModel<FormulateTreeItemResponseModel> { Total = 0, Items = Array.Empty<FormulateTreeItemResponseModel>() };
-        _service.Setup(x => x.GetRoot("forms", true, 5, 7)).Returns(FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Success(page));
+        _service.Setup(x => x.GetRoot("forms", true, 5, 7)).Returns(ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>>.Success(page));
 
         var result = CreateController().Root("forms", 5, 7, true);
 

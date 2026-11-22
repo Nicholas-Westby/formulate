@@ -102,14 +102,6 @@
         }
 
         /// <inheritdoc />
-        public bool HasChildren(Guid parentId, Func<IPersistedEntity, bool>? filter = default)
-        {
-            var children = GetChildren(parentId);
-
-            return filter == default ? children.Any() : children.Any(filter);
-        }
-
-        /// <inheritdoc />
         public IReadOnlyCollection<IPersistedEntity> GetRootItems(TreeTypes treeRootType)
         {
             var rootId = GetRootId(treeRootType);
@@ -185,55 +177,6 @@
             }
 
             return default;
-        }
-
-        public IReadOnlyCollection<Guid> Delete(IPersistedEntity entity)
-        {
-            var children = GetChildren(entity.Id);
-            var deleteIds = new List<Guid>();
-
-            foreach (var child in children)
-            {
-                deleteIds.AddRange(Delete(child));
-            }
-
-            switch (entity)
-            {
-                case PersistedDataValues:
-                    _dataValuesEntityRepository.Delete(entity.Id);
-                    break;
-
-                case PersistedFolder:
-                    _folderEntityRepository.Delete(entity.Id);
-                    break;
-
-                case PersistedForm:
-                    _formEntityRepository.Delete(entity.Id);
-                    break;
-
-                case PersistedLayout:
-                    _layoutEntityRepository.Delete(entity.Id);
-                    break;
-
-                case PersistedValidation:
-                    _validationEntityRepository.Delete(entity.Id);
-                    break;
-            }
-
-            deleteIds.Add(entity.Id);
-
-            return deleteIds;
-        }
-        public Guid[] Move(IPersistedEntity entity, Guid[] parentPath)
-        {
-            var updatedPath = new List<Guid>(parentPath).Append(entity.Id).ToArray();
-
-            foreach (var child in GetChildren(entity.Id))
-            {
-                Move(child, updatedPath);
-            }
-
-            return Persist(entity, updatedPath);
         }
 
         /// <inheritdoc />

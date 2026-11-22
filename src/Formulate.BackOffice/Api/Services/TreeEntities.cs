@@ -56,6 +56,20 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <summary>
+        /// Gets the answer when a tree alias names no Formulate tree.
+        /// </summary>
+        /// <typeparam name="T">The type of the service result value.</typeparam>
+        public static ServiceResult<T> UnknownTree<T>(string? treeAlias) =>
+            ServiceResult<T>.Invalid("treeAlias", $"'{treeAlias}' is not a Formulate tree. Use {TreeAliases.Forms}, {TreeAliases.DataValues} or {TreeAliases.Validations}.");
+
+        /// <summary>
+        /// Gets the answer when an item is not in the tree asked about.
+        /// </summary>
+        /// <typeparam name="T">The type of the service result value.</typeparam>
+        public static ServiceResult<T> NotInTree<T>(Guid? id, string treeAlias) =>
+            ServiceResult<T>.NotFound($"The item {id} does not exist in the {treeAlias} tree.");
+
+        /// <summary>
         /// Gets the alias of a tree, as in <see cref="TreeAliases"/>.
         /// </summary>
         public static string GetAlias(TreeTypes tree)

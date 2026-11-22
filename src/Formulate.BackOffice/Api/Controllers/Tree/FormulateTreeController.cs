@@ -8,7 +8,6 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
     using Formulate.BackOffice.Api.Services;
     using Microsoft.AspNetCore.Http;
     using Microsoft.AspNetCore.Mvc;
-    using Umbraco.Cms.Api.Common.Builders;
     using Umbraco.Cms.Api.Common.ViewModels.Pagination;
     using Umbraco.Cms.Api.Management.Routing;
 
@@ -49,7 +48,7 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
         {
             var result = _treeService.GetRoot(treeAlias, foldersOnly, skip, take);
 
-            return ToActionResult(result, treeAlias);
+            return result.Status == ServiceStatus.Success ? Ok(result.Value) : ProblemFor(result);
         }
 
         /// <summary>
@@ -68,7 +67,7 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
         {
             var result = _treeService.GetChildren(treeAlias, parentId, foldersOnly, skip, take);
 
-            return ToActionResult(result, treeAlias);
+            return result.Status == ServiceStatus.Success ? Ok(result.Value) : ProblemFor(result);
         }
 
         /// <summary>
@@ -84,7 +83,7 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
         {
             var result = _treeService.GetAncestors(treeAlias, descendantId);
 
-            return ToActionResult(result, treeAlias);
+            return result.Status == ServiceStatus.Success ? Ok(result.Value) : ProblemFor(result);
         }
 
         /// <summary>
@@ -102,27 +101,6 @@ namespace Formulate.BackOffice.Api.Controllers.Tree
             var result = _createOptionsService.GetCreateOptions(treeAlias, parentId);
 
             return result.Status == ServiceStatus.Success ? Ok(result.Value) : ProblemFor(result);
-        }
-
-        private IActionResult ToActionResult<T>(FormulateTreeResult<T> result, string treeAlias)
-        {
-            switch (result.Status)
-            {
-                case FormulateTreeStatus.Success:
-                    return Ok(result.Value);
-
-                case FormulateTreeStatus.UnknownTree:
-                    return BadRequest(new ProblemDetailsBuilder()
-                        .WithTitle("Unknown tree")
-                        .WithDetail($"'{treeAlias}' is not a Formulate tree. Use forms, data-values or validations.")
-                        .Build());
-
-                default:
-                    return NotFound(new ProblemDetailsBuilder()
-                        .WithTitle("Item not found")
-                        .WithDetail($"The item does not exist in the {treeAlias} tree.")
-                        .Build());
-            }
         }
     }
 }

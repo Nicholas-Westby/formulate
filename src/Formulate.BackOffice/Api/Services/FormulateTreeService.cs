@@ -38,51 +38,51 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>> GetRoot(string treeAlias, bool foldersOnly, int skip, int take)
+        public ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>> GetRoot(string treeAlias, bool foldersOnly, int skip, int take)
         {
             if (!TreeEntities.TryGetTree(treeAlias, out var tree))
             {
-                return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree);
+                return TreeEntities.UnknownTree<PagedViewModel<FormulateTreeItemResponseModel>>(treeAlias);
             }
 
             var entities = _treeEntityRepository.GetRootItems(tree);
 
-            return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Success(CreatePage(tree, entities, foldersOnly, skip, take));
+            return ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>>.Success(CreatePage(tree, entities, foldersOnly, skip, take));
         }
 
         /// <inheritdoc />
-        public FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>> GetChildren(string treeAlias, Guid parentId, bool foldersOnly, int skip, int take)
+        public ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>> GetChildren(string treeAlias, Guid parentId, bool foldersOnly, int skip, int take)
         {
             if (!TreeEntities.TryGetTree(treeAlias, out var tree))
             {
-                return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree);
+                return TreeEntities.UnknownTree<PagedViewModel<FormulateTreeItemResponseModel>>(treeAlias);
             }
 
             var parent = _treeEntityRepository.Get(parentId);
 
             if (parent is null || TreeEntities.GetTree(parent) != tree)
             {
-                return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.NotFound);
+                return TreeEntities.NotInTree<PagedViewModel<FormulateTreeItemResponseModel>>(parentId, treeAlias);
             }
 
             var entities = _treeEntityRepository.GetChildren(parentId);
 
-            return FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>>.Success(CreatePage(tree, entities, foldersOnly, skip, take));
+            return ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>>.Success(CreatePage(tree, entities, foldersOnly, skip, take));
         }
 
         /// <inheritdoc />
-        public FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>> GetAncestors(string treeAlias, Guid descendantId)
+        public ServiceResult<IReadOnlyList<FormulateTreeItemResponseModel>> GetAncestors(string treeAlias, Guid descendantId)
         {
             if (!TreeEntities.TryGetTree(treeAlias, out var tree))
             {
-                return FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.UnknownTree);
+                return TreeEntities.UnknownTree<IReadOnlyList<FormulateTreeItemResponseModel>>(treeAlias);
             }
 
             var descendant = _treeEntityRepository.Get(descendantId);
 
             if (descendant is null || TreeEntities.GetTree(descendant) != tree)
             {
-                return FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Failure(FormulateTreeStatus.NotFound);
+                return TreeEntities.NotInTree<IReadOnlyList<FormulateTreeItemResponseModel>>(descendantId, treeAlias);
             }
 
             // The first path ID is the tree's root, which exists only in the client.
@@ -101,7 +101,7 @@ namespace Formulate.BackOffice.Api.Services
 
             ancestors.Add(CreateTreeItem(descendant, hasChildren));
 
-            return FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Success(ancestors);
+            return ServiceResult<IReadOnlyList<FormulateTreeItemResponseModel>>.Success(ancestors);
         }
 
         /// <inheritdoc />

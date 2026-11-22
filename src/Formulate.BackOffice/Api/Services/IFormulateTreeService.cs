@@ -18,7 +18,7 @@ namespace Formulate.BackOffice.Api.Services
         /// <param name="foldersOnly">True to list folders only.</param>
         /// <param name="skip">The number of items to skip, after sorting.</param>
         /// <param name="take">The number of items to return.</param>
-        FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>> GetRoot(string treeAlias, bool foldersOnly, int skip, int take);
+        ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>> GetRoot(string treeAlias, bool foldersOnly, int skip, int take);
 
         /// <summary>
         /// Gets a page of the children of an item.
@@ -28,14 +28,14 @@ namespace Formulate.BackOffice.Api.Services
         /// <param name="foldersOnly">True to list folders only.</param>
         /// <param name="skip">The number of items to skip, after sorting.</param>
         /// <param name="take">The number of items to return.</param>
-        FormulateTreeResult<PagedViewModel<FormulateTreeItemResponseModel>> GetChildren(string treeAlias, Guid parentId, bool foldersOnly, int skip, int take);
+        ServiceResult<PagedViewModel<FormulateTreeItemResponseModel>> GetChildren(string treeAlias, Guid parentId, bool foldersOnly, int skip, int take);
 
         /// <summary>
         /// Gets an item's ancestors, root-most first, ending with the item itself.
         /// </summary>
         /// <param name="treeAlias">One of the <see cref="TreeAliases"/> values.</param>
         /// <param name="descendantId">The item's ID.</param>
-        FormulateTreeResult<IReadOnlyList<FormulateTreeItemResponseModel>> GetAncestors(string treeAlias, Guid descendantId);
+        ServiceResult<IReadOnlyList<FormulateTreeItemResponseModel>> GetAncestors(string treeAlias, Guid descendantId);
 
         /// <summary>
         /// Gets items from any tree, in the order requested. Unknown IDs are left out.

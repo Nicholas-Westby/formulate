@@ -1,5 +1,4 @@
 using Xunit;
-using ApiEntityTypes = Formulate.BackOffice.Api.EntityTypes;
 using Formulate.BackOffice.Api;
 using Formulate.BackOffice.Api.Services;
 using Formulate.BackOffice.Persistence;
@@ -71,11 +70,13 @@ public class FormulateTreeServiceTests
 
     private static Guid[] Path(Guid root, Guid[] parents, Guid id) => new[] { root }.Concat(parents).Append(id).ToArray();
 
-    private static T Ok<T>(FormulateTreeResult<T> result)
+    private static T Ok<T>(ServiceResult<T> result)
     {
-        Assert.Equal(FormulateTreeStatus.Success, result.Status);
+        Assert.Equal(ServiceStatus.Success, result.Status);
         return result.Value!;
     }
+
+    private static (ServiceStatus, string?) Tuple<T>(ServiceResult<T> result) => (result.Status, result.Field);
 
     [Fact]
     public void Root_lists_folders_then_items_by_name()
@@ -90,7 +91,7 @@ public class FormulateTreeServiceTests
 
         Assert.Equal(new[] { "Yankee folder", "zeta folder", "Alpha", "beta" }, page.Items.Select(x => x.Name));
         Assert.Equal(4, page.Total);
-        Assert.Equal(new[] { ApiEntityTypes.FormFolder, ApiEntityTypes.FormFolder, ApiEntityTypes.Form, ApiEntityTypes.Form }, page.Items.Select(x => x.EntityType));
+        Assert.Equal(new[] { EntityTypes.FormFolder, EntityTypes.FormFolder, EntityTypes.Form, EntityTypes.Form }, page.Items.Select(x => x.EntityType));
         Assert.All(page.Items, x => Assert.Null(x.Parent));
         Assert.Equal(new[] { true, true, false, false }, page.Items.Select(x => x.IsFolder));
         Assert.Equal(new[] { "icon-folder", "icon-folder", "icon-document", "icon-document" }, page.Items.Select(x => x.Icon));
@@ -111,7 +112,7 @@ public class FormulateTreeServiceTests
         Assert.Equal(new[] { "first", "second" }, page.Items.Select(x => x.Name));
         Assert.All(page.Items, x =>
         {
-            Assert.Equal(ApiEntityTypes.Layout, x.EntityType);
+            Assert.Equal(EntityTypes.Layout, x.EntityType);
             Assert.Equal("icon-layout", x.Icon);
             Assert.False(x.HasChildren);
             Assert.Equal(form.Id, x.Parent!.Id);
@@ -219,19 +220,28 @@ public class FormulateTreeServiceTests
     {
         var service = CreateService();
 
-        Assert.Equal(FormulateTreeStatus.UnknownTree, service.GetRoot("nope", false, 0, 100).Status);
-        Assert.Equal(FormulateTreeStatus.UnknownTree, service.GetChildren("nope", Guid.NewGuid(), false, 0, 100).Status);
-        Assert.Equal(FormulateTreeStatus.UnknownTree, service.GetAncestors("nope", Guid.NewGuid()).Status);
-        Assert.Equal(FormulateTreeStatus.UnknownTree, service.GetRoot("Forms", false, 0, 100).Status);
+        Assert.Equal((ServiceStatus.Invalid, "treeAlias"), Tuple(service.GetRoot("nope", false, 0, 100)));
+        Assert.Equal((ServiceStatus.Invalid, "treeAlias"), Tuple(service.GetChildren("nope", Guid.NewGuid(), false, 0, 100)));
+        Assert.Equal((ServiceStatus.Invalid, "treeAlias"), Tuple(service.GetAncestors("nope", Guid.NewGuid())));
+        Assert.Equal((ServiceStatus.Invalid, "treeAlias"), Tuple(service.GetRoot("Forms", false, 0, 100)));
+        Assert.Equal(
+            "'nope' is not a Formulate tree. Use forms, data-values or validations.",
+            service.GetRoot("nope", false, 0, 100).Message);
     }
 
     [Fact]
     public void Unknown_parent_or_descendant_is_not_found()
     {
         var service = CreateService();
+        var id = Guid.NewGuid();
+        var children = service.GetChildren(TreeAliases.Forms, id, false, 0, 100);
+        var ancestors = service.GetAncestors(TreeAliases.Forms, id);
 
-        Assert.Equal(FormulateTreeStatus.NotFound, service.GetChildren(TreeAliases.Forms, Guid.NewGuid(), false, 0, 100).Status);
-        Assert.Equal(FormulateTreeStatus.NotFound, service.GetAncestors(TreeAliases.Forms, Guid.NewGuid()).Status);
+        // The same words as create-options, naming the item.
+        foreach (var result in new[] { (children.Status, children.Message), (ancestors.Status, ancestors.Message) })
+        {
+            Assert.Equal((ServiceStatus.NotFound, $"The item {id} does not exist in the forms tree."), result);
+        }
     }
 
     [Fact]
@@ -240,9 +250,9 @@ public class FormulateTreeServiceTests
         var validation = AddValidation("validation");
         var service = CreateService();
 
-        Assert.Equal(FormulateTreeStatus.NotFound, service.GetAncestors(TreeAliases.Forms, validation.Id).Status);
-        Assert.Equal(FormulateTreeStatus.NotFound, service.GetChildren(TreeAliases.Forms, validation.Id, false, 0, 100).Status);
-        Assert.Equal(FormulateTreeStatus.Success, service.GetAncestors(TreeAliases.Validations, validation.Id).Status);
+        Assert.Equal(ServiceStatus.NotFound, service.GetAncestors(TreeAliases.Forms, validation.Id).Status);
+        Assert.Equal(ServiceStatus.NotFound, service.GetChildren(TreeAliases.Forms, validation.Id, false, 0, 100).Status);
+        Assert.Equal(ServiceStatus.Success, service.GetAncestors(TreeAliases.Validations, validation.Id).Status);
     }
 
     [Fact]
@@ -257,10 +267,10 @@ public class FormulateTreeServiceTests
         var dataValues = Ok(service.GetRoot(TreeAliases.DataValues, false, 0, 100));
 
         Assert.Equal("validation", Assert.Single(validations.Items).Name);
-        Assert.Equal(ApiEntityTypes.Validation, validations.Items.ElementAt(0).EntityType);
+        Assert.Equal(EntityTypes.Validation, validations.Items.ElementAt(0).EntityType);
         Assert.Equal("icon-check", validations.Items.ElementAt(0).Icon);
         Assert.Equal("values", Assert.Single(dataValues.Items).Name);
-        Assert.Equal(ApiEntityTypes.DataValues, dataValues.Items.ElementAt(0).EntityType);
+        Assert.Equal(EntityTypes.DataValues, dataValues.Items.ElementAt(0).EntityType);
         Assert.Equal("icon-bulleted-list", dataValues.Items.ElementAt(0).Icon);
     }
 
@@ -272,7 +282,7 @@ public class FormulateTreeServiceTests
         var page = Ok(CreateService().GetRoot(TreeAliases.DataValues, false, 0, 100));
 
         Assert.Equal(folder.Id, Assert.Single(page.Items).Id);
-        Assert.Equal(ApiEntityTypes.DataValuesFolder, page.Items.ElementAt(0).EntityType);
+        Assert.Equal(EntityTypes.DataValuesFolder, page.Items.ElementAt(0).EntityType);
     }
 
     [Fact]
@@ -305,12 +315,12 @@ public class FormulateTreeServiceTests
         var items = CreateService().GetItems(new[] { layout.Id, unknown, form.Id, inFolder.Id });
 
         Assert.Equal(new[] { layout.Id, form.Id, inFolder.Id }, items.Select(x => x.Id));
-        Assert.Equal(ApiEntityTypes.Layout, items[0].EntityType);
+        Assert.Equal(EntityTypes.Layout, items[0].EntityType);
         Assert.Equal("icon-layout", items[0].Icon);
         Assert.Equal(form.Id, items[0].ParentId);
         Assert.Equal("My form", items[0].ParentName);
         Assert.Equal(layout.KindId, items[0].KindId);
-        Assert.Equal(ApiEntityTypes.Form, items[1].EntityType);
+        Assert.Equal(EntityTypes.Form, items[1].EntityType);
         Assert.Null(items[1].ParentId);
         Assert.Null(items[1].ParentName);
         Assert.Null(items[1].KindId);
