@@ -29,7 +29,7 @@ public sealed class StoreDataTests : IDisposable
         var settings = Options.Create(new StoreDataSettings());
         var folders = new UploadFolders(_root, settings.Value.UploadsFolderPath);
         return new Utilities.StoreData(
-            new StoreFields(),
+            new StoreFields(new Formulate.Core.FormFields.FormFieldDefinitionCollection(() => Array.Empty<Formulate.Core.FormFields.IFormFieldDefinition>())),
             new StoreFiles(folders, settings, new CapturingLogger<StoreFiles>()),
             new TestJsonUtility(),
             new SubmissionRepository(_database),
@@ -128,7 +128,7 @@ public sealed class StoreDataTests : IDisposable
         var folders = new UploadFolders(_root, null);
         var logger = new CapturingLogger<Utilities.StoreData>();
         var store = new Utilities.StoreData(
-            new StoreFields(),
+            new StoreFields(new Formulate.Core.FormFields.FormFieldDefinitionCollection(() => Array.Empty<Formulate.Core.FormFields.IFormFieldDefinition>())),
             new StoreFiles(folders, settings, new CapturingLogger<StoreFiles>()),
             new TestJsonUtility(),
             repository,

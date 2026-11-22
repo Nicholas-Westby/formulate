@@ -4,6 +4,7 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
     using Formulate.Core.FormFields;
     using Formulate.Core.FormFields.Upload;
     using Formulate.Core.Submissions.Requests;
+    using Formulate.Core.Types;
     using Formulate.Extensions.SendEmail.Configuration;
     using Formulate.Extensions.SendEmail.Utilities;
 
@@ -14,7 +15,7 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
     {
         private static readonly Guid UploadKindId = Guid.Parse(UploadFieldDefinition.Constants.KindId);
 
-        public static EmailData Create(FormSubmissionRequest submission, SubmissionPage page, EmailHandlerConfiguration configuration,
+        public static EmailData Create(FormSubmissionRequest submission, FormFieldDefinitionCollection fieldDefinitions, SubmissionPage page, EmailHandlerConfiguration configuration,
             string senderEmail, EmailRecipients recipients)
         {
             // The page comes first, named as Formulate 3 named it, so views read Values.Url and Values.PageName.
@@ -30,6 +31,13 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
                 var name = string.IsNullOrWhiteSpace(field.Alias) ? field.Name : field.Alias;
 
                 if (string.IsNullOrWhiteSpace(name))
+                {
+                    continue;
+                }
+
+                // A field whose definition is not stored (reCAPTCHA) is left out, as the Email handler leaves it out.
+                // A kind that is not installed has no definition to ask, so its values are kept.
+                if (fieldDefinitions.FirstOrDefault(field.KindId)?.IsStored == false)
                 {
                     continue;
                 }

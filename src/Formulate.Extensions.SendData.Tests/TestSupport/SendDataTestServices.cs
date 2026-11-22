@@ -57,6 +57,7 @@ internal sealed class SendDataTestServices : IAsyncDisposable
         var services = new ServiceCollection();
         services.AddLogging(x => x.AddProvider(logs).SetMinimumLevel(LogLevel.Trace));
         services.AddSingleton(TestForms.Json);
+        services.AddSingleton(TestForms.FieldDefinitions);
 
         // The same registrations the composer makes on a site.
         services.AddFormulateSendData();

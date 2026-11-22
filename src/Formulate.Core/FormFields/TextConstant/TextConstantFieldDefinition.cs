@@ -61,6 +61,10 @@
         public override bool IsServerSideOnly => true; 
 
         /// <inheritdoc />
+        /// <remarks>True, as in Formulate 3: the field takes no input from the visitor.</remarks>
+        public override bool IsTransitory => true;
+
+        /// <inheritdoc />
         public override bool SupportsLabel => false;
 
         /// <inheritdoc />

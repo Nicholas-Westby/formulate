@@ -59,7 +59,7 @@ export class RenderRecaptcha extends FieldRendererBase<HTMLDivElement> {
             id: "",
             alias: "recaptchaRequired",
             validationType: "required",
-            configuration: { message: "Please solve the recaptcha." },
+            configuration: { message: "Please solve the reCAPTCHA." },
           },
         ],
         fieldValidators,

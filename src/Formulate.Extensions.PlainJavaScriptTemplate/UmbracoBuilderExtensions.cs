@@ -18,6 +18,10 @@
             umbracoBuilder.MapDefinitions().Add<RadioButtonListFieldMapDefinition>();
             umbracoBuilder.MapDefinitions().Add<ButtonFieldMapDefinition>();
             umbracoBuilder.MapDefinitions().Add<HiddenFieldMapDefinition>();
+            umbracoBuilder.MapDefinitions().Add<CheckboxFieldMapDefinition>();
+            umbracoBuilder.MapDefinitions().Add<DateFieldMapDefinition>();
+            umbracoBuilder.MapDefinitions().Add<ExtendedRadioButtonListFieldMapDefinition>();
+            umbracoBuilder.MapDefinitions().Add<RecaptchaFieldMapDefinition>();
 
             umbracoBuilder.MapDefinitions().Add<DefaultValidationMapDefinition>();
             umbracoBuilder.MapDefinitions().Add<MandatoryValidationMapDefinition>();

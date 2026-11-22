@@ -1,5 +1,7 @@
 using Formulate.Core.FormFields;
+using Formulate.Core.FormFields.Date;
 using Formulate.Core.FormFields.Hidden;
+using Formulate.Core.FormFields.Recaptcha;
 using Formulate.Core.FormFields.Text;
 using Formulate.Core.FormFields.TextArea;
 using Formulate.Core.FormFields.TextConstant;
@@ -28,10 +30,9 @@ internal static class TestForms
 
     public const string UploadKind = UploadFieldDefinition.Constants.KindId;
 
-    /// <summary>
-    /// Formulate 3's Date field.
-    /// </summary>
-    public const string DateKind = "E70CB78CCF52461198B4556382F23119";
+    public const string DateKind = DateFieldDefinition.Constants.KindId;
+
+    public const string RecaptchaKind = RecaptchaFieldDefinition.Constants.KindId;
 
     /// <summary>
     /// The JSON utility the site uses (Newtonsoft.Json with the data contract names).
@@ -48,6 +49,11 @@ internal static class TestForms
         new HiddenFieldDefinition(Json),
         new TextConstantFieldDefinition(Json),
         new UploadFieldDefinition(),
+        new DateFieldDefinition(),
+        new RecaptchaFieldDefinition(
+            Microsoft.Extensions.Options.Options.Create(new Formulate.Core.Configuration.FormulateRecaptchaOptions()),
+            new NoRecaptchaVerifier(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<RecaptchaFieldDefinition>.Instance),
     });
 
     public static PersistedFormField Field(string name, string kindId, string? alias = null, string? configuration = null)
@@ -117,5 +123,16 @@ internal sealed class SubmissionBuilder(PersistedForm form)
     public FormSubmissionRequest Build()
     {
         return new FormSubmissionRequest(form, _pageId, _values, _files) { ExtraContext = _extra };
+    }
+}
+
+/// <summary>
+/// A verifier no test uses: the handlers never verify.
+/// </summary>
+internal sealed class NoRecaptchaVerifier : IRecaptchaVerifier
+{
+    public Task<RecaptchaVerification> VerifyAsync(string secretKey, string token, CancellationToken cancellationToken)
+    {
+        throw new NotSupportedException();
     }
 }

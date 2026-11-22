@@ -61,6 +61,10 @@
         public override bool IsStored => false;
 
         /// <inheritdoc />
+        /// <remarks>True, as in Formulate 3: the field takes no input from the visitor.</remarks>
+        public override bool IsTransitory => true;
+
+        /// <inheritdoc />
         /// <remarks>
         /// This form field does not support validation.
         /// </remarks>

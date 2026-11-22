@@ -20,12 +20,15 @@
         private static IUmbracoBuilder AddFormulateUtilities(this IUmbracoBuilder builder)
         {
             builder.Services.Configure<FormulateSubmissionsOptions>(builder.Config.GetSection(FormulateSubmissionsOptions.SectionName));
+            builder.Services.Configure<FormulateRecaptchaOptions>(builder.Config.GetSection(FormulateRecaptchaOptions.SectionName));
 
             builder.Services.AddSingleton<IGetDataValuesItemsUtility, GetDataValuesItemsUtility>();
             builder.Services.AddSingleton<IJsonUtility, JsonUtility>();
             builder.Services.AddSingleton<IJsonSerializer, NewtonsoftJsonSerializer>();
 
+            builder.Services.AddScoped<IBuildFormSubmissionFields, BuildFormSubmissionFields>();
             builder.Services.AddScoped<IValidateFormSubmissionRequest, ValidateFormSubmissionRequest>();
+            builder.Services.AddScoped<IVerifyFormSubmissionRequest, VerifyFormSubmissionRequest>();
             builder.Services.AddScoped<ISubmitFormSubmissionRequest, SubmitFormSubmissionRequest>();
 
             // One page lookup for the handlers that need the page a form was on (Email, Send Data, Store Data).

@@ -1,7 +1,6 @@
 namespace Formulate.Extensions.SendEmail.Utilities
 {
     using Formulate.Core.Utilities.Submissions;
-    using System.Globalization;
     using System.Net;
     using System.Text.RegularExpressions;
     using Formulate.Core.FormFields;
@@ -22,11 +21,6 @@ namespace Formulate.Extensions.SendEmail.Utilities
     /// </remarks>
     internal sealed class SendEmailContentBuilder
     {
-        /// <summary>
-        /// Formulate 3's Date field. Its values are written as long dates, such as "November 05, 2026".
-        /// </summary>
-        internal static readonly Guid DateKindId = Guid.Parse("E70CB78CCF52461198B4556382F23119");
-
         private const string NewLine = "\r\n";
 
         private const string HtmlNewLine = NewLine + "<br>" + NewLine;
@@ -80,7 +74,9 @@ namespace Formulate.Extensions.SendEmail.Utilities
 
             foreach (var pair in submission.FieldValues ?? new Dictionary<Guid, IStringFormFieldValues>())
             {
-                if (IsIncluded(pair.Key))
+                // A field whose definition is not stored (reCAPTCHA) is left out, even when chosen: it was posted to be
+                // checked, and its value means nothing to the people reading the email.
+                if (IsIncluded(pair.Key) && (fieldsById.TryGetValue(pair.Key, out var posted) == false || IsStored(posted)))
                 {
                     values[pair.Key] = pair.Value?.GetValues().ToArray() ?? Array.Empty<string?>();
                 }
@@ -180,9 +176,10 @@ namespace Formulate.Extensions.SendEmail.Utilities
 
             var texts = values.Select(x => x ?? string.Empty);
 
-            if (field?.KindId == DateKindId)
+            // A field kind that writes its values differently for people (such as Date) says how.
+            if (field is not null && _fieldDefinitions.FirstOrDefault(field.KindId) is IFormFieldValueFormatter formatter)
             {
-                texts = texts.Select(FormatDate);
+                texts = texts.Select(formatter.FormatValue);
             }
 
             return string.Join(", ", texts);
@@ -203,30 +200,12 @@ namespace Formulate.Extensions.SendEmail.Utilities
         }
 
         /// <summary>
-        /// Writes a date as "MMMM dd, yyyy" in the current culture, as Formulate 3 did. A value that is not a
-        /// date is kept.
+        /// Gets a value indicating whether the field's values are kept. A kind that is not installed has no
+        /// definition to ask, so its values are kept.
         /// </summary>
-        /// <remarks>
-        /// The current culture is the submit request's, which ASP.NET Core's request localization takes from
-        /// the query string, a cookie or the Accept-Language header, or else the default request culture. It is
-        /// not the culture of the page the form is on. The value is read without regard to culture: the Date
-        /// field posts "yyyy-MM-dd" (or a JavaScript date) in every language.
-        /// </remarks>
-        private static string FormatDate(string value)
+        private bool IsStored(PersistedFormField field)
         {
-            var text = value.Trim();
-            var culture = CultureInfo.InvariantCulture;
-
-            if (DateTime.TryParseExact(text, "yyyy-MM-dd", culture, DateTimeStyles.None, out var date)
-                || DateTime.TryParse(text, culture, DateTimeStyles.None, out date)
-
-                // A JavaScript date, such as "Sat Nov 21 2026 10:30:00 GMT-0800 (Pacific Standard Time)".
-                || (text.Length >= 24 && DateTime.TryParseExact(text[..24], "ddd MMM dd yyyy HH:mm:ss", culture, DateTimeStyles.None, out date)))
-            {
-                return date.ToString("MMMM dd, yyyy", CultureInfo.CurrentCulture);
-            }
-
-            return value;
+            return _fieldDefinitions.FirstOrDefault(field.KindId)?.IsStored != false;
         }
 
         private static string GetExtraText(FormSubmissionRequest submission, string key)

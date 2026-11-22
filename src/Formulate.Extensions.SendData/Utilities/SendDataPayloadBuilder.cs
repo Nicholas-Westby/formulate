@@ -6,6 +6,7 @@ namespace Formulate.Extensions.SendData.Utilities
     using System.Text.Json;
     using Formulate.Core.FormFields;
     using Formulate.Core.FormFields.TextConstant;
+    using Formulate.Core.Types;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Utilities;
     using Formulate.Core.Utilities.Submissions;
@@ -30,6 +31,8 @@ namespace Formulate.Extensions.SendData.Utilities
 
         private readonly ISubmissionPageResolver _pages;
 
+        private readonly FormFieldDefinitionCollection _fieldDefinitions;
+
         private readonly IJsonUtility _jsonUtility;
 
         private readonly IHttpContextAccessor? _httpContextAccessor;
@@ -39,10 +42,11 @@ namespace Formulate.Extensions.SendData.Utilities
         private readonly ILogger<SendDataPayloadBuilder> _logger;
 
         public SendDataPayloadBuilder(
-            ISubmissionPageResolver pages, IJsonUtility jsonUtility, IOptions<SendDataSettings> settings,
+            ISubmissionPageResolver pages, FormFieldDefinitionCollection fieldDefinitions, IJsonUtility jsonUtility, IOptions<SendDataSettings> settings,
             ILogger<SendDataPayloadBuilder> logger, IHttpContextAccessor? httpContextAccessor = null)
         {
             _pages = pages;
+            _fieldDefinitions = fieldDefinitions;
             _jsonUtility = jsonUtility;
             _settings = settings;
             _logger = logger;
@@ -56,7 +60,9 @@ namespace Formulate.Extensions.SendData.Utilities
         /// </summary>
         /// <remarks>
         /// A field's values are sent as posted, joined with ", " as Formulate 3's field formatting did for a
-        /// checkbox list. An Upload field sends nothing (files are never sent). A mapping whose name is blank
+        /// checkbox list, except that a field kind that formats its values (a Date, as "MMMM dd, yyyy" in the
+        /// current culture, as in Formulate 3) sends them formatted. A reCAPTCHA response token is sent only when
+        /// the mapping names the field. An Upload field sends nothing (files are never sent). A mapping whose name is blank
         /// uses the field's alias, or its name when it has no alias.
         /// </remarks>
         public List<KeyValuePair<string, string>> GetData(FormSubmissionRequest submission, SendDataConfiguration configuration, HandlerContext context)
@@ -84,7 +90,14 @@ namespace Formulate.Extensions.SendData.Utilities
 
                 if (values is not null && values.TryGetValue(field.Id, out var fieldValues) && fieldValues is not null)
                 {
-                    data.Add(new KeyValuePair<string, string>(sendName, string.Join(", ", fieldValues.GetValues().Select(x => x ?? string.Empty))));
+                    var texts = fieldValues.GetValues().Select(x => x ?? string.Empty);
+
+                    if (_fieldDefinitions.FirstOrDefault(field.KindId) is IFormFieldValueFormatter formatter)
+                    {
+                        texts = texts.Select(formatter.FormatValue);
+                    }
+
+                    data.Add(new KeyValuePair<string, string>(sendName, string.Join(", ", texts)));
                 }
             }
 

@@ -1,6 +1,5 @@
-﻿namespace Formulate.Core.Utilities.Submissions
+namespace Formulate.Core.Utilities.Submissions
 {
-    using Formulate.Core.FormFields;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Submissions.Responses;
     using System.Collections.Generic;
@@ -8,35 +7,17 @@
 
     internal sealed class ValidateFormSubmissionRequest : IValidateFormSubmissionRequest
     {
-        private readonly IFormFieldFactory _formFieldFactory;
-
-        public ValidateFormSubmissionRequest(IFormFieldFactory formFieldFactory)
+        public ValidateFormSubmissionRequestOutput Validate(FormSubmissionRequest input, FormSubmissionFields fields)
         {
-            _formFieldFactory = formFieldFactory;
-        }
-
-        public ValidateFormSubmissionRequestOutput Validate(FormSubmissionRequest input)
-        {
-            var form = input.Form;
-            var fieldValues = input.AllValues;
             var errors = new List<ValidationErrorSubmissionResponse>();
 
-            foreach (var field in form.Fields)
+            foreach (var item in fields.Items)
             {
-                var formField = _formFieldFactory.Create(field);
-
-                if (formField is null)
-                {
-                    continue;
-                }
-
-                var hasValues = fieldValues.Any(x => x.Key == field.Id);
-                var values = hasValues == false ? FormFieldValues.Empty : fieldValues.FirstOrDefault(x => x.Key == field.Id).Value;
-                var result = formField.Validate(values);
+                var result = item.Field.Validate(input.For(item.Persisted.Id));
 
                 if (result.ErrorMessages.Any())
                 {
-                    errors.Add(new ValidationErrorSubmissionResponse(field.Name, field.Id, result.ErrorMessages));
+                    errors.Add(new ValidationErrorSubmissionResponse(item.Persisted.Name, item.Persisted.Id, result.ErrorMessages));
                 }
             }
 

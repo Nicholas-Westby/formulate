@@ -21,7 +21,11 @@
 
         private readonly FormFieldDefinitionCollection _formFieldDefinitions;
 
+        private readonly IBuildFormSubmissionFields _buildFormSubmissionFields;
+
         private readonly IValidateFormSubmissionRequest _validateFormSubmissionRequest;
+
+        private readonly IVerifyFormSubmissionRequest _verifyFormSubmissionRequest;
 
         private readonly ISubmitFormSubmissionRequest _submitFormSubmissionRequest;
 
@@ -29,12 +33,14 @@
 
         private readonly ILogger<AttemptSubmitForm> _logger;
 
-        public AttemptSubmitForm(IFormEntityRepository formEntityRepository, FormFieldDefinitionCollection formFieldDefinitions, IValidateFormSubmissionRequest validateFormSubmissionRequest, ISubmitFormSubmissionRequest submitFormSubmissionRequest,
+        public AttemptSubmitForm(IFormEntityRepository formEntityRepository, FormFieldDefinitionCollection formFieldDefinitions, IBuildFormSubmissionFields buildFormSubmissionFields, IValidateFormSubmissionRequest validateFormSubmissionRequest, IVerifyFormSubmissionRequest verifyFormSubmissionRequest, ISubmitFormSubmissionRequest submitFormSubmissionRequest,
             IOptions<FormulateSubmissionsOptions> options, ILogger<AttemptSubmitForm> logger)
         {
             _formEntityRepository = formEntityRepository;
             _formFieldDefinitions = formFieldDefinitions;
+            _buildFormSubmissionFields = buildFormSubmissionFields;
             _validateFormSubmissionRequest = validateFormSubmissionRequest;
+            _verifyFormSubmissionRequest = verifyFormSubmissionRequest;
             _submitFormSubmissionRequest = submitFormSubmissionRequest;
             _options = options;
             _logger = logger;
@@ -117,7 +123,9 @@
             }
 
             var payload = new FormSubmissionRequest(form, input.PageId, formValues, fileValues);
-            var validationResult = _validateFormSubmissionRequest.Validate(payload);
+            // The fields are built once; validation and verification share them.
+            var builtFields = _buildFormSubmissionFields.Build(payload);
+            var validationResult = _validateFormSubmissionRequest.Validate(payload, builtFields);
 
             if (validationResult.Errors.Any())
             {
@@ -125,6 +133,19 @@
                 {
                     IsSuccessful = false,
                     Errors = validationResult.Errors.Select(x => new ValidationErrorSubmissionResponse(x.FieldName, x.FieldId, x.Messages)).ToArray()
+                };
+            }
+
+            // The checks that need the network (reCAPTCHA) come last, and only for a form that is otherwise valid:
+            // a token can be used once, so one is not spent on a form the visitor has to correct.
+            var verificationResult = await _verifyFormSubmissionRequest.VerifyAsync(payload, builtFields, cancellationToken);
+
+            if (verificationResult.Errors.Any())
+            {
+                return new AttemptSubmitFormOutput()
+                {
+                    IsSuccessful = false,
+                    Errors = verificationResult.Errors.Select(x => new ValidationErrorSubmissionResponse(x.FieldName, x.FieldId, x.Messages)).ToArray()
                 };
             }
 
@@ -204,7 +225,9 @@
         /// </summary>
         /// <remarks>
         /// A field is left out when its definition is server side only (such as Text Constant, whose value comes
-        /// from configuration), hidden, or not stored (such as Header and Rich Text). The Hidden field kind is
+        /// from configuration), hidden, or transitory, as in Formulate 3 (Header,
+        /// Rich Text, Text Constant and Button take no input). Whether a field is stored does not matter here: reCAPTCHA
+        /// is not stored, but its response token is posted and checked. The Hidden field kind is
         /// not "hidden" in this sense: pages fill it from the query string, so it keeps accepting values.
         /// A field whose kind is not installed has no definition to ask, so it is left out too.
         /// </remarks>
@@ -216,7 +239,7 @@
             {
                 var definition = _formFieldDefinitions.FirstOrDefault(x => x.KindId == field.KindId);
 
-                if (definition is null || definition.IsServerSideOnly || definition.IsHidden || definition.IsStored == false)
+                if (definition is null || definition.IsServerSideOnly || definition.IsHidden || definition.IsTransitory)
                 {
                     continue;
                 }

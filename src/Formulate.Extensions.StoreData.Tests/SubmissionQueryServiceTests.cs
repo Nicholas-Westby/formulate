@@ -53,7 +53,7 @@ public sealed class SubmissionQueryServiceTests : IDisposable
     {
         var settings = Options.Create(new StoreDataSettings());
         IStoreData store = new Utilities.StoreData(
-            new StoreFields(),
+            new StoreFields(new Formulate.Core.FormFields.FormFieldDefinitionCollection(() => Array.Empty<Formulate.Core.FormFields.IFormFieldDefinition>())),
             new StoreFiles(_folders, settings, new CapturingLogger<StoreFiles>()),
             new TestJsonUtility(),
             _repository,

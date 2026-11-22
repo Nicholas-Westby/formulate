@@ -136,12 +136,25 @@ public sealed class EmailDataTests
     }
 
     [Fact]
+    public void A_field_whose_definition_is_not_stored_is_left_out_of_the_values()
+    {
+        var name = Field("Name", TextKind, alias: "name");
+        var robot = Field("Robot check", RecaptchaKind, alias: "robot");
+        var submission = Submit(Form(name, robot)).Value(name, "Ada").Value(robot, "03AGdBq-TOKEN").Build();
+
+        var expando = (Formulate.Extensions.SendEmail.DesignedEmail.SafeExpandoObject)Create(submission).Values;
+
+        Assert.DoesNotContain("robot", expando.GetRawValues().Keys, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("name", expando.GetRawValues().Keys, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Sender_recipients_subject_and_message_come_from_the_handler()
     {
         var configuration = new DesignedEmailConfiguration { Subject = "Subject", Message = "Message" };
         var recipients = EmailRecipients.For("to", new[] { new MailAddress("zed@site.test"), new MailAddress("amy@site.test") });
 
-        var data = EmailDataFactory.Create(Submit(Form()).Build(), SubmissionPage.None, configuration, "forms@site.test", recipients);
+        var data = EmailDataFactory.Create(Submit(Form()).Build(), FieldDefinitions, SubmissionPage.None, configuration, "forms@site.test", recipients);
 
         Assert.Equal("forms@site.test", data.SenderEmail);
         Assert.Equal(new[] { "amy@site.test", "zed@site.test" }, data.RecipientEmails);
@@ -183,7 +196,7 @@ public sealed class EmailDataTests
 
     private static EmailData Create(FormSubmissionRequest submission, SubmissionPage? page = null)
     {
-        return EmailDataFactory.Create(submission, page ?? SubmissionPage.None, new DesignedEmailConfiguration(), "forms@site.test",
+        return EmailDataFactory.Create(submission, FieldDefinitions, page ?? SubmissionPage.None, new DesignedEmailConfiguration(), "forms@site.test",
             EmailRecipients.For("to", new[] { new MailAddress("team@site.test") }));
     }
 }

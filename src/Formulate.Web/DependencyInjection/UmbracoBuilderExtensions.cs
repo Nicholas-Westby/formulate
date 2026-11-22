@@ -17,6 +17,8 @@
             umbracoBuilder.Services.AddSingleton<IRepositoryUtilityFactory, WebHostRepositoryUtilityFactory>();
             umbracoBuilder.Services.AddSingleton<IPersistedEntityCache, FileSystemPersistedEntityCache>();
 
+            umbracoBuilder.Services.AddFormulateRecaptcha();
+
             umbracoBuilder.Services.AddSingleton<IBuildFormLayoutRenderModel, BuildFormLayoutRenderModel>();
             umbracoBuilder.Services.AddScoped<IAttemptSubmitForm, AttemptSubmitForm>();
 

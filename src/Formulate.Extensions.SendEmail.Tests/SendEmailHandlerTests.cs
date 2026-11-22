@@ -480,6 +480,27 @@ public sealed class SendEmailHandlerTests
         Assert.Contains("Start date: novembre 05, 2026", body);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task The_recaptcha_token_is_left_out_of_the_email(bool chosen)
+    {
+        var name = Field("Name", TextKind);
+        var robot = Field("Robot check", RecaptchaKind);
+        var form = Form(name, robot);
+        var submission = Submit(form).Value(name, "Ada").Value(robot, "03AGdBq-TOKEN").Build();
+        await using var services = EmailTestServices.Create();
+
+        // Even a site that picks the field by id gets no token: Formulate 3 never stored or sent it.
+        var fieldsToInclude = chosen ? new[] { new { id = name.Id.ToString("N") }, new { id = robot.Id.ToString("N") } } : Array.Empty<object>().Select(x => new { id = string.Empty }).ToArray();
+        await services.SendEmailAsync(new { recipients = new[] { new { email = "team@site.test" } }, subject = "Hello", appendFields = true, fieldsToInclude }, submission);
+
+        var body = Assert.Single(services.Sent).Message.Body!;
+        Assert.Contains("Name: Ada", body);
+        Assert.DoesNotContain("TOKEN", body);
+        Assert.DoesNotContain("Robot check", body);
+    }
+
     /// <summary>
     /// Sends the submission with the given current culture, as request localization sets it for the submit request.
     /// </summary>

@@ -2,6 +2,7 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
 {
     using Formulate.Core.Utilities.Submissions;
     using System.Net;
+    using Formulate.Core.FormFields;
     using Formulate.Core.FormHandlers;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Extensions.SendEmail.Utilities;
@@ -29,16 +30,19 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
 
         private readonly ISubmissionPageResolver _pages;
 
+        private readonly FormFieldDefinitionCollection _fieldDefinitions;
+
         private readonly RazorEmailViewRenderer _renderer;
 
         private readonly ILogger<DesignedEmailWorker> _logger;
 
         public DesignedEmailWorker(EmailRecipientResolver recipients, EmailDispatcher dispatcher, ISubmissionPageResolver pages,
-            RazorEmailViewRenderer renderer, ILogger<DesignedEmailWorker> logger)
+            FormFieldDefinitionCollection fieldDefinitions, RazorEmailViewRenderer renderer, ILogger<DesignedEmailWorker> logger)
         {
             _recipients = recipients;
             _dispatcher = dispatcher;
             _pages = pages;
+            _fieldDefinitions = fieldDefinitions;
             _renderer = renderer;
             _logger = logger;
         }
@@ -67,7 +71,7 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
                 return;
             }
 
-            var data = EmailDataFactory.Create(submission, _pages.Resolve(submission.PageId), configuration, sender, recipients);
+            var data = EmailDataFactory.Create(submission, _fieldDefinitions, _pages.Resolve(submission.PageId), configuration, sender, recipients);
 
             // The subject comes from its view, or else from the handler.
             var subject = configuration.Subject;

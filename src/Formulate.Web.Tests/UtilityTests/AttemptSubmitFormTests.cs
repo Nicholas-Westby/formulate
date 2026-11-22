@@ -1,13 +1,16 @@
 using Formulate.Core.Configuration;
 using Formulate.Core.FormFields;
+using Formulate.Core.FormFields.Button;
 using Formulate.Core.FormFields.Header;
 using Formulate.Core.FormFields.Hidden;
+using Formulate.Core.FormFields.Recaptcha;
 using Formulate.Core.FormFields.RichText;
 using Formulate.Core.FormFields.Text;
 using Formulate.Core.FormFields.TextConstant;
 using Formulate.Core.FormFields.Upload;
 using Formulate.Core.Forms;
 using Formulate.Core.Submissions.Requests;
+using Formulate.Core.Submissions.Responses;
 using Formulate.Core.Utilities;
 using Formulate.Core.Utilities.Internal;
 using Formulate.Core.Utilities.Submissions;
@@ -242,6 +245,74 @@ namespace Formulate.Web.Tests.UtilityTests
             Assert.Empty(output.Errors);
         }
 
+        [Fact]
+        public async Task Values_for_button_fields_are_ignored()
+        {
+            var site = new Site();
+            var button = site.Field(ButtonFieldDefinition.Constants.KindId);
+            var text = site.Field(TextFieldDefinition.Constants.KindId);
+
+            await site.Submit((button, "Submit"), (text, "t"));
+
+            Assert.Equal(new[] { text.Id }, site.Submitted!.FieldValues.Keys);
+        }
+
+        [Fact]
+        public async Task The_recaptcha_token_is_accepted_although_the_field_is_not_stored()
+        {
+            var site = new Site();
+            var recaptcha = site.Field(RecaptchaFieldDefinition.Constants.KindId);
+
+            await site.Submit((recaptcha, "the-token"));
+
+            Assert.Equal("the-token", site.Submitted!.FieldValues[recaptcha.Id].GetValues().ToString());
+        }
+
+        [Fact]
+        public async Task Network_checks_run_after_every_field_is_valid_and_before_the_handlers()
+        {
+            var site = new Site();
+            var text = site.Field(TextFieldDefinition.Constants.KindId);
+
+            var output = await site.Submit((text, "t"));
+
+            Assert.True(output.IsSuccessful);
+            site.Verifier.Verify(x => x.VerifyAsync(It.IsAny<FormSubmissionRequest>(), It.IsAny<FormSubmissionFields>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Network_checks_do_not_run_when_another_field_is_invalid()
+        {
+            // Tokens are single use, so one is not spent on a form that will be sent back to the visitor.
+            var site = new Site();
+            var text = site.Field(TextFieldDefinition.Constants.KindId, "Name", mandatoryMessage: "Name is required.");
+
+            var output = await site.Submit((text, ""));
+
+            Assert.False(output.IsSuccessful);
+            Assert.Equal("Name is required.", Assert.Single(output.Errors!).Messages.Single());
+            site.Verifier.Verify(x => x.VerifyAsync(It.IsAny<FormSubmissionRequest>(), It.IsAny<FormSubmissionFields>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task A_failed_network_check_returns_its_errors_and_runs_no_handlers()
+        {
+            var site = new Site();
+            var recaptcha = site.Field(RecaptchaFieldDefinition.Constants.KindId, "Robot check");
+            site.VerifyOutput = new ValidateFormSubmissionRequestOutput
+            {
+                Errors = new[] { new ValidationErrorSubmissionResponse("Robot check", recaptcha.Id, "The reCAPTCHA failed.") }
+            };
+
+            var output = await site.Submit((recaptcha, "the-token"));
+
+            Assert.False(output.IsSuccessful);
+            var error = Assert.Single(output.Errors!);
+            Assert.Equal(recaptcha.Id, error.FieldId);
+            Assert.Equal("The reCAPTCHA failed.", error.Messages.Single());
+            Assert.Null(site.Submitted);
+        }
+
         private sealed class Site
         {
             private readonly PersistedForm _form = new PersistedForm { Id = Guid.NewGuid(), Fields = Array.Empty<PersistedFormField>() };
@@ -250,6 +321,10 @@ namespace Formulate.Web.Tests.UtilityTests
 
             public Site()
             {
+                Verifier
+                    .Setup(x => x.VerifyAsync(It.IsAny<FormSubmissionRequest>(), It.IsAny<FormSubmissionFields>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(() => VerifyOutput);
+
                 _submitter
                     .Setup(x => x.SubmitAsync(It.IsAny<FormSubmissionRequest>(), It.IsAny<CancellationToken>()))
                     .Callback<FormSubmissionRequest, CancellationToken>((request, _) => Submitted = request)
@@ -257,6 +332,11 @@ namespace Formulate.Web.Tests.UtilityTests
             }
 
             public FormSubmissionRequest? Submitted { get; private set; }
+
+            /// <summary>The network checks that run once every field is valid.</summary>
+            public Mock<IVerifyFormSubmissionRequest> Verifier { get; } = new Mock<IVerifyFormSubmissionRequest>();
+
+            public ValidateFormSubmissionRequestOutput VerifyOutput { get; set; } = new ValidateFormSubmissionRequestOutput();
 
             public SubmitFormSubmissionResult Result { get; set; } = new SubmitFormSubmissionResult { IsSuccessful = true };
 
@@ -317,9 +397,11 @@ namespace Formulate.Web.Tests.UtilityTests
                     new TextConstantFieldDefinition(json),
                     new HeaderFieldDefinition(json),
                     new RichTextFieldDefinition(json),
-                    new UploadFieldDefinition()
+                    new UploadFieldDefinition(),
+                    new ButtonFieldDefinition(json),
+                    new RecaptchaFieldDefinition(Options.Create(new FormulateRecaptchaOptions()), Mock.Of<IRecaptchaVerifier>(), NullLogger<RecaptchaFieldDefinition>.Instance)
                 });
-                var submit = new AttemptSubmitForm(forms.Object, definitions, Validator(definitions), _submitter.Object,
+                var submit = new AttemptSubmitForm(forms.Object, definitions, BuildFields(definitions), Validator(definitions), Verifier.Object, _submitter.Object,
                     Options.Create(Settings), NullLogger<AttemptSubmitForm>.Instance);
 
                 var form = new FormCollection((values ?? Array.Empty<(PersistedFormField, string)>())
@@ -331,27 +413,36 @@ namespace Formulate.Web.Tests.UtilityTests
                     new AttemptSubmitFormInput(_form.Id, 1, form, fileCollection), CancellationToken.None);
             }
 
-            private IValidateFormSubmissionRequest Validator(FormFieldDefinitionCollection definitions)
+            private FormFieldFactory Fields(FormFieldDefinitionCollection definitions)
             {
-                if (_validations.Count == 0)
-                {
-                    var accepting = new Mock<IValidateFormSubmissionRequest>();
-                    accepting
-                        .Setup(x => x.Validate(It.IsAny<FormSubmissionRequest>()))
-                        .Returns(new ValidateFormSubmissionRequestOutput());
-
-                    return accepting.Object;
-                }
-
                 var json = new JsonUtility(new NewtonsoftJsonSerializer());
                 var validationFactory = new ValidationFactory(
                     new ValidationDefinitionCollection(() => new IValidationDefinition[] { new MandatoryValidationDefinition(json) }),
                     NullLogger<ValidationFactory>.Instance);
                 var validations = new Mock<IValidationEntityRepository>();
                 validations.Setup(x => x.Get(It.IsAny<Guid>())).Returns((Guid id) => _validations.GetValueOrDefault(id)!);
-                var fields = new FormFieldFactory(definitions, validationFactory, validations.Object, NullLogger<FormFieldFactory>.Instance);
 
-                return new ValidateFormSubmissionRequest(fields);
+                return new FormFieldFactory(definitions, validationFactory, validations.Object, NullLogger<FormFieldFactory>.Instance);
+            }
+
+            private IBuildFormSubmissionFields BuildFields(FormFieldDefinitionCollection definitions)
+            {
+                return new BuildFormSubmissionFields(Fields(definitions));
+            }
+
+            private IValidateFormSubmissionRequest Validator(FormFieldDefinitionCollection definitions)
+            {
+                if (_validations.Count == 0)
+                {
+                    var accepting = new Mock<IValidateFormSubmissionRequest>();
+                    accepting
+                        .Setup(x => x.Validate(It.IsAny<FormSubmissionRequest>(), It.IsAny<FormSubmissionFields>()))
+                        .Returns(new ValidateFormSubmissionRequestOutput());
+
+                    return accepting.Object;
+                }
+
+                return new ValidateFormSubmissionRequest();
             }
         }
 

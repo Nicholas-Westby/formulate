@@ -16,7 +16,11 @@ using Formulate.Core.DataValues.PairList;
 using Formulate.Core.DataValues.UsStates;
 using Formulate.Core.FormFields;
 using Formulate.Core.FormFields.Button;
+using Formulate.Core.FormFields.Checkbox;
 using Formulate.Core.FormFields.CheckboxList;
+using Formulate.Core.FormFields.Date;
+using Formulate.Core.FormFields.ExtendedRadioButtonList;
+using Formulate.Core.FormFields.Recaptcha;
 using Formulate.Core.FormFields.DropDown;
 using Formulate.Core.FormFields.Header;
 using Formulate.Core.FormFields.Hidden;
@@ -66,7 +70,11 @@ public class BuiltInKindDefaultsTests
             return new FormFieldDefinitionCollection(() => new IFormFieldDefinition[]
             {
                 new ButtonFieldDefinition(JsonUtility),
+                new CheckboxFieldDefinition(),
                 new CheckboxListFieldDefinition(JsonUtility, items),
+                new DateFieldDefinition(),
+                new ExtendedRadioButtonListFieldDefinition(JsonUtility, items),
+                new RecaptchaFieldDefinition(Options.Create(new FormulateRecaptchaOptions()), Mock.Of<IRecaptchaVerifier>(), NullLogger<RecaptchaFieldDefinition>.Instance),
                 new DropDownFieldDefinition(JsonUtility, items),
                 new HeaderFieldDefinition(JsonUtility),
                 new HiddenFieldDefinition(JsonUtility),
@@ -148,7 +156,7 @@ public class BuiltInKindDefaultsTests
             _tree.Repositories.DefaultTemplateId,
             new ApiWriteLock());
 
-        Assert.Equal(11, kinds.Count);
+        Assert.Equal(15, kinds.Count);
 
         foreach (var kind in kinds)
         {
@@ -163,6 +171,52 @@ public class BuiltInKindDefaultsTests
             };
 
             AssertCreated(service.Create(request), kind.Name);
+        }
+    }
+
+    [Theory]
+    [InlineData("99C1A656C7A644ACA787C18593327310")]
+    [InlineData("E70CB78CCF52461198B4556382F23119")]
+    [InlineData("8B277AF31B1F469897D23900C6621C7D")]
+    [InlineData("80C0543D419E4DDFAB052C2D052B97A2")]
+    public void A_migrated_form_with_a_formulate_3_field_kind_saves_with_any_stored_configuration(string kindId)
+    {
+        var service = new FormApiService(
+            _tree.Repositories.Forms,
+            _tree.Repositories.Layouts,
+            _tree.Tree,
+            _tree.Repositories.FormDefinitions,
+            Fields,
+            new FormHandlerDefinitionCollection(() => Array.Empty<IFormHandlerDefinition>()),
+            ConfigurationJson,
+            new DefaultShortStringHelper(new DefaultShortStringHelperConfig()),
+            _tree.Repositories.DefaultTemplateId,
+            new ApiWriteLock());
+
+        // Null and {} are what the editors send for a new field; the others are what Formulate 3 stored.
+        var configurations = new System.Text.Json.JsonElement?[]
+        {
+            null,
+            System.Text.Json.JsonDocument.Parse("{}").RootElement.Clone(),
+            System.Text.Json.JsonDocument.Parse("{\"dataValue\":\"0f8fad5bd9cb469fa16570867728950e\"}").RootElement.Clone(),
+            System.Text.Json.JsonDocument.Parse("{\"dataValue\":\"0f8fad5b-d9cb-469f-a165-70867728950e\",\"orientation\":\"horizontal\"}").RootElement.Clone(),
+            System.Text.Json.JsonDocument.Parse("{\"dataValue\":\"\"}").RootElement.Clone(),
+            System.Text.Json.JsonDocument.Parse("{\"siteKey\":\"abc\",\"unknown\":[1,2]}").RootElement.Clone(),
+        };
+
+        foreach (var configuration in configurations)
+        {
+            var field = new FormFieldModel { Id = Guid.NewGuid(), KindId = Guid.Parse(kindId), Name = "Field", Configuration = configuration };
+            var request = new CreateFormRequestModel
+            {
+                Id = Guid.NewGuid(),
+                KindId = new DefaultFormLayoutDefinition().KindId,
+                Name = "Migrated",
+                Fields = new[] { field },
+                Handlers = Array.Empty<FormHandlerModel>(),
+            };
+
+            AssertCreated(service.Create(request), configuration?.GetRawText() ?? "null");
         }
     }
 

@@ -58,6 +58,9 @@
         public override Guid KindId => Guid.Parse(Constants.KindId);
 
         /// <inheritdoc />
+        public override bool IsTransitory => true;
+
+        /// <inheritdoc />
         public override string Icon => Constants.Icon;
 
         /// <inheritdoc />

@@ -129,13 +129,13 @@
             RawConfiguration = settings.Data;
         }
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// A field that has no validations is still checked by <see cref="ValidateStrings"/> and
+        /// <see cref="ValidateFiles"/>, so a field kind can have checks of its own (such as Date's).
+        /// </remarks>
         public virtual FormFieldValidationResult Validate(IFormFieldValues values)
         {
-            if (Validations.Any() == false)
-            {
-                return new FormFieldValidationResult();
-            }
-
             if (values is IStringFormFieldValues strings)
             {
                 return ValidateStrings(strings);
