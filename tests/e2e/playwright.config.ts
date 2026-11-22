@@ -76,6 +76,8 @@ export default defineConfig({
 			// Leave no MSBuild or compiler server running after the build that "dotnet run" does.
 			MSBUILDDISABLENODEREUSE: '1',
 			UseSharedCompilation: 'false',
+			// Send no .NET telemetry from the build and the site.
+			DOTNET_CLI_TELEMETRY_OPTOUT: '1',
 		},
 	},
 });

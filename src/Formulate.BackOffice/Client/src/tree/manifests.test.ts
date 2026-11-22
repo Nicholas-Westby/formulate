@@ -79,6 +79,14 @@ describe('Formulate tree manifests', () => {
 		expect(TREES.map((tree) => lists[tree.workspaces]?.includes(tree.folderWorkspace))).toStrictEqual([true, true, true]);
 	});
 
+	it("put the validation and data values workspaces on their own tree's list only", () => {
+		const lists = constants as unknown as Record<string, Array<string> | undefined>;
+		const listsWith = (alias: string) => TREES.filter((tree) => lists[tree.workspaces]?.includes(alias)).map((tree) => tree.alias);
+
+		expect(listsWith('Formulate.Workspace.Validation')).toStrictEqual(['Formulate.Tree.Validations']);
+		expect(listsWith('Formulate.Workspace.DataValues')).toStrictEqual(['Formulate.Tree.DataValues']);
+	});
+
 	it("list what is in each tree's root and folders in their workspaces, as Umbraco's trees do", () => {
 		const views = (manifests as Array<Manifest>).filter((manifest) => manifest.type === 'workspaceView');
 

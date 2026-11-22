@@ -57,3 +57,21 @@ export async function runEntityAction(item: Locator, label: string) {
 		.getByRole('button', { name: new RegExp(`^${label}(…|\\.\\.\\.)?$`) })
 		.click();
 }
+
+/** The direct children of a tree item, by name. */
+export async function childNames(item: Locator): Promise<Array<string | null>> {
+	const names: Array<string | null> = [];
+	for (const child of await item.locator(':scope > umb-tree-item').all()) {
+		names.push(await child.locator('uui-menu-item').first().getAttribute('label'));
+	}
+
+	return names;
+}
+
+/** Confirms a delete in Umbraco's confirm dialog, after checking what it says. */
+export async function confirmDelete(page: Page, text: string) {
+	const dialog = page.locator('umb-confirm-modal');
+	await expect(dialog).toContainText(text);
+	await dialog.locator('uui-button#confirm').click();
+	await expect(dialog).toHaveCount(0);
+}

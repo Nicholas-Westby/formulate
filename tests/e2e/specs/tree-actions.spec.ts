@@ -1,20 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { expect, test } from '../fixtures/login.ts';
+import { createFolder, emptyTree } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
-import { TREES, expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
+import { TREES, childNames, confirmDelete, expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
 
 const SCREENSHOTS = join(import.meta.dirname, '..', 'screenshots');
 
 interface CreateOption {
 	entityType: string;
 	kindId?: string | null;
-	name: string;
-}
-
-interface TreeItem {
-	id: string;
 	name: string;
 }
 
@@ -57,28 +53,6 @@ async function createLayout(page: Page, formId: string, name: string): Promise<s
 	return id;
 }
 
-/** Creates a folder through the API, at the top of a tree or in another folder. */
-async function createFolder(page: Page, treeAlias: string, name: string, parentId?: string): Promise<string> {
-	const id = randomUUID();
-	await callManagementApi(page, 'POST', '/formulate/folder', { id, treeAlias, name, ...(parentId ? { parentId } : {}) });
-
-	return id;
-}
-
-/** Deletes whatever the tests left at the top of a tree, through the API. */
-async function emptyTree(page: Page, treeAlias: string) {
-	const { items } = await callManagementApi<{ items: Array<TreeItem & { entityType: string }> }>(
-		page,
-		'GET',
-		`/formulate/tree/${treeAlias}/root?skip=0&take=100`,
-	);
-
-	for (const item of items) {
-		const type = item.entityType.endsWith('-folder') ? 'folder' : item.entityType.replace('formulate-', '');
-		await callManagementApi(page, 'DELETE', `/formulate/${type}/${item.id}`);
-	}
-}
-
 /** Picks the Folder option in the create dialog and names the new folder in Umbraco's folder dialog. */
 async function createFolderInDialog(page: Page, name: string) {
 	await page.locator('formulate-create-options-modal').locator('umb-ref-item[name="Folder..."]').click();
@@ -96,24 +70,6 @@ async function renameFolderInDialog(page: Page, currentName: string, name: strin
 	await input.fill(name);
 	await dialog.locator('uui-button#confirm').click();
 	await expect(dialog).toHaveCount(0);
-}
-
-/** Confirms a delete in Umbraco's confirm dialog, after checking what it says. */
-async function confirmDelete(page: Page, text: string) {
-	const dialog = page.locator('umb-confirm-modal');
-	await expect(dialog).toContainText(text);
-	await dialog.locator('uui-button#confirm').click();
-	await expect(dialog).toHaveCount(0);
-}
-
-/** The direct children of a tree item, by name. */
-async function childNames(item: Locator): Promise<Array<string | null>> {
-	const names: Array<string | null> = [];
-	for (const child of await item.locator(':scope > umb-tree-item').all()) {
-		names.push(await child.locator('uui-menu-item').first().getAttribute('label'));
-	}
-
-	return names;
 }
 
 test.afterEach(async ({ page }) => {

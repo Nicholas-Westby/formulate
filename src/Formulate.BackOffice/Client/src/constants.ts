@@ -59,15 +59,20 @@ export const FORMULATE_VALIDATIONS_ROOT_WORKSPACE_ALIAS = 'Formulate.Workspace.V
 export const FORMULATE_FORMS_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.Forms';
 export const FORMULATE_DATA_VALUES_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.DataValues';
 export const FORMULATE_VALIDATIONS_FOLDER_WORKSPACE_ALIAS = 'Formulate.Workspace.Folder.Validations';
+// Picking a validation or data values item opens it in its workspace, which edits it with its kind's editor.
+export const FORMULATE_VALIDATION_WORKSPACE_ALIAS = 'Formulate.Workspace.Validation';
+export const FORMULATE_DATA_VALUES_WORKSPACE_ALIAS = 'Formulate.Workspace.DataValues';
 
 // The workspaces of each tree's items. Each one shows the tree's breadcrumb in its footer, and opening one
 // expands the tree down to its item. A new workspace for a tree's items goes on that tree's list.
 export const FORMULATE_FORMS_TREE_WORKSPACE_ALIASES: ReadonlyArray<string> = [FORMULATE_FORMS_FOLDER_WORKSPACE_ALIAS];
 export const FORMULATE_DATA_VALUES_TREE_WORKSPACE_ALIASES: ReadonlyArray<string> = [
 	FORMULATE_DATA_VALUES_FOLDER_WORKSPACE_ALIAS,
+	FORMULATE_DATA_VALUES_WORKSPACE_ALIAS,
 ];
 export const FORMULATE_VALIDATIONS_TREE_WORKSPACE_ALIASES: ReadonlyArray<string> = [
 	FORMULATE_VALIDATIONS_FOLDER_WORKSPACE_ALIAS,
+	FORMULATE_VALIDATION_WORKSPACE_ALIAS,
 ];
 
 // Items of every entity type, as pickers and entity actions show them.

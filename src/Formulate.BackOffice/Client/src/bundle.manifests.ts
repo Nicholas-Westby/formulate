@@ -1,6 +1,8 @@
 import { manifests as item } from './core/item/manifests.js';
 import { manifests as core } from './core/manifests.js';
 import { manifests as dataValues } from './data-values/repository/manifests.js';
+import { manifests as dataValuesWorkspace } from './data-values/workspace/manifests.js';
+import { manifests as editors } from './editors/manifests.js';
 import { manifests as entityActions } from './entity-actions/manifests.js';
 import { manifests as entrypoint } from './entrypoint/manifests.js';
 import { manifests as folders } from './folders/manifests.js';
@@ -10,6 +12,7 @@ import { manifests as localization } from './localization/manifests.js';
 import { manifests as section } from './section/manifests.js';
 import { manifests as tree } from './tree/manifests.js';
 import { manifests as validations } from './validations/repository/manifests.js';
+import { manifests as validationWorkspace } from './validations/workspace/manifests.js';
 
 // Umbraco loads this bundle through public/umbraco-package.json and registers every manifest in it.
 export const manifests: Array<UmbExtensionManifest> = [
@@ -23,6 +26,9 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...forms,
 	...layouts,
 	...validations,
+	...validationWorkspace,
 	...dataValues,
+	...dataValuesWorkspace,
+	...editors,
 	...entityActions,
 ];
