@@ -37,13 +37,13 @@
             public const string Icon = "icon-formulate-hidden";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-hidden-field";
+            public const string EditorAlias = "formulate-hidden-field";
         }
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Name => Constants.Name;

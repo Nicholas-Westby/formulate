@@ -21,7 +21,7 @@
         public abstract string Icon { get; }
 
         /// <inheritdoc />
-        public abstract string Directive { get; }
+        public abstract string EditorAlias { get; }
 
         /// <inheritdoc />
         /// <remarks>Defaults to false.</remarks>

@@ -29,9 +29,9 @@ namespace Formulate.Core.Validations.Regex
             public const string Name = "Regular Expression";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-regex-validation";
+            public const string EditorAlias = "formulate-regex-validation";
         }
 
         public RegexValidationDefinition(IJsonUtility jsonUtility)
@@ -46,7 +46,7 @@ namespace Formulate.Core.Validations.Regex
         public string Name => Constants.Name;
 
         /// <inheritdoc />
-        public string Directive => Constants.Directive;
+        public string EditorAlias => Constants.EditorAlias;
         
         /// <inheritdoc />
         public bool IsLegacy => false;

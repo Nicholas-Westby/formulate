@@ -37,9 +37,9 @@
             public const string Name = "Radio Button List";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-radio-button-list-field";
+            public const string EditorAlias = "formulate-radio-button-list-field";
 
             /// <summary>
             /// The icon.
@@ -57,7 +57,7 @@
         public override string Icon => Constants.Icon;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Category => FormFieldConstants.Categories.Inputs;

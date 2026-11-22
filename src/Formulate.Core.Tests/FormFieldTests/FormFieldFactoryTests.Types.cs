@@ -35,7 +35,7 @@
 
             public override string Icon => "icon-test-field";
 
-            public override string Directive => "formulate-test-field";
+            public override string EditorAlias => "formulate-test-field";
 
             public override string Category => "Test";
 

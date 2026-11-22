@@ -41,16 +41,16 @@
             public const string Icon = "icon-formulate-send-data";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-send-data-handler";
+            public const string EditorAlias = "formulate-send-data-handler";
         }
 
         /// <inheritdoc />
         public override string Category => FormHandlerConstants.Categories.Notify;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Name => Constants.Name;

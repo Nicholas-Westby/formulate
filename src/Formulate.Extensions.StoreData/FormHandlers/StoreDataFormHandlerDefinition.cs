@@ -37,16 +37,16 @@ namespace Formulate.Extensions.StoreData.FormHandlers
             public const string Icon = "icon-formulate-store-data";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-store-data-handler";
+            public const string EditorAlias = "formulate-store-data-handler";
         }
 
         /// <inheritdoc />
         public override string Category => FormHandlerConstants.Categories.Persistence;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Name => Constants.Name;

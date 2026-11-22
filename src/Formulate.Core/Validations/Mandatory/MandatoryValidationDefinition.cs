@@ -26,9 +26,9 @@ namespace Formulate.Core.Validations.Mandatory
             public const string Name = "Mandatory";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-mandatory-validation";
+            public const string EditorAlias = "formulate-mandatory-validation";
         }
 
         public MandatoryValidationDefinition(IJsonUtility jsonUtility)
@@ -43,7 +43,7 @@ namespace Formulate.Core.Validations.Mandatory
         public string Name => Constants.Name;
 
         /// <inheritdoc />
-        public string Directive => Constants.Directive;
+        public string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public bool IsLegacy => false;

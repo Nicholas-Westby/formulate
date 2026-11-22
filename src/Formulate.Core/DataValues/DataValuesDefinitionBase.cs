@@ -15,7 +15,7 @@
         public abstract string Name { get; }
 
         /// <inheritdoc />
-        public abstract string Directive { get; }
+        public abstract string EditorAlias { get; }
 
         /// <inheritdoc />
         public abstract string Icon { get; }

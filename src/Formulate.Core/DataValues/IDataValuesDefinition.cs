@@ -6,7 +6,7 @@
     /// <summary>
     /// A contract for implementing a data values definition.
     /// </summary>
-    public interface IDataValuesDefinition : IDefinition, IHaveDirective
+    public interface IDataValuesDefinition : IDefinition, IHaveEditor
     {
         /// <summary>
         /// Gets the icon.

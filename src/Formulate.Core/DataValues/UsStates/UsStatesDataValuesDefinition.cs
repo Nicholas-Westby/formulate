@@ -25,9 +25,9 @@
             public const string Name = "List of States and Territories in the United States";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-dynamic-data-values";
+            public const string EditorAlias = "formulate-dynamic-data-values";
 
             /// <summary>
             /// The icon.
@@ -42,7 +42,7 @@
         public override string Name => Constants.Name;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Icon => Constants.Icon;

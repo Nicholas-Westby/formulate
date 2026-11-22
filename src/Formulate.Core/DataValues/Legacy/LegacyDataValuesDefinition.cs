@@ -20,9 +20,9 @@
             public const string Name = "Legacy";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-legacy-data-value";
+            public const string EditorAlias = "formulate-legacy-data-value";
 
             /// <summary>
             /// The icon.
@@ -40,7 +40,7 @@
         public override string Name => Constants.Name;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Icon => Constants.Icon;

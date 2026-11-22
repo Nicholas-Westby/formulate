@@ -75,9 +75,9 @@
         public string Icon { get; set; }
 
         /// <summary>
-        /// Gets or sets the AngularJS directive for this form field.
+        /// Gets or sets the back office editor alias for this form field.
         /// </summary>
-        public string Directive { get; set; }
+        public string EditorAlias { get; set; }
 
         /// <summary>
         /// The configuration passed to the back office.

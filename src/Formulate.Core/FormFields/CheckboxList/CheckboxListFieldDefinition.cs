@@ -37,9 +37,9 @@
             public const string Name = "Checkbox List";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-checkbox-list-field";
+            public const string EditorAlias = "formulate-checkbox-list-field";
 
             /// <summary>
             /// The icon.
@@ -57,7 +57,7 @@
         public override string Icon => Constants.Icon;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Category => FormFieldConstants.Categories.Inputs;

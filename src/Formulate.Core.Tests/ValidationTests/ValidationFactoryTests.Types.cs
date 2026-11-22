@@ -32,7 +32,7 @@ namespace Formulate.Core.Tests.ValidationTests
             
             public string Name => "Test Validation";
             
-            public string Directive => "formulate-test-validation";
+            public string EditorAlias => "formulate-test-validation";
 
             public bool IsLegacy => false;
 

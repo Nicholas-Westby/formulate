@@ -33,7 +33,7 @@ namespace Formulate.Core.Tests.FormHandlerTests
             
             public override string Name => "Test Form Handler";
 
-            public override string Directive => throw new NotImplementedException();
+            public override string EditorAlias => throw new NotImplementedException();
 
             public override string Icon => throw new NotImplementedException();
 

@@ -6,7 +6,7 @@
     /// <summary>
     /// A contract for creating a validation definition.
     /// </summary>
-    public interface IValidationDefinition : IDefinition, IHaveDirective
+    public interface IValidationDefinition : IDefinition, IHaveEditor
     {
         /// <summary>
         /// Creates a new instance of a <see cref="IValidation"/>.

@@ -33,8 +33,8 @@
         string Icon { get; }
 
         /// <summary>
-        /// Gets the directive for the form handler.
+        /// Gets the editor alias for the form handler.
         /// </summary>
-        string Directive { get; }
+        string EditorAlias { get; }
     }
 }

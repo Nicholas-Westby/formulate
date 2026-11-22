@@ -30,9 +30,9 @@ namespace Formulate.Core.Layouts.Basic
             public const string Name = "Basic Layout";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-layout-basic";
+            public const string EditorAlias = "formulate-layout-basic";
         }
 
         /// <inheritdoc />
@@ -42,7 +42,7 @@ namespace Formulate.Core.Layouts.Basic
         public string Name => Constants.Name;
 
         /// <inheritdoc />
-        public string Directive => Constants.Directive;
+        public string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public bool IsLegacy => false;

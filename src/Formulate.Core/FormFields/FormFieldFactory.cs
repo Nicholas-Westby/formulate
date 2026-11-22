@@ -77,7 +77,7 @@
             // Set the attributes on the form field that can be obtained from
             // the form field definition.
             field.Icon = foundFormFieldDefinition.Icon;
-            field.Directive = foundFormFieldDefinition.Directive;
+            field.EditorAlias = foundFormFieldDefinition.EditorAlias;
             field.BackOfficeConfiguration = foundFormFieldDefinition
                 .GetBackOfficeConfiguration(settings);
 

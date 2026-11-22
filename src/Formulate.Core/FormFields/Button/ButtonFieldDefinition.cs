@@ -35,9 +35,9 @@
             public const string Icon = "icon-formulate-button";
 
             /// <summary>
-            /// The Angular JS directive.
+            /// The back office editor alias.
             /// </summary>
-            public const string Directive = "formulate-button-field";
+            public const string EditorAlias = "formulate-button-field";
         }
 
         /// <summary>
@@ -64,7 +64,7 @@
         public override string Name => Constants.Name;
 
         /// <inheritdoc />
-        public override string Directive => Constants.Directive;
+        public override string EditorAlias => Constants.EditorAlias;
 
         /// <inheritdoc />
         public override string Category => FormFieldConstants.Categories.Actions;

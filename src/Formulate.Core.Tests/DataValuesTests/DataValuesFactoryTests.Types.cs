@@ -28,7 +28,7 @@
 
             public override string Name => "Test Data Values";
 
-            public override string Directive => "test-data-values";
+            public override string EditorAlias => "test-data-values";
 
             public override string Icon => "icon-test";
 

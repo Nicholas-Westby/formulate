@@ -30,7 +30,7 @@ namespace Formulate.Core.Tests.LayoutTests
             
             public string Name => "Test Layout";
             
-            public string Directive => "formulate-test-layout";
+            public string EditorAlias => "formulate-test-layout";
 
             public bool IsLegacy => false;
 

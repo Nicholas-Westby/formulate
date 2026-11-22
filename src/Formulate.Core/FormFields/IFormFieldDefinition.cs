@@ -7,7 +7,7 @@
     /// <summary>
     /// A contract for implementing a form field definition.
     /// </summary>
-    public interface IFormFieldDefinition : IDefinition, IFormFieldFeatures, IHaveDirective
+    public interface IFormFieldDefinition : IDefinition, IFormFieldFeatures, IHaveEditor
     {
         /// <summary>
         /// Gets the icon.
