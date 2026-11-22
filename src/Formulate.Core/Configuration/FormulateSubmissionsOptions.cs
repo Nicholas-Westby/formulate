@@ -15,5 +15,17 @@ namespace Formulate.Core.Configuration
         /// regular expressions) are checked when a form is submitted. The default is true.
         /// </summary>
         public bool EnableServerSideValidation { get; set; } = true;
+
+        /// <summary>
+        /// The default for <see cref="MaxUploadBytes"/>: 10 MB, the same as Store Data's default.
+        /// </summary>
+        public const long DefaultMaxUploadBytes = 10_485_760;
+
+        /// <summary>
+        /// Gets or sets the size, in bytes, of the largest file a visitor can upload. A larger file fails
+        /// the submission with an error on its field, before any file is read into memory. The default is
+        /// 10 MB.
+        /// </summary>
+        public long MaxUploadBytes { get; set; } = DefaultMaxUploadBytes;
     }
 }

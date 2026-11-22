@@ -1,3 +1,4 @@
+using Formulate.Core.Configuration;
 using Formulate.Core.FormFields;
 using Formulate.Core.FormFields.Header;
 using Formulate.Core.FormFields.Hidden;
@@ -11,6 +12,8 @@ using Formulate.Core.Utilities;
 using Formulate.Core.Utilities.Submissions;
 using Formulate.Web.Utilities;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
 using Xunit;
@@ -94,6 +97,56 @@ namespace Formulate.Web.Tests.UtilityTests
         }
 
         [Fact]
+        public async Task Files_for_fields_that_are_not_upload_fields_are_ignored()
+        {
+            var site = new Site();
+            var upload = site.Field(UploadFieldDefinition.Constants.KindId);
+            var text = site.Field(TextFieldDefinition.Constants.KindId);
+
+            await site.SubmitFiles((upload.Id, "a.txt"), (text.Id, "b.txt"));
+
+            Assert.Equal(new[] { upload.Id }, site.Submitted!.FilesValues.Keys);
+        }
+
+        [Fact]
+        public async Task A_file_over_the_upload_limit_fails_on_its_field_and_no_file_is_read()
+        {
+            var site = new Site();
+            site.Settings.MaxUploadBytes = 1024;
+            var photo = site.Field(UploadFieldDefinition.Constants.KindId, "Photo");
+            var resume = site.Field(UploadFieldDefinition.Constants.KindId, "Resume");
+
+            // Reading either file throws, so this fails if the pipeline reads one before checking sizes.
+            var output = await site.SubmitFiles(Unreadable(photo.Id, "small.png", 10), Unreadable(resume.Id, "cv.pdf", 1025));
+
+            Assert.False(output.IsSuccessful);
+            var error = Assert.Single(output.Errors);
+            Assert.Equal(resume.Id, error.FieldId);
+            Assert.Equal("Resume", error.FieldName);
+            Assert.Equal(new[] { "The file for \"Resume\" is too large. Files can be up to 1 KB." }, error.Messages);
+            Assert.Null(site.Submitted);
+        }
+
+        [Fact]
+        public async Task A_file_at_the_upload_limit_is_accepted()
+        {
+            var site = new Site();
+            site.Settings.MaxUploadBytes = 3;
+            var upload = site.Field(UploadFieldDefinition.Constants.KindId);
+
+            var output = await site.SubmitFiles((upload.Id, "a.txt"));
+
+            Assert.True(output.IsSuccessful);
+            Assert.Equal(new byte[] { 1, 2, 3 }, Assert.Single(site.Submitted!.FilesValues[upload.Id].GetValues()).Data);
+        }
+
+        [Fact]
+        public void The_upload_limit_is_10_MB_unless_set()
+        {
+            Assert.Equal(10_485_760, new FormulateSubmissionsOptions().MaxUploadBytes);
+        }
+
+        [Fact]
         public async Task Cancelled_submission_returns_a_failure_with_one_field_less_error()
         {
             var site = new Site();
@@ -148,9 +201,11 @@ namespace Formulate.Web.Tests.UtilityTests
 
             public SubmitFormSubmissionResult Result { get; set; } = new SubmitFormSubmissionResult { IsSuccessful = true };
 
-            public PersistedFormField Field(string kindId)
+            public FormulateSubmissionsOptions Settings { get; } = new FormulateSubmissionsOptions();
+
+            public PersistedFormField Field(string kindId, string name = "Field")
             {
-                var field = new PersistedFormField { Id = Guid.NewGuid(), KindId = Guid.Parse(kindId), Name = "Field" };
+                var field = new PersistedFormField { Id = Guid.NewGuid(), KindId = Guid.Parse(kindId), Name = name };
                 _form.Fields = _form.Fields.Append(field).ToArray();
 
                 return field;
@@ -163,12 +218,17 @@ namespace Formulate.Web.Tests.UtilityTests
 
             public Task<AttemptSubmitFormOutput> SubmitFiles(params (Guid FieldId, string Name)[] files)
             {
+                return Run(null, files.Select(x => (IFormFile)new FormFile(new MemoryStream(new byte[] { 1, 2, 3 }), 0, 3, x.FieldId.ToString("N"), x.Name) { Headers = new HeaderDictionary(), ContentType = "text/plain" }).ToArray());
+            }
+
+            public Task<AttemptSubmitFormOutput> SubmitFiles(params IFormFile[] files)
+            {
                 return Run(null, files);
             }
 
             private Task<AttemptSubmitFormOutput> Run(
                 (PersistedFormField Field, string Value)[]? values,
-                (Guid FieldId, string Name)[]? files)
+                IFormFile[]? files)
             {
                 var forms = new Mock<IFormEntityRepository>();
                 forms.Setup(x => x.Get(_form.Id)).Returns(_form);
@@ -186,20 +246,50 @@ namespace Formulate.Web.Tests.UtilityTests
                     new RichTextFieldDefinition(json),
                     new UploadFieldDefinition()
                 });
-                var submit = new AttemptSubmitForm(forms.Object, definitions, validator.Object, _submitter.Object);
+                var submit = new AttemptSubmitForm(forms.Object, definitions, validator.Object, _submitter.Object,
+                    Options.Create(Settings), NullLogger<AttemptSubmitForm>.Instance);
 
                 var form = new FormCollection((values ?? Array.Empty<(PersistedFormField, string)>())
                     .ToDictionary(x => x.Field.Id.ToString("N"), x => new StringValues(x.Value)));
                 var fileCollection = new FormFileCollection();
-
-                foreach (var (fieldId, name) in files ?? Array.Empty<(Guid, string)>())
-                {
-                    fileCollection.Add(new FormFile(new MemoryStream(new byte[] { 1, 2, 3 }), 0, 3, fieldId.ToString("N"), name) { Headers = new HeaderDictionary(), ContentType = "text/plain" });
-                }
+                fileCollection.AddRange(files ?? Array.Empty<IFormFile>());
 
                 return submit.SubmitAsync(
                     new AttemptSubmitFormInput(_form.Id, 1, form, fileCollection), CancellationToken.None);
             }
+        }
+
+        /// <summary>
+        /// A posted file of the given length whose contents throw when read.
+        /// </summary>
+        private static IFormFile Unreadable(Guid fieldId, string name, long length)
+        {
+            return new FormFile(new UnreadableStream(), 0, length, fieldId.ToString("N"), name) { Headers = new HeaderDictionary(), ContentType = "application/octet-stream" };
+        }
+
+        private sealed class UnreadableStream : Stream
+        {
+            public override bool CanRead => true;
+
+            public override bool CanSeek => true;
+
+            public override bool CanWrite => false;
+
+            public override long Length => long.MaxValue;
+
+            public override long Position { get; set; }
+
+            public override int Read(byte[] buffer, int offset, int count) => throw new InvalidOperationException("The file was read.");
+
+            public override long Seek(long offset, SeekOrigin origin) => Position = offset;
+
+            public override void Flush()
+            {
+            }
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
         }
     }
 }

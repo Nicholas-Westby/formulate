@@ -1,15 +1,22 @@
 ﻿namespace Formulate.Web.Utilities
 {
+    using Formulate.Core.Configuration;
     using Formulate.Core.FormFields;
+    using Formulate.Core.FormFields.Upload;
     using Formulate.Core.Forms;
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Submissions.Responses;
     using Formulate.Core.Utilities.Submissions;
+    using Microsoft.AspNetCore.Http;
+    using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
     using System.Threading.Tasks;
     using Umbraco.Extensions;
 
     internal sealed class AttemptSubmitForm : IAttemptSubmitForm
     {
+        private static readonly Guid UploadKindId = Guid.Parse(UploadFieldDefinition.Constants.KindId);
+
         private readonly IFormEntityRepository _formEntityRepository;
 
         private readonly FormFieldDefinitionCollection _formFieldDefinitions;
@@ -18,12 +25,19 @@
 
         private readonly ISubmitFormSubmissionRequest _submitFormSubmissionRequest;
 
-        public AttemptSubmitForm(IFormEntityRepository formEntityRepository, FormFieldDefinitionCollection formFieldDefinitions, IValidateFormSubmissionRequest validateFormSubmissionRequest, ISubmitFormSubmissionRequest submitFormSubmissionRequest)
+        private readonly IOptions<FormulateSubmissionsOptions> _options;
+
+        private readonly ILogger<AttemptSubmitForm> _logger;
+
+        public AttemptSubmitForm(IFormEntityRepository formEntityRepository, FormFieldDefinitionCollection formFieldDefinitions, IValidateFormSubmissionRequest validateFormSubmissionRequest, ISubmitFormSubmissionRequest submitFormSubmissionRequest,
+            IOptions<FormulateSubmissionsOptions> options, ILogger<AttemptSubmitForm> logger)
         {
             _formEntityRepository = formEntityRepository;
             _formFieldDefinitions = formFieldDefinitions;
             _validateFormSubmissionRequest = validateFormSubmissionRequest;
             _submitFormSubmissionRequest = submitFormSubmissionRequest;
+            _options = options;
+            _logger = logger;
         }
 
         public async Task<AttemptSubmitFormOutput> SubmitAsync(AttemptSubmitFormInput input, CancellationToken cancellationToken)
@@ -57,34 +71,47 @@
                 formValues[fieldId] = new StringFormFieldValues(value);
             }
 
-            // Get file values.
-            var fileValues = new Dictionary<Guid, IFileFormFieldValues>();
+            // Get file values. Only upload fields take files, and every file's size is checked before any
+            // file is read into memory.
+            var postedFiles = GetUploadedFiles(form, inputFieldIds, input.Files);
+            var maxBytes = _options.Value.MaxUploadBytes;
+            var tooLarge = postedFiles.Where(x => x.File.Length > maxBytes).Select(x => x.Field).Distinct().ToArray();
 
-            foreach (var groupedFiles in input.Files.GroupBy(x => x.Name))
+            if (tooLarge.Length > 0)
             {
-                if (Guid.TryParse(groupedFiles.Key, out var fieldId) == false || inputFieldIds.Contains(fieldId) == false)
+                foreach (var field in tooLarge)
                 {
-                    continue;
+                    _logger.LogInformation(
+                        "Refused a submission of form {FormId} because a file for field {FieldId} ({FieldName}) is over Formulate:Submissions:MaxUploadBytes ({MaxUploadBytes} bytes).",
+                        form.Id, field.Id, field.Name, maxBytes);
                 }
 
+                return new AttemptSubmitFormOutput()
+                {
+                    IsSuccessful = false,
+                    Errors = tooLarge
+                        .Select(x => new ValidationErrorSubmissionResponse(x.Name, x.Id, $"The file for \"{x.Name}\" is too large. Files can be up to {UploadSizes.Describe(maxBytes)}."))
+                        .ToArray()
+                };
+            }
+
+            var fileValues = new Dictionary<Guid, IFileFormFieldValues>();
+
+            foreach (var group in postedFiles.GroupBy(x => x.Field.Id))
+            {
                 var files = new List<FormFileValue>();
 
-                foreach (var file in groupedFiles)
+                foreach (var (_, file) in group)
                 {
-                    using var stream = file.OpenReadStream();
-                    using var reader = new BinaryReader(stream);
-                    var fileData = reader.ReadBytes((int)stream.Length);
-                    var filename = file.FileName;
-
                     files.Add(new FormFileValue
                     {
-                        Data = fileData,
-                        Name = filename,
+                        Data = await ReadAsync(file, cancellationToken),
+                        Name = file.FileName,
                         ContentType = file.ContentType
                     });
                 }
 
-                fileValues[fieldId] = new FilesFormFieldValues(files);
+                fileValues[group.Key] = new FilesFormFieldValues(files);
             }
 
             var payload = new FormSubmissionRequest(form, input.PageId, formValues, fileValues);
@@ -116,6 +143,43 @@
             {
                 IsSuccessful = submitResult.IsSuccessful
             };
+        }
+
+        /// <summary>
+        /// Gets the files posted for the form's upload fields, with their fields. A file posted for any
+        /// other field (including a field that takes text) is dropped, so a visitor cannot attach files to
+        /// a form that does not ask for them.
+        /// </summary>
+        private List<(PersistedFormField Field, IFormFile File)> GetUploadedFiles(PersistedForm form, HashSet<Guid> inputFieldIds, IFormFileCollection files)
+        {
+            var uploadFields = (form.Fields ?? Array.Empty<PersistedFormField>())
+                .Where(x => x.KindId == UploadKindId && inputFieldIds.Contains(x.Id))
+                .GroupBy(x => x.Id)
+                .ToDictionary(x => x.Key, x => x.First());
+            var uploaded = new List<(PersistedFormField Field, IFormFile File)>();
+
+            foreach (var file in files)
+            {
+                if (Guid.TryParse(file.Name, out var fieldId) && uploadFields.TryGetValue(fieldId, out var field))
+                {
+                    uploaded.Add((field, file));
+                }
+                else
+                {
+                    _logger.LogDebug("Ignored a file posted as {Name} to form {FormId}, because it is not one of the form's upload fields.", file.Name, form.Id);
+                }
+            }
+
+            return uploaded;
+        }
+
+        private static async Task<byte[]> ReadAsync(IFormFile file, CancellationToken cancellationToken)
+        {
+            await using var stream = file.OpenReadStream();
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory, cancellationToken);
+
+            return memory.ToArray();
         }
 
         /// <summary>

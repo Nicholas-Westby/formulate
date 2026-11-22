@@ -2,8 +2,8 @@ namespace Formulate.Extensions.StoreData.FormHandlers
 {
     using Formulate.Core.FormFields.Upload;
     using Formulate.Core.Notifications;
+    using Formulate.Core.Submissions.Requests;
     using Microsoft.Extensions.Options;
-    using System.Globalization;
     using Umbraco.Cms.Core.Events;
 
     /// <summary>
@@ -45,29 +45,11 @@ namespace Formulate.Extensions.StoreData.FormHandlers
                 if (values.GetValues().Any(x => (x.Data?.LongLength ?? 0) > maxBytes))
                 {
                     notification.CancelSubmission(
-                        $"The file for \"{field.Name}\" is too large. Files can be up to {FormatSize(maxBytes)}.");
+                        $"The file for \"{field.Name}\" is too large. Files can be up to {UploadSizes.Describe(maxBytes)}.");
 
                     return;
                 }
             }
-        }
-
-        private static string FormatSize(long bytes)
-        {
-            const long kilobyte = 1024;
-            const long megabyte = kilobyte * 1024;
-
-            if (bytes >= megabyte)
-            {
-                return string.Create(CultureInfo.InvariantCulture, $"{Math.Round(bytes / (double)megabyte, 1)} MB");
-            }
-
-            if (bytes >= kilobyte)
-            {
-                return string.Create(CultureInfo.InvariantCulture, $"{Math.Round(bytes / (double)kilobyte, 1)} KB");
-            }
-
-            return string.Create(CultureInfo.InvariantCulture, $"{bytes} bytes");
         }
     }
 }
