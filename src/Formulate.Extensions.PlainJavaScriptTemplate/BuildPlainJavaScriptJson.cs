@@ -4,6 +4,7 @@
     using Formulate.Core.Utilities;
     using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Http;
+    using Newtonsoft.Json.Linq;
     using Umbraco.Cms.Core.Mapping;
     using Umbraco.Cms.Core.Models;
     using Umbraco.Cms.Core.Services;
@@ -11,6 +12,12 @@
 
     public sealed class BuildPlainJavaScriptJson : IBuildPlainJavaScriptJson
     {
+        // The field types that hold a value the visitor can enter.
+        private static readonly HashSet<string> PrefillFieldTypes = new(StringComparer.Ordinal)
+        {
+            "text", "textarea", "select", "checkbox", "checkbox-list", "radio-list", "extended-radio-list", "date"
+        };
+
         private readonly IJsonUtility _jsonUtility;
         private readonly IUmbracoContextAccessor _umbracoContextAccessor;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -52,6 +59,7 @@
             // Structure fields as an anonymous object suitable for serialization to JSON.
             var fieldsData = fields.Select(x => {
                 var mappedField = _umbracoMapper.Map<PlainJavaScriptFormField>(x) ?? new PlainJavaScriptFormField("unknown");
+                var (configuration, initialValue) = GetInitialValue(x.Alias, mappedField);
                 return new
                 {
                     // The alias can be used to attach custom styles.
@@ -77,9 +85,9 @@
                         };
                     }).ToArray(),
                     // The field configuration stores parameters particular to a field (e.g., a list of items).
-                    configuration = mappedField.Configuration,
+                    configuration,
                     // The initial value comes from the query string based on the field alias.
-                    initialValue = "",
+                    initialValue,
                     // The user selected category of the field
                     category = x.Category                
                 };
@@ -169,6 +177,47 @@
             }
 
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Gets the field's configuration and initial value. A query string value for the field's
+        /// alias pre-fills the field (as in Formulate 3). A hidden field starts with the configured
+        /// text when the query string has nothing for it, and the renderer reads that value from the
+        /// configuration as well.
+        /// </summary>
+        private (object Configuration, object InitialValue) GetInitialValue(string alias, PlainJavaScriptFormField field)
+        {
+            var values = GetQueryValues(alias);
+
+            if (field.FieldType == "hidden")
+            {
+                var configured = JObject.FromObject(field.Configuration)["text"]?.ToString() ?? string.Empty;
+                var text = values.Length > 0 ? values[0] : configured;
+
+                return (new { text }, text);
+            }
+
+            if (!PrefillFieldTypes.Contains(field.FieldType) || values.Length == 0)
+            {
+                return (field.Configuration, string.Empty);
+            }
+
+            // Only a list of checkboxes can take more than one value.
+            object initialValue = field.FieldType == "checkbox-list" ? values : values[0];
+
+            return (field.Configuration, initialValue);
+        }
+
+        private string[] GetQueryValues(string alias)
+        {
+            var request = _httpContextAccessor.HttpContext?.Request;
+
+            if (request is null || string.IsNullOrEmpty(alias) || !request.Query.TryGetValue(alias, out var values))
+            {
+                return Array.Empty<string>();
+            }
+
+            return values.Where(x => !string.IsNullOrEmpty(x)).Select(x => x!).ToArray();
         }
 
         private string GenerateAntiForgeryToken()

@@ -1,5 +1,6 @@
 using Formulate.Core.FormFields;
 using Formulate.Core.FormFields.Button;
+using Formulate.Core.FormFields.Hidden;
 using Formulate.Core.Layouts.Basic;
 using Formulate.Extensions.PlainJavaScriptTemplate.Core;
 using Formulate.Extensions.PlainJavaScriptTemplate.Core.Mapping.FormFields;
@@ -75,6 +76,79 @@ public sealed class FormJsonTests
         builder.Object.AddMapDefinitions();
 
         Assert.True(collection.Has<ButtonFieldMapDefinition>());
+        Assert.True(collection.Has<HiddenFieldMapDefinition>());
+    }
+
+    [Fact]
+    public void Hidden_value_prefers_query_string_then_configured_text()
+    {
+        var hidden = new PlainJavaScriptFormField(new { text = "configured" }, "hidden");
+
+        var withoutQuery = new FormJsonHarness();
+        withoutQuery.AddField("source", "Source", hidden);
+        var withQuery = new FormJsonHarness { QueryString = "?source=newsletter%20%3Cb%3E" };
+        withQuery.AddField("source", "Source", hidden);
+
+        var plain = withoutQuery.Build()["data"]!["fields"]![0]!;
+        var prefilled = withQuery.Build()["data"]!["fields"]![0]!;
+
+        Assert.Equal("configured", plain["initialValue"]!.Value<string>());
+        Assert.Equal("configured", plain["configuration"]!["text"]!.Value<string>());
+        Assert.Equal("newsletter <b>", prefilled["initialValue"]!.Value<string>());
+        Assert.Equal("newsletter <b>", prefilled["configuration"]!["text"]!.Value<string>());
+    }
+
+    // An empty value (?alias=) is the same as no value, so it never wipes what the form is configured with.
+    [Fact]
+    public void Empty_query_string_values_are_ignored()
+    {
+        var harness = new FormJsonHarness { QueryString = "?source=&name=&interests=" };
+        harness.AddField("source", "Source", new PlainJavaScriptFormField(new { text = "configured" }, "hidden"));
+        harness.AddField("name", "Name", new PlainJavaScriptFormField("text"));
+        harness.AddField("interests", "Interests", new PlainJavaScriptFormField("checkbox-list"));
+
+        var fields = harness.Build()["data"]!["fields"]!;
+
+        Assert.Equal("configured", fields[0]!["initialValue"]!.Value<string>());
+        Assert.Equal("configured", fields[0]!["configuration"]!["text"]!.Value<string>());
+        Assert.Equal("", fields[1]!["initialValue"]!.Value<string>());
+        Assert.Equal("", fields[2]!["initialValue"]!.Value<string>());
+    }
+
+    [Fact]
+    public void Hidden_map_emits_the_configured_text()
+    {
+        var field = new HiddenField(Mock.Of<IFormFieldSettings>(), new HiddenFieldConfiguration { Text = "abc" });
+
+        var mapped = RunMap<HiddenField, PlainJavaScriptFormField>(new HiddenFieldMapDefinition(), field);
+
+        Assert.Equal("hidden", mapped.FieldType);
+        Assert.Equal("abc", JObject.FromObject(mapped.Configuration)["text"]!.Value<string>());
+    }
+
+    [Fact]
+    public void Text_initial_value_comes_from_query_string_alias()
+    {
+        var harness = new FormJsonHarness { QueryString = "?email=a%40b.c&other=x&interests=a&interests=b" };
+        harness.AddField("email", "Email", new PlainJavaScriptFormField("text"));
+        harness.AddField("name", "Name", new PlainJavaScriptFormField("text"));
+        harness.AddField("interests", "Interests", new PlainJavaScriptFormField("checkbox-list"));
+
+        var fields = harness.Build()["data"]!["fields"]!;
+
+        Assert.Equal("a@b.c", fields[0]!["initialValue"]!.Value<string>());
+        Assert.Equal("", fields[1]!["initialValue"]!.Value<string>());
+        Assert.Equal(new[] { "a", "b" }, fields[2]!["initialValue"]!.Values<string>());
+    }
+
+    [Fact]
+    public void Unknown_field_kinds_map_through_the_default_map()
+    {
+        var field = Mock.Of<IFormField>();
+
+        var mapped = RunMap<IFormField, PlainJavaScriptFormField>(new DefaultFormFieldMapDefinition(), field);
+
+        Assert.False(string.IsNullOrEmpty(mapped.FieldType));
     }
 
     /// <summary>Runs the map a definition registers, the way the mapper would.</summary>
