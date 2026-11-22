@@ -56,10 +56,8 @@ namespace Formulate.Extensions.SendData.Utilities
         /// </summary>
         /// <remarks>
         /// A field's values are sent as posted, joined with ", " as Formulate 3's field formatting did for a
-        /// checkbox list. Formulate 3 also formatted values per field kind for transmission; Formulate 5 has
-        /// no such formatting yet, so a Date field sends the text its field posts ("yyyy-MM-dd"), and an
-        /// Upload field nothing (files are never sent). The Date field coming next formats dates as v3 did.
-        /// A mapping whose name is blank uses the field's alias, or its name when it has no alias.
+        /// checkbox list. An Upload field sends nothing (files are never sent). A mapping whose name is blank
+        /// uses the field's alias, or its name when it has no alias.
         /// </remarks>
         public List<KeyValuePair<string, string>> GetData(FormSubmissionRequest submission, SendDataConfiguration configuration, HandlerContext context)
         {

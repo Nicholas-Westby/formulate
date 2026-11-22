@@ -30,6 +30,16 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
     public Encoding ResponseEncoding { get; set; } = Encoding.UTF8;
 
     /// <summary>
+    /// Gets or sets the exact bytes to answer with instead of <see cref="ResponseBody"/>, with the charset utf-8 declared.
+    /// </summary>
+    public byte[]? ResponseBytes { get; set; }
+
+    /// <summary>
+    /// Gets the headers to add to the response, added without validation.
+    /// </summary>
+    public Dictionary<string, string> ResponseHeaders { get; } = new();
+
+    /// <summary>
     /// Gets or sets a failure to throw instead of answering.
     /// </summary>
     public Exception? Failure { get; set; }
@@ -52,7 +62,20 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
             throw Failure;
         }
 
-        return new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, ResponseEncoding, "text/plain") };
+        var response = new HttpResponseMessage(Status) { Content = new StringContent(ResponseBody, ResponseEncoding, "text/plain") };
+
+        if (ResponseBytes is not null)
+        {
+            response.Content = new ByteArrayContent(ResponseBytes);
+            response.Content.Headers.TryAddWithoutValidation("Content-Type", "text/plain; charset=utf-8");
+        }
+
+        foreach (var header in ResponseHeaders)
+        {
+            response.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return response;
     }
 }
 

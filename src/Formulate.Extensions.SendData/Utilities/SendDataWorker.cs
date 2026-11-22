@@ -1,5 +1,6 @@
 namespace Formulate.Extensions.SendData.Utilities
 {
+    using System.Buffers;
     using System.Collections.Concurrent;
     using System.Net;
     using System.Text;
@@ -130,6 +131,7 @@ namespace Formulate.Extensions.SendData.Utilities
             string? body = null;
             var truncated = false;
             string? redirect = null;
+            var redirectUnreadable = false;
             Exception? error = null;
 
             try
@@ -144,7 +146,7 @@ namespace Formulate.Extensions.SendData.Utilities
                 using var response = await _httpClientFactory.CreateClient(Constants.HttpClientName)
                     .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, limit.Token);
                 status = response.StatusCode;
-                redirect = GetRedirect(uri, response);
+                (redirect, redirectUnreadable) = GetRedirect(uri, response);
                 (body, truncated) = await ReadBodyAsync(response.Content, limit.Token);
             }
             catch (Exception ex)
@@ -152,34 +154,88 @@ namespace Formulate.Extensions.SendData.Utilities
                 error = ex;
             }
 
-            Log(context, logUrl, status, redirect, error, cancellationToken);
+            Log(context, logUrl, status, redirect, redirectUnreadable, error, cancellationToken);
             await PublishSentAsync(new SentDataNotification(submission, context.HandlerId, context.HandlerName, configuration.Url, status, body, error, truncated), context, logUrl);
         }
 
         /// <summary>
-        /// Reads at most <see cref="MaxResponseBodyBytes"/> of the body, decoded by its charset (UTF-8 when it has none).
+        /// Reads at most <see cref="MaxResponseBodyBytes"/> of the body, decoded by its byte order mark, or else
+        /// its charset (UTF-8 when it has none). A mark is not part of the text, and a character the limit cuts in
+        /// half is left out.
         /// </summary>
         private static async Task<(string Body, bool Truncated)> ReadBodyAsync(HttpContent content, CancellationToken cancellationToken)
         {
             await using var stream = await content.ReadAsStreamAsync(cancellationToken);
-            var buffer = new byte[MaxResponseBodyBytes + 1];
-            var length = 0;
 
-            while (length < buffer.Length)
+            // The buffer grows with what arrives, so a small response does not allocate the limit.
+            using var bytes = new MemoryStream();
+            var chunk = ArrayPool<byte>.Shared.Rent(8192);
+
+            try
             {
-                var read = await stream.ReadAsync(buffer.AsMemory(length), cancellationToken);
-
-                if (read == 0)
+                while (bytes.Length <= MaxResponseBodyBytes)
                 {
-                    break;
-                }
+                    var wanted = (int)Math.Min(chunk.Length, MaxResponseBodyBytes + 1 - bytes.Length);
+                    var read = await stream.ReadAsync(chunk.AsMemory(0, wanted), cancellationToken);
 
-                length += read;
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
+                    bytes.Write(chunk, 0, read);
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(chunk);
             }
 
-            var truncated = length > MaxResponseBodyBytes;
+            var truncated = bytes.Length > MaxResponseBodyBytes;
+            var buffer = bytes.GetBuffer();
+            var length = (int)Math.Min(bytes.Length, MaxResponseBodyBytes);
+            var (encoding, skip) = DetectByteOrderMark(buffer, length);
+            encoding ??= GetEncoding(content);
 
-            return (GetEncoding(content).GetString(buffer, 0, Math.Min(length, MaxResponseBodyBytes)), truncated);
+            // Without flushing, the decoder keeps back the start of a character the limit cut, instead of writing U+FFFD.
+            var decoder = encoding.GetDecoder();
+            var chars = new char[encoding.GetMaxCharCount(length - skip)];
+            var count = decoder.GetChars(buffer, skip, length - skip, chars, 0, flush: truncated == false);
+
+            return (new string(chars, 0, count), truncated);
+        }
+
+        /// <summary>
+        /// Finds the encoding a byte order mark says, as <see cref="StreamReader"/> does, and the mark's length.
+        /// </summary>
+        private static (Encoding? Encoding, int Length) DetectByteOrderMark(byte[] b, int length)
+        {
+            if (length >= 4 && b[0] == 0xFF && b[1] == 0xFE && b[2] == 0 && b[3] == 0)
+            {
+                return (new UTF32Encoding(false, true), 4);
+            }
+
+            if (length >= 4 && b[0] == 0 && b[1] == 0 && b[2] == 0xFE && b[3] == 0xFF)
+            {
+                return (new UTF32Encoding(true, true), 4);
+            }
+
+            if (length >= 3 && b[0] == 0xEF && b[1] == 0xBB && b[2] == 0xBF)
+            {
+                return (Encoding.UTF8, 3);
+            }
+
+            if (length >= 2 && b[0] == 0xFF && b[1] == 0xFE)
+            {
+                return (Encoding.Unicode, 2);
+            }
+
+            if (length >= 2 && b[0] == 0xFE && b[1] == 0xFF)
+            {
+                return (Encoding.BigEndianUnicode, 2);
+            }
+
+            return (null, 0);
         }
 
         private static Encoding GetEncoding(HttpContent content)
@@ -197,7 +253,7 @@ namespace Formulate.Extensions.SendData.Utilities
             }
         }
 
-        private void Log(HandlerContext context, string url, HttpStatusCode? status, string? redirect, Exception? error, CancellationToken cancellationToken)
+        private void Log(HandlerContext context, string url, HttpStatusCode? status, string? redirect, bool redirectUnreadable, Exception? error, CancellationToken cancellationToken)
         {
             if (error is OperationCanceledException)
             {
@@ -220,7 +276,8 @@ namespace Formulate.Extensions.SendData.Utilities
                 // It is not an error, but the site owner should change the URL to where it now goes.
                 _logger.LogInformation(
                     "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sent data to {Url}, which answered with status {StatusCode} ({StatusName}) and sent the request on to {Location}. Redirects are not followed: set the handler's URL to where the receiver now is.",
-                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, url, (int)status!.Value, status.Value, redirect ?? "(no Location)");
+                    context.HandlerName, context.HandlerId, context.FormName, context.FormId, url, (int)status!.Value, status.Value,
+                    redirectUnreadable ? "a Location that could not be read" : redirect ?? "(no Location)");
             }
             else if (status is < (HttpStatusCode)200 or >= (HttpStatusCode)300)
             {
@@ -245,18 +302,27 @@ namespace Formulate.Extensions.SendData.Utilities
         }
 
         /// <summary>
-        /// Gets the host and path of the response's Location, to log, or null when it has none.
+        /// Gets the host and path of the response's Location, to log, for a redirect only. It is null when there is
+        /// no Location, and Unreadable is true when the Location is malformed: that is not the send's error, and the
+        /// value is not logged.
         /// </summary>
-        private static string? GetRedirect(Uri requested, HttpResponseMessage response)
+        private static (string? Location, bool Unreadable) GetRedirect(Uri requested, HttpResponseMessage response)
         {
-            var location = response.Headers.Location;
-
-            if (location is null)
+            if ((int)response.StatusCode is < 300 or >= 400)
             {
-                return null;
+                return (null, false);
             }
 
-            return SafeUrl(location.IsAbsoluteUri ? location : new Uri(requested, location));
+            try
+            {
+                var location = response.Headers.Location;
+
+                return location is null ? (null, false) : (SafeUrl(location.IsAbsoluteUri ? location : new Uri(requested, location)), false);
+            }
+            catch (Exception)
+            {
+                return (null, true);
+            }
         }
 
         private async Task PublishSentAsync(SentDataNotification notification, HandlerContext context, string url)

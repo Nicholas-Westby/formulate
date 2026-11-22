@@ -168,4 +168,98 @@ public sealed class SendDataNotificationTests
 
         Assert.Equal("caf\u00e9", seen!.ResponseBody);
     }
+
+    private async Task<SentDataNotification> SendAndGetSentAsync(SendDataTestServices services, SentDataNotification?[] holder)
+    {
+        await services.SendAsync(Config, Submission());
+
+        return holder[0]!;
+    }
+
+    [Fact]
+    public async Task Sent_notification_strips_a_utf8_byte_order_mark_so_json_parses()
+    {
+        var holder = new SentDataNotification?[1];
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => holder[0] = n)));
+        services.Network.ResponseBytes = new byte[] { 0xEF, 0xBB, 0xBF }.Concat(System.Text.Encoding.UTF8.GetBytes("{\"a\":1}")).ToArray();
+
+        var seen = await SendAndGetSentAsync(services, holder);
+
+        Assert.Equal("{\"a\":1}", seen.ResponseBody);
+        using var document = System.Text.Json.JsonDocument.Parse(seen.ResponseBody!);
+    }
+
+    [Fact]
+    public async Task Sent_notification_honours_a_byte_order_mark_over_the_declared_charset()
+    {
+        var holder = new SentDataNotification?[1];
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => holder[0] = n)));
+
+        // UTF-16 little endian with its mark, though the response declares utf-8.
+        services.Network.ResponseBytes = new byte[] { 0xFF, 0xFE }.Concat(System.Text.Encoding.Unicode.GetBytes("caf\u00e9")).ToArray();
+
+        var seen = await SendAndGetSentAsync(services, holder);
+
+        Assert.Equal("caf\u00e9", seen.ResponseBody);
+    }
+
+    [Fact]
+    public async Task Sent_notification_cut_inside_a_character_drops_the_part_character()
+    {
+        var holder = new SentDataNotification?[1];
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => holder[0] = n)));
+
+        // The two bytes of the e acute start one byte before the limit, so the limit cuts them in half.
+        services.Network.ResponseBytes = System.Text.Encoding.UTF8.GetBytes(new string('a', 1_048_575) + "\u00e9" + "tail");
+
+        var seen = await SendAndGetSentAsync(services, holder);
+
+        Assert.True(seen.IsBodyTruncated);
+        Assert.Equal(new string('a', 1_048_575), seen.ResponseBody);
+        Assert.DoesNotContain('\uFFFD', seen.ResponseBody!);
+    }
+
+    [Fact]
+    public async Task Sent_notification_with_a_character_ending_exactly_at_the_limit_keeps_it()
+    {
+        var holder = new SentDataNotification?[1];
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => holder[0] = n)));
+        services.Network.ResponseBytes = System.Text.Encoding.UTF8.GetBytes(new string('a', 1_048_574) + "\u00e9");
+
+        var seen = await SendAndGetSentAsync(services, holder);
+
+        Assert.False(seen.IsBodyTruncated);
+        Assert.EndsWith("\u00e9", seen.ResponseBody);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Found, "http://[bad-host/loc-secret", true)]
+    [InlineData(HttpStatusCode.Found, "//loc-secret:bad:port/x", true)]
+    [InlineData(HttpStatusCode.Found, "http://loc-secret:99999999/x", true)]
+    [InlineData(HttpStatusCode.OK, "http://[bad-host/loc-secret", false)]
+    [InlineData(HttpStatusCode.InternalServerError, "//loc-secret:bad:port/x", false)]
+    public async Task Malformed_location_is_not_the_sends_error_and_is_logged_without_its_value(HttpStatusCode status, string location, bool logsLocation)
+    {
+        var holder = new SentDataNotification?[1];
+        await using var services = SendDataTestServices.Create(x =>
+            x.AddSingleton<INotificationHandler<SentDataNotification>>(new DelegateHandler<SentDataNotification>(n => holder[0] = n)));
+        services.Network.Status = status;
+        services.Network.ResponseHeaders["Location"] = location;
+
+        var seen = await SendAndGetSentAsync(services, holder);
+
+        Assert.Equal(status, seen.StatusCode);
+        Assert.Null(seen.Error);
+        Assert.DoesNotContain(services.Logs.Entries, x => x.Message.Contains("loc-secret") || x.Exception?.ToString().Contains("loc-secret") == true);
+
+        if (logsLocation)
+        {
+            Assert.Empty(services.Logs.Errors);
+            Assert.Contains(services.Logs.Entries, x => x.Level == Microsoft.Extensions.Logging.LogLevel.Information && x.Message.Contains("Location") && x.Message.Contains("302"));
+        }
+    }
 }
