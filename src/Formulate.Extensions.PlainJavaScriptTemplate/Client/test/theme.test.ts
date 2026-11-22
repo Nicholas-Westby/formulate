@@ -38,6 +38,7 @@ describe("the Basic theme", () => {
       ".formulate__field--button button",
       ".formulate__step--active.formulate__step--animating",
       ".formulate__inline-validation-summary__error",
+      ".formulate__form-alert__message",
     ]) {
       expect(css, selector).toContain(selector);
     }

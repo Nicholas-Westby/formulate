@@ -246,3 +246,39 @@ export function showValidationSummary(formElement: HTMLFormElement, messages: re
 export function removeValidationSummary(formElement: HTMLFormElement): void {
   formElement.querySelector(`:scope > .${summaryWrapperClass}`)?.remove();
 }
+
+const formAlertClass = "formulate__form-alert";
+
+/**
+ * Shows errors that belong to no field (such as a submission a site refused) in an
+ * alert (role="alert") above the submit button, replacing any earlier one. The
+ * alert is a sibling of the row that holds the submit button, so it sits in the
+ * button's step. Without a submit button it goes at the end of the form.
+ */
+export function showFormAlert(formElement: HTMLFormElement, messages: readonly string[]): void {
+  removeFormAlert(formElement);
+  if (messages.length === 0) {
+    return;
+  }
+  const alertElement = document.createElement("div");
+  alertElement.classList.add(formAlertClass);
+  alertElement.setAttribute("role", "alert");
+  for (const message of messages) {
+    const messageElement = document.createElement("p");
+    messageElement.classList.add(`${formAlertClass}__message`);
+    messageElement.appendChild(document.createTextNode(message));
+    alertElement.appendChild(messageElement);
+  }
+  const submitButtons = formElement.querySelectorAll<HTMLElement>("button[type='submit']");
+  const submitButton = submitButtons[submitButtons.length - 1];
+  const anchor = submitButton?.closest(".formulate__row") ?? submitButton;
+  if (anchor?.parentNode) {
+    anchor.parentNode.insertBefore(alertElement, anchor);
+  } else {
+    formElement.appendChild(alertElement);
+  }
+}
+
+export function removeFormAlert(formElement: HTMLFormElement): void {
+  formElement.querySelector(`.${formAlertClass}`)?.remove();
+}

@@ -9,9 +9,11 @@ import type {
 import { postFormData } from "../utils/ajax";
 import { dispatchFormEvent, FormulateEvents } from "../utils/events";
 import {
+  removeFormAlert,
   removeValidationSummary,
   resolveFieldValidity,
   showFieldValidity,
+  showFormAlert,
   showValidationSummary,
   type FieldValidity,
 } from "../utils/validation";
@@ -155,6 +157,7 @@ async function attemptSubmission(state: FormState): Promise<SubmitOutcome> {
   }
 
   removeValidationSummary(state.formElement);
+  removeFormAlert(state.formElement);
   clearServerErrors(state);
   return sendPayloadToServer(state, validationData.fields, validationData.payload);
 }
@@ -163,6 +166,8 @@ function reportOutcome(state: FormState, outcome: SubmitOutcome): void {
   const { formElement } = state;
   switch (outcome.kind) {
     case "invalid":
+      // The server's form-level message is about the last attempt, not this one.
+      removeFormAlert(formElement);
       showInvalidFields(state, outcome.validity.invalidFields);
       handleInvalidFields(formElement, outcome.validity.messages, false);
       break;
@@ -256,14 +261,21 @@ function focusFirstInvalidField(state: FormState, invalidFields: readonly Render
 
 /**
  * Dispatches the validation errors event and shows the validation summary, unless
- * a listener cancelled the event (to show the messages its own way).
+ * a listener cancelled the event (to show the messages its own way). The event
+ * lists every message; the summary lists summaryMessages, which leave out the
+ * form-level ones that the form-level alert shows.
  */
-function handleInvalidFields(formElement: HTMLFormElement, messages: string[], isStep: boolean): void {
+function handleInvalidFields(
+  formElement: HTMLFormElement,
+  messages: string[],
+  isStep: boolean,
+  summaryMessages: readonly string[] = messages,
+): void {
   const event = dispatchFormEvent(formElement, FormulateEvents.validationErrors, { messages, isStep }, true);
   if (event.defaultPrevented) {
     removeValidationSummary(formElement);
   } else {
-    showValidationSummary(formElement, messages);
+    showValidationSummary(formElement, summaryMessages);
   }
 }
 
@@ -292,10 +304,14 @@ async function sendPayloadToServer(
 /**
  * Shows the server's validation messages below their fields and in the summary,
  * and shows the step that contains the first invalid field. Messages for
- * unknown fields (such as form-level errors) only appear in the summary.
+ * unknown fields (form-level errors, such as a cancelled submission) are shown
+ * in the form-level alert above the submit button instead of the summary. The
+ * validation errors event still lists every message.
  */
 function showServerErrors(state: FormState, errors: readonly SubmissionValidationError[]): void {
   const messages: string[] = [];
+  const formMessages: string[] = [];
+  const fieldMessageList: string[] = [];
   const messagesByField = new Map<RenderedField, string[]>();
   for (const error of errors) {
     const errorMessages = (error.Messages ?? []).filter((x) => typeof x === "string" && x !== "");
@@ -303,6 +319,9 @@ function showServerErrors(state: FormState, errors: readonly SubmissionValidatio
     const field = findField(state, error.FieldId);
     if (field) {
       messagesByField.set(field, [...(messagesByField.get(field) ?? []), ...errorMessages]);
+      fieldMessageList.push(...errorMessages);
+    } else {
+      formMessages.push(...errorMessages);
     }
   }
   for (const [field, fieldMessages] of messagesByField) {
@@ -313,7 +332,8 @@ function showServerErrors(state: FormState, errors: readonly SubmissionValidatio
     }
   }
   showInvalidFields(state, state.fields.filter((x) => messagesByField.has(x)));
-  handleInvalidFields(state.formElement, messages, false);
+  showFormAlert(state.formElement, formMessages);
+  handleInvalidFields(state.formElement, messages, false, fieldMessageList);
 }
 
 function clearServerErrors(state: FormState): void {

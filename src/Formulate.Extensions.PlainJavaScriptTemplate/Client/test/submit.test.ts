@@ -8,6 +8,7 @@ import {
   fieldByLabel,
   fieldId,
   fillContactForm,
+  formAlertMessages,
   flush,
   inlineMessages,
   loadFixture,
@@ -113,10 +114,9 @@ describe("submitting", () => {
     expect(email.classList).toContain("formulate__field--validation-error");
     expect(inlineMessages(email)).toEqual(["That email address is already registered."]);
     expect(formElement.querySelectorAll(".formulate__field--validation-error")).toHaveLength(1);
-    expect(summaryMessages(formElement)).toEqual([
-      "That email address is already registered.",
-      "Submissions are closed.",
-    ]);
+    // Messages for no field have their own form-level area, so the summary only lists field messages.
+    expect(summaryMessages(formElement)).toEqual(["That email address is already registered."]);
+    expect(formAlertMessages(formElement)).toEqual(["Submissions are closed."]);
     expect(onSuccess).not.toHaveBeenCalled();
     // As in v3, an unsuccessful response also dispatches the failure event.
     expect(onFailure).toHaveBeenCalledTimes(1);
@@ -131,6 +131,76 @@ describe("submitting", () => {
     expect(inlineMessages(email)).toEqual([]);
     expect(email.classList).not.toContain("formulate__field--validation-error");
     expect(formElement.querySelector(".formulate__validation-summary")).toBeNull();
+  });
+
+  it("shows a field-less error, such as a cancelled submission, in an alert above the submit button", async () => {
+    const { formElement, button } = renderContactForm();
+    mockFetch({
+      Success: false,
+      ValidationErrors: [{ FieldName: "", FieldId: "00000000000000000000000000000000", Messages: ["Submissions are closed."] }],
+    });
+    fillContactForm(formElement);
+    const onFailure = vi.fn();
+    formElement.addEventListener("formulate form: submit: failure", onFailure);
+    const errors = nextEvent<{ messages: string[] }>(formElement, "formulate: submit: validation errors");
+
+    button.click();
+    await errors;
+
+    const alert = formElement.querySelector<HTMLElement>(".formulate__form-alert");
+    expect(alert?.getAttribute("role")).toBe("alert");
+    expect(formAlertMessages(formElement)).toEqual(["Submissions are closed."]);
+    // It sits above the submit button, and the field summary has nothing to list.
+    expect(alert!.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(summaryMessages(formElement)).toEqual([]);
+    expect(formElement.querySelectorAll(".formulate__field--validation-error")).toHaveLength(0);
+    expect(onFailure).toHaveBeenCalledTimes(1);
+    expect(button.disabled).toBe(false);
+
+    // The next attempt removes it.
+    mockFetch({ Success: true, ValidationErrors: [] });
+    const success = nextEvent(formElement, "formulate form: submit: success");
+    button.click();
+    await success;
+    expect(formElement.querySelector(".formulate__form-alert")).toBeNull();
+  });
+
+  it("removes the form-level alert when the next attempt fails validation in the browser", async () => {
+    const { formElement, button } = renderContactForm();
+    mockFetch({
+      Success: false,
+      ValidationErrors: [{ FieldName: "", FieldId: "00000000000000000000000000000000", Messages: ["Closed."] }],
+    });
+    fillContactForm(formElement);
+    const errors = nextEvent(formElement, "formulate: submit: validation errors");
+    button.click();
+    await errors;
+    expect(formAlertMessages(formElement)).toEqual(["Closed."]);
+
+    typeInto(controlByLabel(formElement, "Email Address"), "");
+    const invalid = nextEvent(formElement, "formulate: submit: validation errors");
+    button.click();
+    await invalid;
+
+    expect(formAlertMessages(formElement)).toEqual([]);
+    expect(formElement.querySelector(".formulate__form-alert")).toBeNull();
+    expect(summaryMessages(formElement).length).toBeGreaterThan(0);
+  });
+
+  it("keeps the form-level alert when a listener shows the validation messages its own way", async () => {
+    const { formElement, button } = renderContactForm();
+    mockFetch({
+      Success: false,
+      ValidationErrors: [{ FieldName: "", FieldId: "00000000000000000000000000000000", Messages: ["Closed."] }],
+    });
+    fillContactForm(formElement);
+    formElement.addEventListener("formulate: submit: validation errors", (event) => event.preventDefault());
+    const errors = nextEvent(formElement, "formulate: submit: validation errors");
+
+    button.click();
+    await errors;
+
+    expect(formAlertMessages(formElement)).toEqual(["Closed."]);
   });
 
   it("dispatches the failure event (as v3 did) and then the validation errors event when the server rejects values", async () => {

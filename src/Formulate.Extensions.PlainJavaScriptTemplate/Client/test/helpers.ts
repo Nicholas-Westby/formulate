@@ -96,6 +96,13 @@ export function summaryMessages(form: Element): string[] {
   );
 }
 
+/** Returns the messages in the form-level alert, which holds the errors that belong to no field. */
+export function formAlertMessages(form: Element): string[] {
+  return [...form.querySelectorAll(".formulate__form-alert .formulate__form-alert__message")].map(
+    (x) => x.textContent ?? "",
+  );
+}
+
 /** Sets a text control's value as a visitor would. */
 export function typeInto(control: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string): void {
   control.value = value;

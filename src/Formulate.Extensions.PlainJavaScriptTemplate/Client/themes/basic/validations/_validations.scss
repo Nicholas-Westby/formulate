@@ -20,3 +20,15 @@
     }
 
 }
+// The alert above the submit button for errors that belong to no field, such as a refused submission.
+.formulate__form-alert {
+    margin: 20px 0 0;
+
+    // One paragraph per message, in the error color.
+    &__message {
+        color: $formulate-color--error;
+        font-weight: bold;
+        margin: 5px 0 0;
+    }
+
+}
