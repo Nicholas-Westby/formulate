@@ -16,7 +16,6 @@
     <ItemGroup>
         <!-- Migrations, scopes and the submissions table. -->
         <PackageReference Include="Umbraco.Cms.Infrastructure" />
-        <!-- MapPathWebRoot for uploaded files. -->
         <PackageReference Include="Umbraco.Cms.Web.Common" />
         <!-- The table attributes on the submission DTO. -->
         <PackageReference Include="NPoco.Abstractions" />
@@ -24,6 +23,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Formulate.Core\Formulate.Core.csproj" />
+        <!-- The base class, section filter and result types of the submissions API. -->
+        <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
     </ItemGroup>
 
     <ItemGroup>

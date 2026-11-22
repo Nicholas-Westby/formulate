@@ -2,6 +2,7 @@ namespace Formulate.Extensions.StoreData.Migrations
 {
     using Formulate.Extensions.StoreData.Models;
     using Microsoft.Extensions.Logging;
+    using Umbraco.Cms.Infrastructure.Migrations.Expressions.Create.Index;
     using Umbraco.Cms.Infrastructure.Migrations;
 
     /// <summary>
@@ -15,9 +16,19 @@ namespace Formulate.Extensions.StoreData.Migrations
     public sealed class AddSubmissionUrlAndFormIndex : AsyncMigrationBase
     {
         /// <summary>
-        /// The name of the index on the form ID column.
+        /// The name of the index that serves a form's submissions in list order.
         /// </summary>
-        internal const string FormIdIndexName = "IX_FormulateSubmissions_FormId";
+        internal const string IndexName = "IX_FormulateSubmissions_FormId_CreationDate";
+
+        /// <summary>
+        /// The columns of the index: the form, then the list order (newest first, then by ID).
+        /// </summary>
+        internal static readonly string[] IndexColumns =
+        {
+            nameof(FormulateSubmissionDto.FormId),
+            nameof(FormulateSubmissionDto.CreationDate),
+            nameof(FormulateSubmissionDto.SubmissionId),
+        };
 
         public AddSubmissionUrlAndFormIndex(IMigrationContext context) : base(context)
         {
@@ -37,15 +48,16 @@ namespace Formulate.Extensions.StoreData.Migrations
                      .Do();
             }
 
-            if (IndexExists(FormIdIndexName) == false)
+            if (IndexExists(IndexName) == false)
             {
-                Create.Index(FormIdIndexName)
-                      .OnTable(FormulateSubmissionDto.TableName)
-                      .OnColumn(nameof(FormulateSubmissionDto.FormId))
-                      .Ascending()
-                      .WithOptions()
-                      .NonClustered()
-                      .Do();
+                var index = Create.Index(IndexName).OnTable(FormulateSubmissionDto.TableName);
+
+                foreach (var column in IndexColumns)
+                {
+                    index = index.OnColumn(column).Ascending();
+                }
+
+                index.WithOptions().NonClustered().Do();
             }
 
             return Task.CompletedTask;

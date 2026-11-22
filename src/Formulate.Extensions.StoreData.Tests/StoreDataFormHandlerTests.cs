@@ -28,8 +28,8 @@ public sealed class StoreDataFormHandlerTests
         var handler = Assert.IsAssignableFrom<AsyncFormHandler>(
             definition.CreateHandler(Mock.Of<IFormHandlerSettings>()));
 
-        await handler.HandleAsync(CreateSubmission());
-        await handler.HandleAsync(CreateSubmission());
+        await handler.HandleAsync(CreateSubmission(), TestContext.Current.CancellationToken);
+        await handler.HandleAsync(CreateSubmission(), TestContext.Current.CancellationToken);
 
         // One scope per submission, each service used while its scope was alive.
         Assert.Equal(2, scopedInstances.Count);
