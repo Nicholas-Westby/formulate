@@ -74,7 +74,8 @@ export function siteEnvironment(options: SiteAddresses & { runFolder: string }):
 		ASPNETCORE_ENVIRONMENT: 'Development',
 		ASPNETCORE_URLS: `${origin};${plainOrigin}`,
 		// Only warnings and errors, apart from the lines about the Formulate the site loaded, which
-		// specs/loaded-formulate.spec.ts reads (appsettings.Development.json keeps them at Information).
+		// specs/loaded-formulate.spec.ts reads, where email goes and what the seed did
+		// (appsettings.Development.json keeps those at Information).
 		Serilog__MinimumLevel__Default: 'Warning',
 		// Each run's log is its own, in the run folder.
 		Umbraco__CMS__Logging__Directory: join(runFolder, 'Logs'),

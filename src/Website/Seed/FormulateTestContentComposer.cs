@@ -20,7 +20,8 @@ namespace Website.Seed;
 /// </summary>
 /// <remarks>
 /// It runs only in the Development environment, and makes each thing only if it is missing, so it can
-/// run at every start. Like everything in this project, it is never packed.
+/// run at every start. It publishes the page whenever the page is not published, such as when an earlier
+/// start made it but its publish failed. Like everything in this project, it is never packed.
 /// </remarks>
 public sealed class FormulateTestContentComposer : IComposer
 {
@@ -267,28 +268,42 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
 
     private async Task EnsurePageAsync(IContentType contentType)
     {
-        if (_contentService.GetById(PageKey) is not null)
+        var page = _contentService.GetById(PageKey);
+
+        if (page is null)
+        {
+            var created = await _contentEditingService.CreateAsync(
+                new ContentCreateModel
+                {
+                    Key = PageKey,
+                    ContentTypeKey = contentType.Key,
+                    ParentKey = null,
+                    TemplateKey = contentType.DefaultTemplate?.Key,
+                    Variants = [new VariantModel { Name = PageName }],
+                    Properties = [],
+                },
+                Constants.Security.SuperUserKey);
+
+            if (!created.Success)
+            {
+                throw new InvalidOperationException($"The page could not be created: {created.Status}.");
+            }
+        }
+        else if (page.Trashed)
+        {
+            // Publishing it would fail (InTrash) at every attempt of every start.
+            _logger.LogInformation("The Formulate test page is in the recycle bin, so it is left unpublished.");
+            return;
+        }
+        else if (page.Published)
         {
             return;
         }
 
-        var created = await _contentEditingService.CreateAsync(
-            new ContentCreateModel
-            {
-                Key = PageKey,
-                ContentTypeKey = contentType.Key,
-                ParentKey = null,
-                TemplateKey = contentType.DefaultTemplate?.Key,
-                Variants = [new VariantModel { Name = PageName }],
-                Properties = [],
-            },
-            Constants.Security.SuperUserKey);
-
-        if (!created.Success)
-        {
-            throw new InvalidOperationException($"The page could not be created: {created.Status}.");
-        }
-
+        // A page that is there but not published (an earlier attempt or start made it, and its publish failed
+        // or never returned, or it was unpublished since) is published here too. The lines before and after
+        // show in the log whether a publish ended.
+        _logger.LogInformation("Publishing the Formulate test page.");
         var published = await _contentPublishingService.PublishAsync(
             PageKey,
             [new CulturePublishScheduleModel { Culture = "*" }],
@@ -296,7 +311,10 @@ public sealed class FormulateTestContentSeeder : INotificationAsyncHandler<Umbra
 
         if (!published.Success)
         {
+            _logger.LogWarning("The Formulate test page could not be published: {Status}.", published.Status);
             throw new InvalidOperationException($"The page could not be published: {published.Status}.");
         }
+
+        _logger.LogInformation("Published the Formulate test page.");
     }
 }

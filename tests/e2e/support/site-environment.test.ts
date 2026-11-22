@@ -9,6 +9,9 @@ import { LOADED_FORMULATE_LOGGER } from './site-log.ts';
 /** The logger of the dev site's line that says where its email goes (src/Website/Composers/DevEmailComposer.cs). */
 const DEV_EMAIL_LOGGER = 'Website.Composers.DevEmailStarting';
 
+/** The logger of the dev site's seed, which makes the test page (src/Website/Seed/FormulateTestContentComposer.cs). */
+const SEED_LOGGER = 'Website.Seed.FormulateTestContentSeeder';
+
 const ADDRESSES = siteAddresses('44331');
 const ENVIRONMENT = siteEnvironment({ ...ADDRESSES, runFolder: '/tmp/formulate-e2e-1' });
 
@@ -31,14 +34,16 @@ test('a name with a dot is not a shell name', () => {
 	assert.equal(SHELL_NAME.test('Serilog__MinimumLevel__Default'), true);
 });
 
-test("the dev site's Development settings keep the lines about the loaded Formulate, and where email goes, at Information", () => {
+test("the dev site's Development settings keep the lines about the loaded Formulate, where email goes and the seed at Information", () => {
 	// The environment turns the rest of the log down to Warning; specs/loaded-formulate.spec.ts needs the first
-	// lines, and the other says in each run's log where the site's email goes.
+	// lines, the next says in each run's log where the site's email goes, and the seed's say whether it made and
+	// published the test page.
 	const settings = developmentSettings();
 
 	assert.equal(ENVIRONMENT.Serilog__MinimumLevel__Default, 'Warning');
 	assert.equal(settings.Serilog.MinimumLevel.Override[LOADED_FORMULATE_LOGGER], 'Information');
 	assert.equal(settings.Serilog.MinimumLevel.Override[DEV_EMAIL_LOGGER], 'Information');
+	assert.equal(settings.Serilog.MinimumLevel.Override[SEED_LOGGER], 'Information');
 });
 
 test('the site also listens on a plain http port, the E2E port plus 1000, so two runs on two ports never share one', () => {
