@@ -13,6 +13,7 @@ namespace Formulate.Extensions.SendData.Utilities
     using Formulate.Extensions.SendData.Notifications;
     using Microsoft.AspNetCore.Http;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Options;
     using Umbraco.Cms.Core.Events;
 
     /// <summary>
@@ -44,16 +45,19 @@ namespace Formulate.Extensions.SendData.Utilities
 
         private readonly IHttpContextAccessor? _httpContextAccessor;
 
+        private readonly IOptions<SendDataSettings> _settings;
+
         private readonly ILogger<SendDataWorker> _logger;
 
         public SendDataWorker(
             IHttpClientFactory httpClientFactory, IEventAggregator events, ISubmissionPageResolver pages, IJsonUtility jsonUtility,
-            ILogger<SendDataWorker> logger, IHttpContextAccessor? httpContextAccessor = null)
+            IOptions<SendDataSettings> settings, ILogger<SendDataWorker> logger, IHttpContextAccessor? httpContextAccessor = null)
         {
             _httpClientFactory = httpClientFactory;
             _events = events;
             _pages = pages;
             _jsonUtility = jsonUtility;
+            _settings = settings;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -128,7 +132,7 @@ namespace Formulate.Extensions.SendData.Utilities
 
             try
             {
-                using var request = CreateRequest(uri, configuration.Method!, format, data, submission, sending.Headers);
+                using var request = CreateRequest(uri, configuration.Method!, format, data, submission, sending.Headers, context);
 
                 // Handlers run without a cancellation token: the client's timeout is what ends a slow request.
                 using var response = await _httpClientFactory.CreateClient(Constants.HttpClientName).SendAsync(request, CancellationToken.None);
@@ -270,7 +274,7 @@ namespace Formulate.Extensions.SendData.Utilities
 
         private HttpRequestMessage CreateRequest(
             Uri uri, string method, string format, IReadOnlyList<KeyValuePair<string, string>> data, FormSubmissionRequest submission,
-            IDictionary<string, string> headers)
+            IDictionary<string, string> headers, HandlerContext context)
         {
             var httpMethod = new HttpMethod(method);
             var request = new HttpRequestMessage(httpMethod, uri);
@@ -293,7 +297,7 @@ namespace Formulate.Extensions.SendData.Utilities
                     break;
 
                 case Constants.TransmissionFormats.Json:
-                    request.Content = new StringContent(ToJson(data), Encoding.UTF8, "application/json");
+                    request.Content = new StringContent(ToJson(data, GetWrapJson(context)), Encoding.UTF8, "application/json");
                     break;
 
                 default:
@@ -330,12 +334,17 @@ namespace Formulate.Extensions.SendData.Utilities
         /// Writes an object of names to values, where a name used by more than one mapping has an array of its values,
         /// as in Formulate 3.
         /// </summary>
-        private static string ToJson(IEnumerable<KeyValuePair<string, string>> data)
+        private static string ToJson(IEnumerable<KeyValuePair<string, string>> data, bool wrapInArray)
         {
             using var stream = new MemoryStream();
 
             using (var writer = new Utf8JsonWriter(stream, JsonOptions))
             {
+                if (wrapInArray)
+                {
+                    writer.WriteStartArray();
+                }
+
                 writer.WriteStartObject();
 
                 foreach (var group in data.GroupBy(x => x.Key))
@@ -359,9 +368,38 @@ namespace Formulate.Extensions.SendData.Utilities
                 }
 
                 writer.WriteEndObject();
+
+                if (wrapInArray)
+                {
+                    writer.WriteEndArray();
+                }
             }
 
             return Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the JSON is wrapped in an array (Formulate:SendData:JsonMode).
+        /// </summary>
+        private bool GetWrapJson(HandlerContext context)
+        {
+            var mode = _settings.Value.JsonMode;
+
+            if (string.IsNullOrWhiteSpace(mode) || string.Equals(mode, SendDataSettings.ObjectJsonMode, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            if (string.Equals(mode, SendDataSettings.WrappedArrayJsonMode, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            _logger.LogWarning(
+                "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) sends a JSON object, because Formulate:SendData:JsonMode is {JsonMode}, which is not Object or WrappedArray.",
+                context.HandlerName, context.HandlerId, context.FormName, context.FormId, mode);
+
+            return false;
         }
 
         /// <summary>
