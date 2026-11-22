@@ -9,22 +9,24 @@ Formulate 5 renders forms with plain JavaScript. There is no AngularJS template.
 
 Once you've installed Formulate and created a form, there are five steps to show it on a page.
 
-1. Create a data type that uses the "Formulate Form Layout Picker" property editor.
+1. Create a data type that uses the "Formulate Form Layout Picker" property editor (alias `Formulate.FormLayoutPicker`).
 2. Add a property that uses this data type (for example, with the alias `form`) to a document type.
 3. On a content node, pick a form layout.
 4. Render it in your Razor template:
 
-   ```csharp
+   ```cshtml
    @await Component.InvokeAsync("FormulateForm", Model.Value<Formulate.Core.FormLayout>("form"))
    ```
 
    If you use Models Builder, this works too:
 
-   ```csharp
+   ```cshtml
    @await Component.InvokeAsync("FormulateForm", Model.Form)
    ```
 
-5. The form renderer script is added to the page automatically. To add it yourself instead, turn this off in `appsettings.json`:
+   The component shows nothing, and writes nothing to the log, when no form is picked, when the picked layout was deleted or does not belong to a form, or when the form was deleted or has no fields. When the layout has no template, or its template isn't installed, it shows nothing and logs a warning.
+
+5. The form renderer script is added to the page automatically, once per page, even when the page has several forms. To add it yourself instead (for example, in your own bundle), turn this off in `appsettings.json`:
 
    ```json
    {
@@ -36,20 +38,20 @@ Once you've installed Formulate and created a form, there are five steps to show
    }
    ```
 
+Forms have no styles unless you turn on the [basic theme](/pro/basic-theme), with `"Theme": "basic"` under `Formulate:PlainJavaScript` in `appsettings.json`. The settings are listed in the [README on GitHub](https://github.com/Nicholas-Westby/formulate/blob/v5/main/README.md#settings).
+
 ![The Form Layout Picker on a content node, with a form layout selected](/images/v5/layout-picker-content-node.png)
 
 The front-end classes (BEM names such as `formulate__...`), the JavaScript events and the custom field type hooks (`window["formulate-plain-js-fields"]`) are the same as in Formulate 3. Existing styles and custom field types keep working.
 
 # Handling Events
 
-You can respond to the events that Formulate dispatches, such as a successful submission or validation errors. This example wraps the form in an element so the script can find it:
+You can respond to the events that Formulate dispatches, such as a successful submission or validation errors. Formulate dispatches them on the `.formulate-wrapper` element. The form view writes that element around each form, so you don't add one yourself. Just render the form and add your script:
 
-```csharp
-<div class="formulate-wrapper">
-    @await Component.InvokeAsync("FormulateForm", Model.Form)
-</div>
+```html
+@await Component.InvokeAsync("FormulateForm", Model.Form)
 
-<script src="/scripts/custom-formulate-script.js" async></script>
+<script src="/scripts/custom-formulate-script.js" defer></script>
 ```
 
 Here is `custom-formulate-script.js`:
@@ -57,13 +59,13 @@ Here is `custom-formulate-script.js`:
 ```js
 /* This file listens for events dispatched by Formulate and responds to them appropriately. */
 
-// Wait until the markup has rendered
-setTimeout(function () {
+// Wait until the page has been parsed, so the wrapper elements exist.
+document.addEventListener("DOMContentLoaded", function () {
 
     // Variables.
     let i, wrapper, wrappers = document.querySelectorAll(".formulate-wrapper");
 
-    // Process each element that is wrapping a Formulate form.
+    // Process each wrapper element that Formulate writes around a form.
     for (i = 0; i < wrappers.length; i++) {
         wrapper = wrappers[i];
         (function (wrapper) {
@@ -119,7 +121,7 @@ setTimeout(function () {
         })(wrapper);
     }
 
-}, 0);
+});
 ```
 
 Next up, you'll want to style the form: [Styles](/plain-javascript/styles), or turn on the optional [basic theme](/pro/basic-theme).
