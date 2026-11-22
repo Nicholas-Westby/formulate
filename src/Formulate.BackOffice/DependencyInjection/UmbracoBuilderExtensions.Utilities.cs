@@ -5,12 +5,6 @@ namespace Formulate.BackOffice.DependencyInjection
     using Formulate.BackOffice.Api.Services;
     using Formulate.BackOffice.Persistence;
     using Formulate.BackOffice.Utilities;
-    using Formulate.BackOffice.Utilities.DataValues;
-    using Formulate.BackOffice.Utilities.FormFields;
-    using Formulate.BackOffice.Utilities.FormHandlers;
-    using Formulate.BackOffice.Utilities.Scaffolding.Forms;
-    using Formulate.BackOffice.Utilities.Scaffolding.Layouts;
-    using Formulate.BackOffice.Utilities.Validations;
     using Formulate.Core.Utilities.Submissions;
     using Microsoft.Extensions.DependencyInjection;
     using System.Linq;
@@ -42,18 +36,6 @@ namespace Formulate.BackOffice.DependencyInjection
             builder.Services.AddScoped<ICreateOptionsApiService, CreateOptionsApiService>();
             builder.Services.AddScoped<IConfigApiService, ConfigApiService>();
             builder.Services.AddScoped<ConfigurationJson>();
-
-            builder.Services.AddScoped<ICreateFormsScaffoldingEntity, CreateFormsScaffoldingEntity>();
-
-            builder.Services.AddScoped<ICreateDataValuesScaffoldingEntity, CreateDataValuesScaffoldingEntity>();
-
-            builder.Services.AddScoped<ICreateLayoutsScaffoldingEntity, CreateLayoutsScaffoldingEntity>();
-
-            builder.Services.AddScoped<ICreateValidationsScaffoldingEntity, CreateValidationsScaffoldingEntity>();
-
-            builder.Services.AddScoped<IGetFormFieldScaffolding, GetFormFieldScaffolding>();
-
-            builder.Services.AddScoped<IGetFormHandlerScaffolding, GetFormHandlerScaffolding>();
 
             builder.Services.AddSingleton<IGetDefaultTemplateId, GetDefaultTemplateId>();
 
