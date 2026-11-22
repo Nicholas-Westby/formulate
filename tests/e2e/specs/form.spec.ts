@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 import { dragRowToTop } from '../fixtures/drag.ts';
 import { KINDS, createKindItem, emptyTree } from '../fixtures/formulate-api.ts';
@@ -7,8 +6,7 @@ import { WORKSPACE_URL, waitForNameFocus } from '../fixtures/kind-item-workspace
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
-
-const SCREENSHOTS = join(import.meta.dirname, '..', 'screenshots');
+import { screenshotPath } from '../support/screenshots.ts';
 
 /** The kinds of form, field and handler the tests use, by the IDs the API gives them. */
 const FORM_KINDS = { withBasicLayout: '3a11bd58-0ac6-43d7-8f63-2f88e7c132af', plain: '61244083-bd75-417b-af77-dfa8f8dc2673' };
@@ -116,7 +114,7 @@ async function addField(page: Page, kindName: string, field: NewField) {
 	}
 
 	if (field.screenshot) {
-		await page.screenshot({ path: join(SCREENSHOTS, field.screenshot), animations: 'disabled' });
+		await page.screenshot({ path: screenshotPath(field.screenshot), animations: 'disabled' });
 	}
 
 	await dialog.getByRole('button', { name: 'Submit', exact: true }).click();
@@ -196,7 +194,7 @@ test('the Contact form is designed with its fields and a handler, reordered, sav
 	const enabled = workspace.handlersView.getByRole('switch', { name: 'Enabled: Store submissions', exact: true });
 	await expect(enabled).toBeChecked();
 	await expect(workspace.handlerRows.locator('uui-toggle')).toContainText('Enabled');
-	await page.screenshot({ path: join(SCREENSHOTS, 'handlers.png'), animations: 'disabled' });
+	await page.screenshot({ path: screenshotPath('handlers.png'), animations: 'disabled' });
 
 	// Saved: the workspace moves to the form's edit URL; the form shows in the tree, its layout under it.
 	await workspace.save.click();
@@ -233,7 +231,7 @@ test('the Contact form is designed with its fields and a handler, reordered, sav
 	await expect.poll(() => namesOf(workspace.fieldRows)).toEqual(['Intro', 'Name', 'Email', 'State', 'Interests', 'Submit']);
 	await expect(workspace.fieldRows.nth(1).locator('uui-tag')).toHaveText(['Text', '1 validation']);
 	await expect(workspace.fieldRows.nth(3).locator('uui-ref-node')).toHaveAttribute('detail', 'state');
-	await page.screenshot({ path: join(SCREENSHOTS, 'form-fields.png'), animations: 'disabled' });
+	await page.screenshot({ path: screenshotPath('form-fields.png'), animations: 'disabled' });
 
 	// The drop down's dialog shows its data values; closing it changes nothing. Each row's actions, and each
 	// picked item's Remove, are named after their item.
