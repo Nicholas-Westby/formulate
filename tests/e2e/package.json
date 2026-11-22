@@ -13,7 +13,7 @@
     "test": "playwright test",
     "test:packages": "node scripts/test-packages.ts",
     "pack:local": "node scripts/pack-local.ts",
-    "test:unit": "node --test support/run-folders.test.ts support/local-packages.test.ts support/site-log.test.ts support/site-environment.test.ts support/eml.test.ts support/echo.test.ts support/server-constants.test.ts",
+    "test:unit": "node --test support/run-folders.test.ts support/local-packages.test.ts support/site-log.test.ts support/site-environment.test.ts support/seeded-page-wait.test.ts support/eml.test.ts support/echo.test.ts support/server-constants.test.ts",
     "typecheck": "tsc",
     "install-browser": "playwright install chromium"
   },

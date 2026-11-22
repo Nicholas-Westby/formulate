@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { LOADED_FORMULATE_LOGGER, loadedFormulate, parseSiteLog } from './site-log.ts';
+import { LOADED_FORMULATE_LOGGER, SEED_LOGGER, loadedFormulate, parseSiteLog, seedLines } from './site-log.ts';
 
 /** A log line as Umbraco writes it. */
 function line(properties: Record<string, unknown>) {
@@ -55,4 +55,21 @@ test("picks out the dev site's lines about the Formulate it loaded", () => {
 
 test('finds nothing in a log without those lines', () => {
 	assert.deepEqual(loadedFormulate(parseSiteLog(line({ SourceContext: 'A' }))), { assemblies: [] });
+});
+
+test("picks out the seed's lines, with their values filled in as the console shows them", () => {
+	const events = parseSiteLog(
+		[
+			line({ SourceContext: SEED_LOGGER, '@mt': 'Seeding the Formulate test content (attempt {Attempt}).', Attempt: 2 }),
+			line({ SourceContext: 'Umbraco.Cms.Core.Something', '@mt': 'Not the seed.' }),
+			line({ SourceContext: SEED_LOGGER, '@mt': 'The Formulate test page could not be published: {Status}.', Status: 'InTrash' }),
+			line({ SourceContext: SEED_LOGGER, '@mt': 'A {Missing} value stays as it is.' }),
+		].join('\n'),
+	);
+
+	assert.deepEqual(seedLines(events), [
+		'Seeding the Formulate test content (attempt 2).',
+		'The Formulate test page could not be published: InTrash.',
+		'A {Missing} value stays as it is.',
+	]);
 });

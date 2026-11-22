@@ -4,13 +4,10 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { REPO_ROOT } from './repo.ts';
 import { SEED_FINISHED, SHELL_NAME, runFolderPaths, siteAddresses, siteEnvironment, siteReadiness } from './site-environment.ts';
-import { LOADED_FORMULATE_LOGGER } from './site-log.ts';
+import { LOADED_FORMULATE_LOGGER, SEED_LOGGER } from './site-log.ts';
 
 /** The logger of the dev site's line that says where its email goes (src/Website/Composers/DevEmailComposer.cs). */
 const DEV_EMAIL_LOGGER = 'Website.Composers.DevEmailStarting';
-
-/** The logger of the dev site's seed, which makes the test page (src/Website/Seed/FormulateTestContentComposer.cs). */
-const SEED_LOGGER = 'Website.Seed.FormulateTestContentSeeder';
 
 const ADDRESSES = siteAddresses('44331');
 const ENVIRONMENT = siteEnvironment({ ...ADDRESSES, runFolder: '/tmp/formulate-e2e-1' });
