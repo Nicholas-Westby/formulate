@@ -1,0 +1,280 @@
+name: CI
+
+# Builds, tests and packs Formulate on every pull request and on every push to v5/main, and on demand.
+# Tags are left to release.yml.
+on:
+  push:
+    branches: [v5/main]
+  pull_request:
+  workflow_dispatch:
+
+# Nothing here writes to the repository, so the token only reads.
+permissions:
+  contents: read
+
+# A newer push to the same pull request replaces the run in progress. A run on v5/main is never cut off.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/v5/main' }}
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+jobs:
+  # Proves: the solution restores, builds (including both Vite clients, which "dotnet build" runs
+  # through npm) and passes every .NET test on Linux and on Windows. A crash that only happens on
+  # Windows once slipped through, so both run on every change.
+  build-and-test:
+    name: .NET build and tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Formulate.BackOffice/Client/package-lock.json
+            src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
+      - name: Restore
+        run: dotnet restore src/Formulate.sln
+      - name: Build
+        run: dotnet build src/Formulate.sln -c Release --no-restore
+      - name: Test
+        run: dotnet test src/Formulate.sln -c Release --no-build
+
+  # Proves: both browser clients pass their Vitest suites and type-check, and so do the E2E
+  # project's own helper tests and type-check, on their own, without the .NET build around them.
+  clients:
+    name: Client tests and type checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Formulate.BackOffice/Client/package-lock.json
+            src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
+            tests/e2e/package-lock.json
+      - name: Back office client
+        working-directory: src/Formulate.BackOffice/Client
+        run: |
+          npm ci
+          npm test
+          npm run typecheck
+      - name: Site renderer client
+        working-directory: src/Formulate.Extensions.PlainJavaScriptTemplate/Client
+        run: |
+          npm ci
+          npm test
+          npm run typecheck
+      - name: E2E project
+        working-directory: tests/e2e
+        run: |
+          npm ci
+          npm run typecheck
+          npm run test:unit
+
+  # Proves: every Umbraco and NPoco type and member the shipped Formulate assemblies reference
+  # still exists, with the same signature, in Umbraco 18 and 19. The assemblies come from a normal
+  # build (compiled against the Umbraco 17.6 floor); the target folder is the dev site built on the
+  # version under test. Umbraco 19 targets .NET 11, so that leg installs the .NET 11 SDK too.
+  compatibility:
+    name: Binary compatibility (Umbraco ${{ matrix.umbraco }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - umbraco: 18.3.2
+            needs-dotnet-11: false
+          - umbraco: 19.0.0-rc1
+            needs-dotnet-11: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      # A GA .NET 11 SDK is intended here. A preview SDK would also need "allowPrerelease": true in global.json,
+      # which otherwise ignores preview SDKs.
+      - uses: actions/setup-dotnet@v4
+        if: matrix.needs-dotnet-11
+        with:
+          dotnet-version: 11.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Formulate.BackOffice/Client/package-lock.json
+            src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
+      - name: Build the Formulate assemblies (Umbraco 17.6 floor)
+        run: dotnet build src/Formulate/Formulate.csproj -c Release -o "$RUNNER_TEMP/formulate"
+      - name: Build the dev site on Umbraco ${{ matrix.umbraco }}
+        run: dotnet build src/Website/Website.csproj -c Release -p:UmbracoSiteVersion=${{ matrix.umbraco }} -o "$RUNNER_TEMP/site"
+      - name: Check the references
+        run: >-
+          dotnet run --project src/Formulate.CompatibilityCheck -c Release --
+          "$RUNNER_TEMP/site"
+          "$RUNNER_TEMP"/formulate/Formulate*.dll
+
+  # Proves: the migration plan runs on a real SQL Server (every other test uses SQLite). The test
+  # boots Umbraco on a new database in the service container and checks the table, the Url column,
+  # the form index and the stored plan state. It skips itself when the variable is unset, so the
+  # last step makes sure it ran and did not skip.
+  storedata-sqlserver:
+    name: Store Data migration on SQL Server
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: Formulate-Ci-Passw0rd!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Formulate-Ci-Passw0rd!' -Q 'SELECT 1' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 20s
+    env:
+      FORMULATE_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=Formulate-Ci-Passw0rd!;TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Formulate.BackOffice/Client/package-lock.json
+      - name: Run the migration test
+        run: >-
+          dotnet test src/Formulate.Extensions.StoreData.Tests -c Release
+          --filter "FullyQualifiedName~SqlServerMigrationTests"
+          --logger "trx;LogFileName=sqlserver.trx"
+          --results-directory "$RUNNER_TEMP/trx"
+      - name: Make sure the test ran and passed
+        run: |
+          grep -q 'outcome="Passed"' "$RUNNER_TEMP/trx/sqlserver.trx"
+          if grep -q 'outcome="NotExecuted"' "$RUNNER_TEMP/trx/sqlserver.trx"; then
+            echo 'The SQL Server migration test was skipped.'
+            exit 1
+          fi
+
+  # Proves: the solution packs, and gives the packages to later jobs and to people (a download
+  # from the run's page) as the "packages" artifact.
+  pack:
+    name: Pack
+    runs-on: ubuntu-latest
+    needs: [build-and-test, clients]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Formulate.BackOffice/Client/package-lock.json
+            src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
+      - name: Pack
+        run: dotnet pack src/Formulate.sln -c Release -o artifacts/packages
+      - name: List the packages
+        run: ls -l artifacts/packages
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: artifacts/packages/*.nupkg
+          if-no-files-found: error
+          retention-days: 14
+
+  # Proves: the back office works in a real browser on each supported Umbraco version, with
+  # Formulate installed. Playwright boots its own throwaway site per run (SQLite, new folder).
+  e2e:
+    name: E2E (Umbraco ${{ matrix.umbraco }})
+    runs-on: ubuntu-latest
+    needs: [build-and-test, clients]
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        umbraco: [17.6.2, 17.8.2, 18.3.2, 19.0.0-rc1]
+    env:
+      UMBRACO_SITE_VERSION: ${{ matrix.umbraco }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      # Umbraco 19 targets .NET 11. Only that leg installs the SDK, so the others build on .NET 10.
+      # A GA .NET 11 SDK is intended here. A preview SDK would also need "allowPrerelease": true in global.json,
+      # which otherwise ignores preview SDKs.
+      - uses: actions/setup-dotnet@v4
+        if: startsWith(matrix.umbraco, '19.')
+        with:
+          dotnet-version: 11.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            src/Formulate.BackOffice/Client/package-lock.json
+            src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
+            tests/e2e/package-lock.json
+      # Kestrel serves the site over HTTPS on a development certificate.
+      - name: Create the development certificate
+        run: dotnet dev-certs https
+      # TODO(release plan task 2): the site is built from source for now. Task 2 switches this job
+      # to the packed packages (download the "packages" artifact, then build and run the site with
+      # -p:FormulateFromPackages=true), so the E2E run exercises what is shipped.
+      # Built first (Debug, like the "dotnet run" Playwright starts), so the npm builds do not count against
+      # Playwright's startup timeout.
+      - name: Build the dev site
+        run: dotnet build src/Website/Website.csproj -p:UmbracoSiteVersion=${{ matrix.umbraco }}
+      - name: Install the E2E packages
+        working-directory: tests/e2e
+        run: npm ci
+      - name: Cache the Playwright browser
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tests/e2e/package-lock.json') }}
+      - name: Install the Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: tests/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Install the browser's system packages
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: tests/e2e
+        run: npx playwright install-deps chromium
+      - name: Run the E2E tests
+        working-directory: tests/e2e
+        run: npx playwright test
+      - name: Upload screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure-${{ matrix.umbraco }}
+          path: |
+            tests/e2e/test-results
+            tests/e2e/playwright-report
+          if-no-files-found: ignore
+          retention-days: 14
