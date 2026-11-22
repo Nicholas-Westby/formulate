@@ -30,11 +30,14 @@ export function readItems(value: unknown): Array<FormulateListItem> {
  * button, as Umbraco's multiple text string input has them. The value is the list, each item exactly as
  * stored; each change stores the whole list again, keeping what an item has that the input does not edit,
  * and dispatches an UmbChangeEvent.
+ *
+ * The value can instead be something that holds the list, such as a configuration with its items: the input
+ * then says where the list is in it, with itemsOf and valueWith.
  */
-export abstract class FormulateSortableRowsInputElement extends UmbLitElement {
-	/** The items, as they are stored. */
+export abstract class FormulateSortableRowsInputElement<Value = ReadonlyArray<FormulateListItem>> extends UmbLitElement {
+	/** The items, as they are stored, or what holds them. */
 	@property({ attribute: false })
-	value: ReadonlyArray<FormulateListItem> = [];
+	value: Value | undefined;
 
 	/** Whether nothing may be changed. */
 	@property({ type: Boolean, reflect: true })
@@ -43,7 +46,7 @@ export abstract class FormulateSortableRowsInputElement extends UmbLitElement {
 	@state()
 	protected _rows: Array<FormulateListRow> = [];
 
-	/** The items the rows were last made from or stored as, so a stored change is not read back. */
+	/** The value the rows were last made from or stored as, so a stored change is not read back. */
 	#rowsValue?: string;
 
 	#sorter: UmbSorterController<FormulateListRow, HTMLElement>;
@@ -96,6 +99,22 @@ export abstract class FormulateSortableRowsInputElement extends UmbLitElement {
 	}
 
 	/**
+	 * The items in a value: the value itself, when it is the list.
+	 * @param value The value, as it is stored.
+	 */
+	protected itemsOf(value: Value | undefined): Array<FormulateListItem> {
+		return readItems(value);
+	}
+
+	/**
+	 * The value that stores the items: the list itself, unless itemsOf finds the list in something else.
+	 * @param items The items, in order.
+	 */
+	protected valueWith(items: Array<FormulateListItem>): Value {
+		return items as unknown as Value;
+	}
+
+	/**
 	 * Stores new values for fields of an item, keeping its other fields.
 	 * @param key The item's row.
 	 * @param fields The fields that change.
@@ -135,21 +154,21 @@ export abstract class FormulateSortableRowsInputElement extends UmbLitElement {
 	}
 
 	#readRows() {
-		const value = JSON.stringify(this.value ?? []);
+		const value = JSON.stringify(this.value ?? null);
 
-		// The items this input stored come back to it: its rows, and so its focus, stay.
+		// The value this input stored comes back to it: its rows, and so its focus, stay.
 		if (value === this.#rowsValue) {
 			return;
 		}
 
 		this.#rowsValue = value;
-		this._rows = readItems(this.value).map((item) => ({ key: UmbId.new(), item }));
+		this._rows = this.itemsOf(this.value).map((item) => ({ key: UmbId.new(), item }));
 		this.#sorter.setModel(this._rows);
 		this.#keyboard.putDown();
 	}
 
 	#store(rows: Array<FormulateListRow>) {
-		const value = rows.map((row) => ({ ...row.item }));
+		const value = this.valueWith(rows.map((row) => ({ ...row.item })));
 		this._rows = rows;
 		this.#rowsValue = JSON.stringify(value);
 		this.#sorter.setModel(rows);

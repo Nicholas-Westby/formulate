@@ -1,6 +1,7 @@
 import { customElement, html, nothing } from '@umbraco-cms/backoffice/external/lit';
 import { readText } from '../../../core/kind-editor.js';
-import { FormulateSortableItemsEditorElement, type FormulateItemRow } from '../sortable-items-editor.js';
+import type { FormulateListRow } from '../../../core/sortable/sortable-rows-input.js';
+import { FormulateSortableItemsEditorElement } from '../sortable-items-editor.js';
 
 /**
  * The editor of Pair List data values, { items: [{ primary, secondary }] }: each item's value (primary) is
@@ -34,7 +35,7 @@ export class FormulatePairListDataValuesEditorElement extends FormulateSortableI
 		`;
 	}
 
-	protected override renderItem(row: FormulateItemRow, position: number) {
+	protected override renderItem(row: FormulateListRow, position: number) {
 		return html`
 			<uui-input
 				class="field primary"

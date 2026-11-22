@@ -1,6 +1,7 @@
 import { customElement, html } from '@umbraco-cms/backoffice/external/lit';
 import { readText } from '../../../core/kind-editor.js';
-import { FormulateSortableItemsEditorElement, type FormulateItemRow } from '../sortable-items-editor.js';
+import type { FormulateListRow } from '../../../core/sortable/sortable-rows-input.js';
+import { FormulateSortableItemsEditorElement } from '../sortable-items-editor.js';
 
 /**
  * The editor of List data values, { items: [{ value }] }: each item's value is both what is stored and
@@ -22,7 +23,7 @@ export class FormulateListDataValuesEditorElement extends FormulateSortableItems
 		return readText(item, 'value');
 	}
 
-	protected override renderItem(row: FormulateItemRow, position: number) {
+	protected override renderItem(row: FormulateListRow, position: number) {
 		return html`<uui-input
 			class="field value"
 			label=${this.localize.term('formulate_itemValue', position)}
