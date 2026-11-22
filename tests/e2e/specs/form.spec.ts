@@ -5,7 +5,7 @@ import { KINDS, createKindItem, emptyTree } from '../fixtures/formulate-api.ts';
 import { WORKSPACE_URL, waitForNameFocus } from '../fixtures/kind-item-workspace.ts';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
-import { expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
+import { expandTreeItem, pickInTree, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
 import { screenshotPath } from '../support/screenshots.ts';
 
 /** The kinds of form, field and handler the tests use, by the IDs the API gives them. */
@@ -51,14 +51,6 @@ function formWorkspace(page: Page) {
 /** The names of the rows of a view, in order. */
 function namesOf(rows: Locator) {
 	return rows.locator('uui-ref-node').evaluateAll((refs) => refs.map((ref) => ref.getAttribute('name')));
-}
-
-/** Picks an item in the tree picker a picker opened, such as a validation, and chooses it. */
-async function pickInTree(page: Page, name: string) {
-	const modal = page.locator('umb-tree-picker-modal');
-	await modal.locator(`uui-menu-item[label="${name}"] #label-button`).first().click();
-	await modal.getByRole('button', { name: 'Choose', exact: true }).click();
-	await expect(modal).toHaveCount(0);
 }
 
 /** What a new field is given in its dialog. */

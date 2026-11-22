@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import type { Locator, Page } from '@playwright/test';
+import { screenshotDialog } from '../fixtures/dialog-screenshot.ts';
 import { emptyTree } from '../fixtures/formulate-api.ts';
 import { WORKSPACE_URL, waitForNameFocus } from '../fixtures/kind-item-workspace.ts';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
-import { screenshotPath } from '../support/screenshots.ts';
 import { transmissionFormats } from '../support/server-constants.ts';
 
 /** The kinds the tests use, by the IDs the API gives them. */
@@ -163,20 +163,6 @@ async function saveAndRead(page: Page, formId: string) {
 	const stored = (await callManagementApi<{ handlers: Array<StoredHandler> }>(page, 'GET', `/formulate/form/${formId}`)).handlers;
 
 	return { sent, stored };
-}
-
-/**
- * Takes a screenshot of the page with the whole of a handler's dialog in view: the window is made as tall as
- * the dialog's settings need for the screenshot, then given its size back.
- */
-async function screenshotDialog(page: Page, editor: Locator, name: string) {
-	const viewport = page.viewportSize()!;
-	await page.setViewportSize({ width: viewport.width, height: 3000 });
-	const box = (await editor.boundingBox())!;
-	// Room under the settings for the end of their box and the dialog's buttons.
-	await page.setViewportSize({ width: viewport.width, height: Math.max(viewport.height, Math.ceil(box.y + box.height) + 140) });
-	await page.screenshot({ path: screenshotPath(name), animations: 'disabled' });
-	await page.setViewportSize(viewport);
 }
 
 test.use({ actionTimeout: 15_000 });

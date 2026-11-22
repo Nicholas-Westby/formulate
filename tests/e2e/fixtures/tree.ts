@@ -68,6 +68,14 @@ export async function childNames(item: Locator): Promise<Array<string | null>> {
 	return names;
 }
 
+/** Picks an item in the tree picker a picker opened, such as a validation or data values, and chooses it. */
+export async function pickInTree(page: Page, name: string) {
+	const modal = page.locator('umb-tree-picker-modal');
+	await modal.locator(`uui-menu-item[label="${name}"] #label-button`).first().click();
+	await modal.getByRole('button', { name: 'Choose', exact: true }).click();
+	await expect(modal).toHaveCount(0);
+}
+
 /** Confirms a delete in Umbraco's confirm dialog, after checking what it says. */
 export async function confirmDelete(page: Page, text: string) {
 	const dialog = page.locator('umb-confirm-modal');
