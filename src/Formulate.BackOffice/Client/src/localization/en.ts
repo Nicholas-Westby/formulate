@@ -59,5 +59,8 @@ export default {
 		layoutNotFound: 'Layout not found',
 		legacyDataValues:
 			'These data values were made by an older version of Formulate and can no longer be changed. Create new data values to use instead.',
+		validationNotFound: 'Validation not found',
+		itemNotRead: 'Could not be read',
+		dataValuesNotFound: 'Data values not found',
 	},
 } satisfies UmbLocalizationDictionary;
