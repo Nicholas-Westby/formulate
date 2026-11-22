@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { KINDS, createKindItem } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
-import { expect, test } from '../fixtures/seeded-page.ts';
+import { SEEDED_PAGE_ID, expect, test } from '../fixtures/seeded-page.ts';
 import { screenshotPath } from '../support/screenshots.ts';
 
 /** The seed's document type (src/Website/Seed), which shows the form its "form" property picks. */
@@ -12,6 +12,11 @@ const STORE_DATA_KIND_ID = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
 const THANK_YOU = 'Thank you, your message was sent.';
 const EMAIL_REQUIRED = 'Enter your email address.';
 const EMAIL_INVALID = 'That does not look like an email address.';
+/** The Image media type, which Umbraco's rich text editor picks images of. */
+const IMAGE_MEDIA_TYPE_ID = 'cc07b313-0843-4aa8-bbda-871c8da728c8';
+/** A blue PNG, 120 by 80 pixels. */
+const BLUE_PNG =
+	'iVBORw0KGgoAAAANSUhEUgAAAHgAAABQCAIAAABd+SbeAAAAg0lEQVR42u3QQQ0AAAgEoOthQ5vayhbOBxsJSPVwIApEi0a0aNEWRItGtGjRFkSLRrRo0YgWjWjRohEtGtGiRSNaNKJFi0a0aESLFo1o0YgWLRrRohEtWjSiRSNatGhEi0a0aNGIFo1o0aIRLRrRokUjWjSiRYtGtGhEixaNaNGI/mMB95Dv0SDKTaAAAAAASUVORK5CYII=';
 /** A label that would end the script block holding the form's data, if it were not escaped. */
 const TRICKY_LABEL = 'Note </script><script>window.formulateScriptBroke = true</script>';
 
@@ -27,6 +32,7 @@ interface KindDefinition {
 interface SeedKinds {
 	text: KindDefinition;
 	button: KindDefinition;
+	richText: KindDefinition;
 	basicLayoutKindId: string;
 	formKindId: string;
 	templateId: string;
@@ -51,11 +57,13 @@ async function findKinds(page: Page): Promise<SeedKinds> {
 	]);
 	const text = fieldKinds.find((kind) => kind.name.toLowerCase() === 'text');
 	const button = fieldKinds.find((kind) => kind.name.toLowerCase() === 'button');
+	const richText = fieldKinds.find((kind) => kind.name.toLowerCase() === 'rich text');
 	const layout = layoutKinds.find((kind) => !kind.isLegacy && /basic/i.test(kind.name));
 	const form = formOptions.find((option) => option.entityType === 'formulate-form' && option.name === 'Form');
 	const template = templates.find((candidate) => candidate.isDefault) ?? templates[0];
 	expect(text, 'a Text field kind exists').toBeTruthy();
 	expect(button, 'a Button field kind exists').toBeTruthy();
+	expect(richText, 'a Rich Text field kind exists').toBeTruthy();
 	expect(layout, 'the Basic layout kind exists').toBeTruthy();
 	expect(form?.kindId, 'the Forms root offers the plain Form kind').toBeTruthy();
 	expect(template, 'a template exists').toBeTruthy();
@@ -63,6 +71,7 @@ async function findKinds(page: Page): Promise<SeedKinds> {
 	return {
 		text: text!,
 		button: button!,
+		richText: richText!,
 		basicLayoutKindId: layout!.kindId,
 		formKindId: form!.kindId!,
 		templateId: template!.id,
@@ -134,12 +143,15 @@ async function createPage(page: Page, name: string, layoutId: string) {
 	return { id, path: `/${name.toLowerCase().replaceAll(' ', '-')}/` };
 }
 
-/** Moves the page to the recycle bin and deletes the form's items, ignoring what is already gone. */
-async function cleanUp(page: Page, items: { documentIds: string[]; formIds: string[]; validationIds: string[] }) {
+/** Moves the page and media to the recycle bin and deletes the form's items, ignoring what is already gone. */
+async function cleanUp(page: Page, items: { documentIds: string[]; formIds: string[]; validationIds: string[]; mediaIds?: string[] }) {
 	await page.goto('/umbraco/section/formulate');
 	await expect(page.locator('umb-backoffice-header')).toBeVisible();
 	for (const id of items.documentIds) {
 		await callManagementApi(page, 'PUT', `/document/${id}/move-to-recycle-bin`).catch(() => undefined);
+	}
+	for (const id of items.mediaIds ?? []) {
+		await callManagementApi(page, 'PUT', `/media/${id}/move-to-recycle-bin`).catch(() => undefined);
 	}
 	for (const id of items.formIds) {
 		await callManagementApi(page, 'DELETE', `/formulate/form/${id}`).catch(() => undefined);
@@ -187,6 +199,76 @@ async function readSubmissions(page: Page, formId: string): Promise<Submission[]
 	const result = await callManagementApi<{ items: Submission[] }>(page, 'GET', `/formulate/submission?formId=${formId}&take=10`);
 
 	return result.items;
+}
+
+/**
+ * Opens the form in the form designer and its Intro field's dialog, lets the test edit the Rich Text field's
+ * text there, then submits the dialog and saves the form. Returns the text the API stored.
+ */
+async function editIntro(page: Page, formId: string, edit: (dialog: Locator, text: Locator) => Promise<void>) {
+	await page.goto(`/umbraco/section/formulate/workspace/formulate-form/edit/${formId}`);
+	await page.locator('formulate-form-fields-workspace-view').getByRole('button', { name: 'Edit Intro', exact: true }).click();
+	const dialog = page.locator('formulate-edit-field-modal');
+	const text = dialog.locator('umb-input-tiptap [contenteditable="true"]');
+	await expect(text).toBeVisible();
+	await edit(dialog, text);
+	await dialog.getByRole('button', { name: 'Submit', exact: true }).click();
+	await expect(dialog).toHaveCount(0);
+	const saved = page.waitForResponse((response) => response.request().method() === 'PUT' && response.url().endsWith(`/formulate/form/${formId}`));
+	await page.locator('umb-workspace-action uui-button[label="Save"]').click();
+	expect((await saved).ok()).toBe(true);
+	const stored = await callManagementApi<{ fields: Array<{ configuration: { text: string } }> }>(page, 'GET', `/formulate/form/${formId}`);
+
+	return stored.fields[0]!.configuration.text;
+}
+
+/**
+ * Selects a line of the text in the rich text editor with a triple click, which the editor itself turns into a
+ * selection of the line's words. After a single click, the caret was sometimes at the start of the text instead.
+ */
+async function selectLine(text: Locator, words: string) {
+	await text.getByText(words, { exact: true }).click({ clickCount: 3 });
+}
+
+/** Uploads a blue PNG, logo.png, and makes an image of it in the media library; returns the media's ID. */
+async function createImage(page: Page, name: string) {
+	const temporaryFileId = randomUUID();
+	// The file is sent as a form, as the Management API takes it, through the back office's own HTTP client, with no
+	// Content-Type of the client's own, so the browser gives the form's.
+	const status = await page.evaluate(
+		async ({ temporaryFileId, png }) => {
+			const file = new File([Uint8Array.from(atob(png), (character) => character.charCodeAt(0))], 'logo.png', { type: 'image/png' });
+			const body = new FormData();
+			body.append('Id', temporaryFileId);
+			body.append('File', file);
+			// A variable, so TypeScript does not look for the module: the page's import map resolves it.
+			const httpClientModule = '@umbraco-cms/backoffice/http-client';
+			const { umbHttpClient } = await import(httpClientModule);
+			const { response } = await umbHttpClient.request({
+				method: 'POST',
+				url: '/umbraco/management/api/v1/temporary-file',
+				body,
+				bodySerializer: null,
+				headers: { 'Content-Type': null },
+				security: [{ scheme: 'bearer', type: 'http' }],
+				throwOnError: false,
+			});
+
+			return response?.status ?? 0;
+		},
+		{ temporaryFileId, png: BLUE_PNG },
+	);
+	expect(status, 'the image is uploaded').toBe(201);
+	const id = randomUUID();
+	await callManagementApi(page, 'POST', '/media', {
+		id,
+		parent: null,
+		mediaType: { id: IMAGE_MEDIA_TYPE_ID },
+		values: [{ alias: 'umbracoFile', value: { temporaryFileId }, culture: null, segment: null }],
+		variants: [{ culture: null, segment: null, name }],
+	});
+
+	return id;
 }
 
 test.use({ actionTimeout: 15_000 });
@@ -367,5 +449,116 @@ test('a multi-step form moves between its steps and is stored when it is sent', 
 	} finally {
 		await site.close();
 		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [required] });
+	}
+});
+
+test("a Rich Text field's text edited in its dialog is stored as the editor writes it, and shows on the page", async ({ page, context, seededPage }) => {
+	void seededPage;
+	test.setTimeout(180_000);
+	await openBackOffice(page);
+	const kinds = await findKinds(page);
+	const intro = field(kinds.richText, 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p>' } });
+	const { formId, layoutId } = await createForm(page, kinds, 'Frontend rich text form', [intro], undefined);
+	const created = await createPage(page, 'Frontend rich text', layoutId);
+	const site = await context.newPage();
+	const problems = await watchPage(site);
+
+	try {
+		const stored = await editIntro(page, formId, async (_dialog, text) => {
+			await selectLine(text, 'Welcome to our form.');
+			await page.keyboard.type('Welcome. Ask us anything.');
+		});
+		expect(stored).toBe('<p>Welcome. Ask us anything.</p>');
+
+		await waitForPage(site, created.path);
+		await site.goto(created.path);
+		await expect(site.locator('.formulate__field--rich-text')).toHaveText('Welcome. Ask us anything.');
+		expect(problems, 'no console errors').toEqual([]);
+	} finally {
+		await site.close();
+		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [] });
+	}
+});
+
+test("a link to a content page, picked in a Rich Text field's editor, takes visitors to that page", async ({ page, context, seededPage }) => {
+	void seededPage;
+	test.setTimeout(180_000);
+	await openBackOffice(page);
+	const kinds = await findKinds(page);
+	const intro = field(kinds.richText, 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p><p>Contact us</p>' } });
+	const { formId, layoutId } = await createForm(page, kinds, 'Frontend rich text link form', [intro], undefined);
+	const created = await createPage(page, 'Frontend rich text link', layoutId);
+	const site = await context.newPage();
+	const problems = await watchPage(site);
+
+	try {
+		const stored = await editIntro(page, formId, async (dialog, text) => {
+			await selectLine(text, 'Contact us');
+			await dialog.getByRole('button', { name: 'Link', exact: true }).click();
+			const linkPicker = page.locator('umb-link-picker-modal');
+			await linkPicker.getByRole('button', { name: 'Content', exact: true }).click();
+			const documentPicker = page.locator('umb-document-link-picker-modal');
+			await documentPicker.getByText('Contact Us', { exact: true }).click();
+			await documentPicker.getByRole('button', { name: 'Choose', exact: true }).click();
+			await linkPicker.getByRole('button', { name: 'Add', exact: true }).click();
+			await expect(linkPicker).toHaveCount(0);
+			await expect(text.getByRole('link', { name: 'Contact us', exact: true })).toBeVisible();
+			await page.screenshot({ path: screenshotPath('rich-text-editor.png'), animations: 'disabled' });
+		});
+		// As Umbraco's rich text editor writes a link to a content page: by the page's key, for the site to resolve.
+		expect(stored).toContain(`href="/{localLink:${SEEDED_PAGE_ID}}"`);
+
+		await waitForPage(site, created.path);
+		await site.goto(created.path);
+		const link = site.locator('.formulate__field--rich-text').getByRole('link', { name: 'Contact us', exact: true });
+		await expect(link).toHaveAttribute('href', '/');
+		await link.click();
+		await expect(site.locator('h1')).toHaveText('Contact Us');
+		expect(new URL(site.url()).pathname).toBe('/');
+		expect(problems, 'no console errors').toEqual([]);
+	} finally {
+		await site.close();
+		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [] });
+	}
+});
+
+test("an image picked from the media library in a Rich Text field's editor shows on the page", async ({ page, context, seededPage }) => {
+	void seededPage;
+	test.setTimeout(180_000);
+	await openBackOffice(page);
+	const kinds = await findKinds(page);
+	const mediaId = await createImage(page, 'Frontend logo');
+	const intro = field(kinds.richText, 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p><p>Logo</p>' } });
+	const { formId, layoutId } = await createForm(page, kinds, 'Frontend rich text image form', [intro], undefined);
+	const created = await createPage(page, 'Frontend rich text image', layoutId);
+	const site = await context.newPage();
+	const problems = await watchPage(site);
+
+	try {
+		const stored = await editIntro(page, formId, async (dialog, text) => {
+			// The image takes the place of the selected word.
+			await selectLine(text, 'Logo');
+			await dialog.getByRole('button', { name: 'Media Picker', exact: true }).click();
+			const mediaPicker = page.locator('umb-media-picker-modal');
+			await mediaPicker.locator('uui-card-media[title="Frontend logo"]').click();
+			await mediaPicker.getByRole('button', { name: 'Choose', exact: true }).click();
+			const details = page.locator('umb-media-caption-alt-text-modal');
+			await details.getByRole('textbox', { name: 'alt text' }).fill('Our logo');
+			await details.getByRole('button', { name: 'Submit', exact: true }).click();
+			await expect(text.getByRole('img', { name: 'Our logo', exact: true })).toBeVisible();
+		});
+		// As Umbraco's rich text editor writes an image from the media library: with the media's key.
+		expect(stored).toContain(`data-udi="umb://media/${mediaId.replaceAll('-', '')}"`);
+
+		await waitForPage(site, created.path);
+		await site.goto(created.path);
+		const image = site.locator('.formulate__field--rich-text').getByRole('img', { name: 'Our logo', exact: true });
+		// At the media's own address on the site, as Umbraco shows an image of its own rich text.
+		await expect(image).toHaveAttribute('src', /^\/media\/[^/]+\/logo\.png\?/);
+		await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(120);
+		expect(problems, 'no console errors').toEqual([]);
+	} finally {
+		await site.close();
+		await cleanUp(page, { documentIds: [created.id], formIds: [formId], validationIds: [], mediaIds: [mediaId] });
 	}
 });
