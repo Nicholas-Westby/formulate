@@ -86,9 +86,7 @@ internal sealed class FormJsonHarness
         httpContext.Request.QueryString = new QueryString(QueryString);
         httpContext.Request.PathBase = new PathString(PathBase);
 
-        var assets = new PlainJavaScriptAssets(
-            Options.Create(new PlainJavaScriptOptions { Theme = Theme, IncludeScript = IncludeScript }),
-            Logger.Object);
+        var assets = AssetsHarness.Create(new PlainJavaScriptOptions { Theme = Theme, IncludeScript = IncludeScript }, Logger.Object);
         var builder = CreateBuilder(umbracoContextAccessor.Object, httpContext, antiforgery.Object, mapper.Object, idKeyMap.Object, assets);
 
         var features = Mock.Of<IFormFieldFeatures>();

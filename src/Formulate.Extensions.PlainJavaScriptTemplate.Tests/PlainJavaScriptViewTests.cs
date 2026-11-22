@@ -46,6 +46,37 @@ public sealed class PlainJavaScriptViewTests
         Assert.Equal(2, Count(html, "window[key].push(formData);"));
         Assert.Equal(1, Count(html, "<script type=\"module\""));
         Assert.Equal(1, Count(html, "<link rel=\"stylesheet\""));
+        Assert.Equal(3, Count(html, "<link rel=\"modulepreload\""));
+    }
+
+    // The entry imports the other modules, which import more, so without the links the browser would find them one
+    // level at a time. With them, it asks for every module at once.
+    [Fact]
+    public async Task View_preloads_every_module_in_the_list_before_the_entry_script()
+    {
+        var html = await RenderPageAsync(forms: 1, new PlainJavaScriptOptions { Theme = "basic" });
+        const string folder = "/site/App_Plugins/Formulate/PlainJavaScript";
+
+        var tags = string.Join("\n", html.Split('\n').Select(x => x.Trim()).Where(x => x.StartsWith("<link", StringComparison.Ordinal) || x.StartsWith("<script type=\"module\"", StringComparison.Ordinal)));
+
+        Assert.Equal(
+            string.Join("\n",
+                $"<link rel=\"stylesheet\" href=\"{folder}/themes/basic.min.css\" />",
+                $"<link rel=\"modulepreload\" href=\"{folder}/formulate.min.js\" />",
+                $"<link rel=\"modulepreload\" href=\"{folder}/api.min.js\" />",
+                $"<link rel=\"modulepreload\" href=\"{folder}/fields/plain-text.min.js\" />",
+                $"<script type=\"module\" src=\"{folder}/formulate.min.js\"></script>"),
+            tags);
+    }
+
+    [Fact]
+    public async Task View_adds_no_script_and_no_preloads_when_the_script_is_turned_off()
+    {
+        var html = await RenderPageAsync(forms: 1, new PlainJavaScriptOptions { IncludeScript = false });
+
+        Assert.Equal(1, Count(html, "window[key].push(formData);"));
+        Assert.Equal(0, Count(html, "<script type=\"module\""));
+        Assert.Equal(0, Count(html, "modulepreload"));
     }
 
     private static int Count(string text, string value)
@@ -67,9 +98,7 @@ public sealed class PlainJavaScriptViewTests
         builder.Logging.ClearProviders();
         builder.Services.AddControllersWithViews().AddApplicationPart(typeof(PlainJavaScriptAssets).Assembly);
         builder.Services.AddSingleton(Mock.Of<IBuildPlainJavaScriptJson>(x => x.Build(It.IsAny<FormLayoutRenderModel>(), It.IsAny<string>()) == "{}"));
-        builder.Services.AddSingleton<IPlainJavaScriptAssets>(new PlainJavaScriptAssets(
-            Options.Create(options),
-            Mock.Of<ILogger<PlainJavaScriptAssets>>()));
+        builder.Services.AddSingleton<IPlainJavaScriptAssets>(AssetsHarness.Create(options));
 
         await using var app = builder.Build();
         app.UsePathBase("/site");

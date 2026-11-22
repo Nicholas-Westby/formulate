@@ -154,7 +154,7 @@ test('a form renders with the theme, validates in the browser, and its submissio
 		await waitForPage(site, created.path);
 		await site.goto(created.path);
 
-		// The form shows, with the Basic theme and the renderer's script (named by a content hash).
+		// The form shows, with the Basic theme and the renderer's entry module (formulate.min.js, which keeps its URL).
 		const form = site.locator('form.formulate__form');
 		await expect(form).toBeVisible();
 		const themeLink = site.locator('link[rel="stylesheet"][href*="basic"]');

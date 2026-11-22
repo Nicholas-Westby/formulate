@@ -11,8 +11,9 @@ namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
         public const string SectionName = "Formulate:PlainJavaScript";
 
         /// <summary>
-        /// Gets or sets a value indicating whether the form view adds the renderer script to the page.
-        /// Turn this off to load the script yourself (for example, in your own bundle).
+        /// Gets or sets a value indicating whether the form view adds the renderer to the page: a
+        /// <c>&lt;script type="module"&gt;</c> for formulate.min.js, after a <c>&lt;link rel="modulepreload"&gt;</c>
+        /// for each of its modules. Turn this off to add them yourself (see <see cref="IPlainJavaScriptAssets"/>).
         /// </summary>
         public bool IncludeScript { get; set; } = true;
 

@@ -41,6 +41,11 @@
 }
 @if (pageAssets.ScriptUrl is not null)
 {
+    @* Every module the entry imports, at once, rather than one level of imports at a time. *@
+    foreach (var moduleUrl in pageAssets.ModuleUrls)
+    {
+        <link rel="modulepreload" href="@moduleUrl" />
+    }
     @* A module script runs once the page is parsed, before DOMContentLoaded, like a deferred script. *@
     <script type="module" src="@pageAssets.ScriptUrl"></script>
 }

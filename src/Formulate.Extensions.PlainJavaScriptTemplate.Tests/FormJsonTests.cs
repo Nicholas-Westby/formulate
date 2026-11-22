@@ -179,9 +179,7 @@ public sealed class FormJsonTests
     public void Unknown_theme_acts_as_none_and_warns_once()
     {
         var logger = new Mock<ILogger<PlainJavaScriptAssets>>();
-        var assets = new PlainJavaScriptAssets(
-            Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { Theme = "fancy" }),
-            logger.Object);
+        var assets = AssetsHarness.Create(new PlainJavaScriptOptions { Theme = "fancy" }, logger.Object);
 
         var urls = new[] { assets.GetThemeUrl(default), assets.GetThemeUrl(default), assets.TakePageAssets(new DefaultHttpContext()).ThemeUrl };
 
@@ -206,9 +204,7 @@ public sealed class FormJsonTests
     [Fact]
     public void Page_assets_are_taken_once_per_request()
     {
-        var assets = new PlainJavaScriptAssets(
-            Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { Theme = "basic" }),
-            Mock.Of<ILogger<PlainJavaScriptAssets>>());
+        var assets = AssetsHarness.Create(new PlainJavaScriptOptions { Theme = "basic" });
         var request = new DefaultHttpContext();
         var otherRequest = new DefaultHttpContext();
 
@@ -220,15 +216,18 @@ public sealed class FormJsonTests
         Assert.Equal("/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css", first.ThemeUrl);
         Assert.Null(second.ScriptUrl);
         Assert.Null(second.ThemeUrl);
-        Assert.Equal(first, other);
+        // Another request gets the same assets. The module URLs are a new list each time, so the lists' contents
+        // are compared.
+        Assert.Equal(first.ScriptUrl, other.ScriptUrl);
+        Assert.Equal(first.ThemeUrl, other.ThemeUrl);
+        Assert.Equal(first.ModuleUrls, other.ModuleUrls);
+        Assert.NotEmpty(other.ModuleUrls);
     }
 
     [Fact]
     public void Page_assets_leave_out_the_script_when_it_is_turned_off()
     {
-        var assets = new PlainJavaScriptAssets(
-            Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { IncludeScript = false }),
-            Mock.Of<ILogger<PlainJavaScriptAssets>>());
+        var assets = AssetsHarness.Create(new PlainJavaScriptOptions { IncludeScript = false });
 
         var page = assets.TakePageAssets(new DefaultHttpContext());
 
