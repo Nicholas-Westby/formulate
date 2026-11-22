@@ -65,17 +65,19 @@ public sealed class FormulateOpenApiComposer : IComposer
     /// Gives the Formulate operations Management API style ids, such as GetFormulateConfig, so the
     /// generated client has readable function names. Umbraco 18 does this for every document itself.
     /// </summary>
+    /// <remarks>
+    /// Every controller built on <see cref="FormulateApiControllerBase"/> belongs to the Formulate
+    /// document, including those in extensions such as Store Data, whatever their namespace.
+    /// </remarks>
     public sealed class FormulateOperationIdHandler : OperationIdHandler
     {
-        private static readonly string ApiNamespace = typeof(FormulateApiControllerBase).Namespace!;
-
         public FormulateOperationIdHandler(IOptions<ApiVersioningOptions> apiVersioningOptions)
             : base(apiVersioningOptions)
         {
         }
 
         protected override bool CanHandle(ApiDescription apiDescription, ControllerActionDescriptor controllerActionDescriptor)
-            => controllerActionDescriptor.ControllerTypeInfo.Namespace?.StartsWith(ApiNamespace, StringComparison.Ordinal) is true;
+            => typeof(FormulateApiControllerBase).IsAssignableFrom(controllerActionDescriptor.ControllerTypeInfo);
     }
 #endif
 }
