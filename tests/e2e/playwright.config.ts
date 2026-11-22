@@ -11,10 +11,12 @@ import { RUN_FOLDER_PREFIX, removeOldRunFolders } from './support/run-folders.ts
  * Environment variables:
  *   UMBRACO_SITE_VERSION  The Umbraco version to run the site on, such as 18.3.2 (default: the version in
  *                         src/Directory.Packages.props).
+ *   FORMULATE_E2E_PORT    The port the site listens on (default: 44331).
  *   DOTNET_EXE            The dotnet executable (default: dotnet). Umbraco 19 needs the .NET 11 SDK.
  */
 
-const ORIGIN = 'https://localhost:44331';
+// Two runs at once (such as in two worktrees) need two ports.
+const ORIGIN = `https://localhost:${process.env.FORMULATE_E2E_PORT || 44331}`;
 
 // Every run starts from nothing: a new folder holds the site's SQLite database and Formulate's JSON files.
 // (An in-memory database does not work: its tables are gone before Umbraco's install has finished.)

@@ -280,7 +280,7 @@ npm test
 
 The site runs over HTTPS on `https://localhost:44331`, so trust the .NET development certificate first with `dotnet dev-certs https --trust`.
 
-Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco version, and `DOTNET_EXE` to point at a different `dotnet` (Umbraco 19 needs the .NET 11 SDK).
+Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco version, `FORMULATE_E2E_PORT` to use another port (so two runs can go at once), and `DOTNET_EXE` to point at a different `dotnet` (Umbraco 19 needs the .NET 11 SDK).
 
 The compatibility check runs in CI. It reads the built Formulate assemblies and confirms that every Umbraco member they use exists in Umbraco 18 and 19. Code compiled against 17.6 must not use members that Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`, such as `Id` and `Name`. The source compiles against both 17 and 18, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` or an extension method instead.
 
