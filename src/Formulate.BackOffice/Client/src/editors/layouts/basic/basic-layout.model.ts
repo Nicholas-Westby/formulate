@@ -138,7 +138,8 @@ export function readLayout(data: unknown): FormulateBasicLayout {
 
 /**
  * A layout to store: as the designer shows it ({@link readLayout}), without the fields that are no longer
- * on the form. A layout that has nothing to drop comes out as it went in.
+ * on the form. A layout with rows and nothing to drop comes out as it went in; one without rows gets the
+ * empty row the designer shows.
  * @param data The configuration.
  * @param form The layout's form.
  */
