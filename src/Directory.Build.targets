@@ -61,15 +61,24 @@
   </Target>
 
   <!--
-    Files created during the build are not in the project's item lists, because those were collected
-    before the build started. This adds them as content, so that a clean build still serves and packs them.
-    It always runs (even when the npm build is skipped), right before static web assets are worked out.
+    The project's item lists were collected before the build started, so they miss what the npm build
+    changed. This adds the files it created as content, so that a clean build still serves and packs them,
+    and drops the output files it deleted (such as chunks whose hashed names changed), which would otherwise
+    fail the build. It always runs (even when the npm build is skipped), right before static web assets are
+    worked out.
   -->
   <Target Name="FormulateIncludeClientOutput"
           DependsOnTargets="FormulateBuildClient"
           BeforeTargets="AssignTargetPaths;ResolveStaticWebAssetsInputs"
           Condition="'$(_FormulateClientActive)' == 'true' and '$(FormulateClientOutputDirectory)' != ''">
+    <PropertyGroup>
+      <_FormulateClientOutputFullPath>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(FormulateClientOutputDirectory)/'))</_FormulateClientOutputFullPath>
+    </PropertyGroup>
     <ItemGroup>
+      <_FormulateDeletedFile Include="@(Content)" Condition="!Exists('%(Content.FullPath)') and $([System.String]::Copy('%(Content.FullPath)').StartsWith('$(_FormulateClientOutputFullPath)'))" />
+      <Content Remove="@(_FormulateDeletedFile)" />
+      <_FormulateDeletedFile Remove="@(_FormulateDeletedFile)" />
+
       <FormulateGeneratedFile Include="$(FormulateClientOutputDirectory)/**" />
       <Content Include="@(FormulateGeneratedFile)" Exclude="@(Content)" />
       <FormulateGeneratedFile Remove="@(FormulateGeneratedFile)" />
