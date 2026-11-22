@@ -5,6 +5,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { fakeApi, jsonResponse } from '../../test/fake-api.js';
 import { serveForms } from '../../test/forms.js';
 import { LIST, MANDATORY, REGEX, US_STATES } from '../../test/kind-items.js';
+import { loadFormulateEnglishTerms } from '../../test/localization.js';
 import { createTestHost, type FormulateTestHostElement } from '../../test/test-host.js';
 import { click, press } from '../../test/ui.js';
 import { FormulateDefinitionsContext } from '../definitions.context.js';
@@ -71,6 +72,8 @@ customElements.define('formulate-test-repository-validation-picker', RepositoryV
 
 beforeAll(() => {
 	umbExtensionsRegistry.registerMany(itemManifests);
+	// The names of the Remove buttons; the other terms show as their keys.
+	loadFormulateEnglishTerms(['formulate_removeItem']);
 });
 
 /**
@@ -242,6 +245,16 @@ describe('Formulate validation picker', () => {
 		expect(refs(shadow).map((ref) => [ref.name, ref.error])).toStrictEqual([
 			['Required', false],
 			['formulate_validationNotFound', true],
+		]);
+	});
+
+	it('names each Remove button after its validation, keeping Remove as what it shows', async () => {
+		const { shadow } = await render(new TestValidationPicker(), [ZIP_ID, GONE_ID]);
+		const buttons = [...shadow.querySelectorAll('uui-ref-node uui-button')];
+
+		expect(buttons.map((button) => [button.getAttribute('label'), button.getAttribute('aria-label')])).toStrictEqual([
+			['general_remove', 'Remove Zip code'],
+			['general_remove', 'Remove item 2'],
 		]);
 	});
 

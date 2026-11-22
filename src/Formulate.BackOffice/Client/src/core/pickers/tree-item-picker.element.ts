@@ -274,7 +274,7 @@ export abstract class FormulateTreeItemPickerElement extends UmbLitElement {
 
 		return html`
 			<div class="row" data-key=${id} ?data-readonly=${this.readonly} ?data-picked-up=${this.#keyboard.pickedUp === id}>
-				${sortable ? this.#keyboard.renderHandle(id, this.localize.term('formulate_moveItem', name, position)) : nothing}
+				${sortable ? this.#keyboard.renderHandle(id, this.localize.term('formulate_moveItem', item?.name ?? '', position)) : nothing}
 				<!-- Read-only: there is nothing to open, only to remove. -->
 				<uui-ref-node name=${name} detail=${detail} ?error=${missing} ?standalone=${!this.#args.multiple} readonly>
 					<umb-icon slot="icon" name=${item?.icon || this.#args.icon}></umb-icon>
@@ -282,7 +282,11 @@ export abstract class FormulateTreeItemPickerElement extends UmbLitElement {
 						? nothing
 						: html`
 								<uui-action-bar slot="actions">
-									<uui-button label=${this.localize.term('general_remove')} @click=${() => this.#remove(id)}></uui-button>
+									<!-- Shows Remove; a screen reader hears which item it removes. -->
+									<uui-button
+										label=${this.localize.term('general_remove')}
+										aria-label=${this.localize.term('formulate_removeItem', item?.name ?? '', position)}
+										@click=${() => this.#remove(id)}></uui-button>
 								</uui-action-bar>
 							`}
 				</uui-ref-node>

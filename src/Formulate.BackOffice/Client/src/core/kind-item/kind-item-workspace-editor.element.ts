@@ -3,7 +3,7 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import './kind-item-workspace-header.element.js';
 
 /**
- * The editor of a validation or data values workspace: Umbraco's entity detail workspace editor (header,
+ * The editor of a validation, data values or form workspace: Umbraco's entity detail workspace editor (header,
  * views, footer with the breadcrumb, actions and Save) with the item's name and alias in the header.
  */
 @customElement('formulate-kind-item-workspace-editor')

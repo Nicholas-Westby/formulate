@@ -46,6 +46,9 @@ export default {
 		itemLabel: (position: number) => `Label of item ${position}`,
 		removeItem: (name: string, position: number) => (name ? `Remove ${name}` : `Remove item ${position}`),
 		moveItem: (name: string, position: number) => (name ? `Move ${name}` : `Move item ${position}`),
+		editItem: (name: string, position: number) => (name ? `Edit ${name}` : `Edit item ${position}`),
+		deleteItem: (name: string, position: number) => (name ? `Delete ${name}` : `Delete item ${position}`),
+		enabledItem: (name: string, position: number) => (name ? `Enabled: ${name}` : `Enabled: item ${position}`),
 		moveHint:
 			'Drag to move it, or press the up and down arrow keys. Enter picks it up and puts it down, and Escape puts it back.',
 		itemPickedUp: (position: number, count: number) =>
@@ -59,8 +62,37 @@ export default {
 		layoutNotFound: 'Layout not found',
 		legacyDataValues:
 			'These data values were made by an older version of Formulate and can no longer be changed. Create new data values to use instead.',
+		fields: 'Fields',
+		handlers: 'Handlers',
+		addField: (kind?: string) => (kind ? `Add ${kind} field` : 'Add field'),
+		editField: (kind?: string) => (kind ? `Edit ${kind} field` : 'Edit field'),
+		deleteField: 'Delete field',
+		confirmDeleteField: (name?: string) =>
+			`Are you sure you want to delete ${name ? `the field ${name}` : 'this field'}? It is removed from the form when the form is saved.`,
+		addHandler: (kind?: string) => (kind ? `Add ${kind} handler` : 'Add handler'),
+		editHandler: (kind?: string) => (kind ? `Edit ${kind} handler` : 'Edit handler'),
+		deleteHandler: 'Delete handler',
+		confirmDeleteHandler: (name?: string) =>
+			`Are you sure you want to delete ${name ? `the handler ${name}` : 'this handler'}? It is removed from the form when the form is saved.`,
+		unnamed: 'Unnamed',
+		unknownKind: 'Not installed',
+		validationCount: (count: number) => (count === 1 ? '1 validation' : `${count} validations`),
+		noKindsFound: 'No kind matches the filter.',
+		label: 'Label',
+		labelDescription: 'What visitors see with the field.',
+		category: 'Category',
+		categoryDescription: "One of the field categories set up in Formulate's configuration.",
+		noCategory: 'No category',
+		validations: 'Validations',
+		validationsDescription: 'Checked in this order when the form is submitted.',
 		validationNotFound: 'Validation not found',
 		itemNotRead: 'Could not be read',
 		dataValuesNotFound: 'Data values not found',
+		unknownFieldKind:
+			'The kind of this field is not installed, so only its name and alias can be changed here. Its settings are kept as they are.',
+		unknownHandlerKind:
+			'The kind of this handler is not installed, so only its name, alias and whether it is enabled can be changed here. Its settings are kept as they are.',
+		enabled: 'Enabled',
+		enabledDescription: 'Whether the handler runs when the form is submitted.',
 	},
 } satisfies UmbLocalizationDictionary;

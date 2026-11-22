@@ -2,23 +2,25 @@ import type { UmbInputWithAliasElement } from '@umbraco-cms/backoffice/component
 import { css, customElement, html, query, state, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import { umbFocus, UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbBindServerValidationToFormControl, umbBindToValidation } from '@umbraco-cms/backoffice/validation';
-import type { FormulateKindItemWorkspaceContext } from './kind-item-workspace.context.js';
-import { FORMULATE_KIND_ITEM_WORKSPACE_CONTEXT } from './kind-item-workspace.context-token.js';
+import {
+	FORMULATE_ALIASED_WORKSPACE_CONTEXT,
+	type FormulateAliasedWorkspaceContext,
+} from './aliased-workspace.context-token.js';
 
 /**
  * Any alias. The API accepts every alias, and Formulate 3 did too, so Umbraco's pattern (a letter, then
  * letters, digits, - and _) must not stop an older item from being saved.
  */
-const ANY_ALIAS = '[\\s\\S]*';
+export const FORMULATE_ANY_ALIAS_PATTERN = '[\\s\\S]*';
 
 /**
- * The header of a validation or data values workspace: the name and alias, as Umbraco's content type and
+ * The header of a validation, data values or form workspace: the name and alias, as Umbraco's content type and
  * user group workspaces show them. The alias follows the name for a new item until it is unlocked. A
  * problem the API reports for the name or alias shows under the input until that value changes.
  */
 @customElement('formulate-kind-item-workspace-header')
 export class FormulateKindItemWorkspaceHeaderElement extends UmbLitElement {
-	#context?: FormulateKindItemWorkspaceContext;
+	#context?: FormulateAliasedWorkspaceContext;
 	#aliasBinder?: UmbBindServerValidationToFormControl;
 
 	@state()
@@ -39,12 +41,12 @@ export class FormulateKindItemWorkspaceHeaderElement extends UmbLitElement {
 	constructor() {
 		super();
 
-		this.consumeContext(FORMULATE_KIND_ITEM_WORKSPACE_CONTEXT, (context) => {
+		this.consumeContext(FORMULATE_ALIASED_WORKSPACE_CONTEXT, (context) => {
 			this.#context = context;
 			this.observe(context?.name, (name) => (this._name = name ?? ''), '_observeName');
 			this.observe(context?.alias, (alias) => (this._alias = alias ?? ''), '_observeAlias');
 			this.observe(context?.isNew, (isNew) => (this._isNew = isNew === true), '_observeIsNew');
-			this.observe(context?.readOnlyGuard.permitted, (readonly) => (this._readonly = readonly === true), '_observeReadOnly');
+			this.observe(context?.readOnlyGuard?.permitted, (readonly) => (this._readonly = readonly === true), '_observeReadOnly');
 		});
 	}
 
@@ -81,7 +83,7 @@ export class FormulateKindItemWorkspaceHeaderElement extends UmbLitElement {
 					label=${this.localize.term('placeholders_entername')}
 					.value=${this._name}
 					.alias=${this._alias}
-					alias-pattern=${ANY_ALIAS}
+					alias-pattern=${FORMULATE_ANY_ALIAS_PATTERN}
 					.autocomplete=${'off'}
 					?auto-generate-alias=${this._isNew}
 					?readonly=${this._readonly}

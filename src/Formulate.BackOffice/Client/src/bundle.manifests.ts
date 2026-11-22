@@ -6,7 +6,9 @@ import { manifests as editors } from './editors/manifests.js';
 import { manifests as entityActions } from './entity-actions/manifests.js';
 import { manifests as entrypoint } from './entrypoint/manifests.js';
 import { manifests as folders } from './folders/manifests.js';
+import { manifests as formModals } from './forms/modals/manifests.js';
 import { manifests as forms } from './forms/repository/manifests.js';
+import { manifests as formWorkspace } from './forms/workspace/manifests.js';
 import { manifests as layouts } from './layouts/repository/manifests.js';
 import { manifests as localization } from './localization/manifests.js';
 import { manifests as formLayoutPicker } from './property-editors/form-layout-picker/manifests.js';
@@ -25,6 +27,8 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...tree,
 	...folders,
 	...forms,
+	...formWorkspace,
+	...formModals,
 	...layouts,
 	...validations,
 	...validationWorkspace,

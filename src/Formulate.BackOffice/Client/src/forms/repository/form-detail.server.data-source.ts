@@ -8,9 +8,13 @@ import {
 } from '../../api/index.js';
 import { FORMULATE_FORM_ENTITY_TYPE } from '../../constants.js';
 import { FormulateDetailServerDataSource } from '../../core/detail/detail.server.data-source.js';
+import { toFormField, toFormFieldRequest, toFormHandler, toFormHandlerRequest } from '../form-items.js';
 import type { FormulateFormDetailModel } from '../types.js';
 
-/** Reads, creates, saves and deletes forms. Deleting a form deletes its layouts. */
+/**
+ * Reads, creates, saves and deletes forms. Deleting a form deletes its layouts. Fields and handlers are sent
+ * back with every part they were read with, so those of a kind that is not installed are kept as they are.
+ */
 export class FormulateFormDetailServerDataSource extends FormulateDetailServerDataSource<
 	FormulateFormDetailModel,
 	FormResponseModel
@@ -31,15 +35,20 @@ export class FormulateFormDetailServerDataSource extends FormulateDetailServerDa
 						kindId: form.kindId,
 						name: form.name,
 						alias: form.alias,
-						fields: form.fields,
-						handlers: form.handlers,
+						fields: form.fields.map(toFormFieldRequest),
+						handlers: form.handlers.map(toFormHandlerRequest),
 					},
 				});
 			},
 			update: (form) =>
 				putFormulateFormById({
 					path: { id: form.unique },
-					body: { name: form.name, alias: form.alias, fields: form.fields, handlers: form.handlers },
+					body: {
+						name: form.name,
+						alias: form.alias,
+						fields: form.fields.map(toFormFieldRequest),
+						handlers: form.handlers.map(toFormHandlerRequest),
+					},
 				}),
 			delete: (id) => deleteFormulateFormById({ path: { id } }),
 			toModel: (form) => ({
@@ -48,8 +57,8 @@ export class FormulateFormDetailServerDataSource extends FormulateDetailServerDa
 				name: form.name,
 				alias: form.alias ?? null,
 				kindId: null,
-				fields: form.fields,
-				handlers: form.handlers,
+				fields: (form.fields ?? []).map(toFormField),
+				handlers: (form.handlers ?? []).map(toFormHandler),
 			}),
 		});
 	}

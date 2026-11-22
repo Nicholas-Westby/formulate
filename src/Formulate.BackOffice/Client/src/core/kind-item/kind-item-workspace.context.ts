@@ -60,6 +60,9 @@ export abstract class FormulateKindItemWorkspaceContext<
 {
 	readonly IS_FORMULATE_KIND_ITEM_WORKSPACE_CONTEXT = true;
 
+	/** Its header shows and changes its name and alias. */
+	readonly IS_FORMULATE_ALIASED_WORKSPACE_CONTEXT = true as const;
+
 	/** The extension type of the editors of this kind of item's kinds. */
 	readonly editorType: FormulateKindEditorType;
 
