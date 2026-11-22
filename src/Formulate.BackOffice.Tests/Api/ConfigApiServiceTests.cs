@@ -12,31 +12,36 @@ namespace Formulate.BackOffice.Tests.Api;
 
 public class ConfigApiServiceTests
 {
-    private static ConfigApiService Create(ButtonsOptions buttons, FormFieldOptions fields, FormulateBackOfficeOptions backOffice) =>
-        new(Options.Create(buttons), Options.Create(fields), Options.Create(backOffice));
+    private static ConfigApiService Create(ButtonsOptions buttons, FormFieldOptions fields) =>
+        new(Options.Create(buttons), Options.Create(fields));
 
     [Fact]
-    public void Config_lists_button_kinds_field_categories_and_the_folder_icon_setting()
+    public void Config_lists_button_kinds_and_field_categories()
     {
         var buttons = new ButtonsOptions { new ButtonItem { Kind = "Next" }, new ButtonItem { Kind = "Submit" } };
         var fields = new FormFieldOptions { Categories = new[] { new FormFieldCategory { Group = "Inputs", Kind = "Text" } } };
 
-        var config = Create(buttons, fields, new FormulateBackOfficeOptions { UseDefaultFolderIcon = true }).Get();
+        var config = Create(buttons, fields).Get();
 
         Assert.Equal(new[] { "Next", "Submit" }, config.ButtonKinds);
         var category = Assert.Single(config.FieldCategories);
         Assert.Equal(("Inputs", "Text"), (category.Group, category.Kind));
-        Assert.True(config.UseDefaultFolderIcon);
     }
 
     [Fact]
-    public void Empty_options_give_no_buttons_no_categories_and_tree_folder_icons()
+    public void Empty_options_give_no_buttons_and_no_categories()
     {
-        var config = Create(new ButtonsOptions(), new FormFieldOptions(), new FormulateBackOfficeOptions()).Get();
+        var config = Create(new ButtonsOptions(), new FormFieldOptions()).Get();
 
         Assert.Empty(config.ButtonKinds);
         Assert.Empty(config.FieldCategories);
-        Assert.False(config.UseDefaultFolderIcon);
+    }
+
+    [Fact]
+    public void There_is_no_folder_icon_setting_because_every_folder_uses_the_folder_icon()
+    {
+        Assert.Equal(new[] { "ButtonKinds", "FieldCategories" }, typeof(Formulate.BackOffice.Api.Models.Config.FormulateConfigResponseModel).GetProperties().Select(x => x.Name).Order());
+        Assert.Null(typeof(FormulateBackOfficeOptions).GetProperty("UseDefaultFolderIcon"));
     }
 
     private static ConfigApiService CreateAsConfiguredByTheApp(Dictionary<string, string?> settings)
@@ -70,11 +75,9 @@ public class ConfigApiServiceTests
             ["Formulate:Buttons:0:Kind"] = "Reset",
             ["Formulate:Fields:Categories:0:Group"] = "Inputs",
             ["Formulate:Fields:Categories:0:Kind"] = "Text",
-            ["Formulate:BackOffice:UseDefaultFolderIcon"] = "true",
         }).Get();
 
         Assert.Equal(new[] { "Reset" }, config.ButtonKinds);
         Assert.Equal(("Inputs", "Text"), (config.FieldCategories[0].Group, config.FieldCategories[0].Kind));
-        Assert.True(config.UseDefaultFolderIcon);
     }
 }

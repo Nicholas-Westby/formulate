@@ -14,10 +14,5 @@ namespace Formulate.BackOffice.Api.Models.Config
         /// Gets how kinds of form field are grouped.
         /// </summary>
         public required FieldCategoryModel[] FieldCategories { get; init; }
-
-        /// <summary>
-        /// Gets a value indicating whether folders show the default folder icon in every tree.
-        /// </summary>
-        public required bool UseDefaultFolderIcon { get; init; }
     }
 }
