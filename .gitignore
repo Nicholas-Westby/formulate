@@ -29,6 +29,9 @@ artifacts/
 # The built back office client (built from src/Formulate.BackOffice/Client by "dotnet build" or "npm run build").
 src/Formulate.BackOffice/wwwroot/App_Plugins/
 
+# Other Umbraco versions the back office client is type-checked against ("npm run typecheck:18" and ":19").
+src/Formulate.BackOffice/Client/.typecheck/
+
 # Playwright end-to-end test output.
 tests/e2e/screenshots/
 tests/e2e/test-results/
