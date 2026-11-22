@@ -44,7 +44,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-checkbox-list";
+            public const string Icon = "icon-bulleted-list";
         }
 
         /// <inheritdoc />

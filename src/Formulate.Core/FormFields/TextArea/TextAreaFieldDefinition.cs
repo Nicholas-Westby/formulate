@@ -26,7 +26,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-textarea";
+            public const string Icon = "icon-edit";
 
             /// <summary>
             /// The back office editor alias.

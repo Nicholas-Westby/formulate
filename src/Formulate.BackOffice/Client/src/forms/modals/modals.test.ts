@@ -77,9 +77,9 @@ afterEach(() => {
 describe('Formulate pick kind dialog', () => {
 	const kinds: FormulatePickKindModalData['kinds'] = [
 		{ kindId: TEXT, name: 'Text', icon: 'icon-document-dashed-line', category: 'Inputs' },
-		{ kindId: HEADER, name: 'Header', icon: 'icon-formulate-header', category: 'Content' },
-		{ kindId: DROP_DOWN, name: 'Drop Down', icon: 'icon-formulate-drop-down', category: 'Inputs' },
-		{ kindId: BUTTON, name: 'Button', icon: 'icon-formulate-button', category: 'Actions' },
+		{ kindId: HEADER, name: 'Header', icon: 'icon-heading', category: 'Content' },
+		{ kindId: DROP_DOWN, name: 'Drop Down', icon: 'icon-list', category: 'Inputs' },
+		{ kindId: BUTTON, name: 'Button', icon: 'icon-mouse-cursor', category: 'Actions' },
 	];
 
 	/** The groups shown, each with the names of its kinds. */

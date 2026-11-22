@@ -26,7 +26,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-document-dashed-line";
+            public const string Icon = "icon-autofill";
 
             /// <summary>
             /// The back office editor alias.

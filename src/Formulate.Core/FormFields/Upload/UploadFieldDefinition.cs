@@ -26,7 +26,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-upload";
+            public const string Icon = "icon-download-alt";
 
             /// <summary>
             /// The back office editor alias.

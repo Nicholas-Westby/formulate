@@ -70,6 +70,7 @@ The packages are renamed, because the old IDs belong to another NuGet account. I
 
 - No telemetry anywhere. The five places version 4 turned on Umbraco's package telemetry are gone, and Formulate Pro's usage tracker is not carried over.
 - `Formulate:Email:Headers` is not supported (Umbraco's email sender cannot add headers). A startup warning names the setting when it is present.
+- Formulate 3's icon font. Every built-in field, handler and data values kind uses an icon of Umbraco's own. Kinds that still name an `icon-formulate-*` icon get a generic one.
 - The `UseDefaultFolderIcon` back office option. Folders use the built-in folder icon.
 - Support for Umbraco Deploy, extra back office languages, and automatic import of Formulate 3 data (all out of scope for 5.0).
 

@@ -39,7 +39,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-pair-list";
+            public const string Icon = "icon-tags";
         }
 
         /// <inheritdoc />

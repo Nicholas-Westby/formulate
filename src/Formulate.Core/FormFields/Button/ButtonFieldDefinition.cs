@@ -32,7 +32,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-button";
+            public const string Icon = "icon-mouse-cursor";
 
             /// <summary>
             /// The back office editor alias.

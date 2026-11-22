@@ -32,7 +32,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-globe";
+            public const string Icon = "icon-map-location";
         }
 
         /// <inheritdoc />

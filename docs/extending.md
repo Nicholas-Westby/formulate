@@ -90,6 +90,8 @@ public sealed class PhoneFieldDefinition : FormFieldDefinition<PhoneField>
 }
 ```
 
+The `Icon` is a name from Umbraco's own icon set (such as `icon-phone`). Formulate 3's `icon-formulate-*` icon font is gone, and the back office shows a generic icon for those names.
+
 The definition can override these features. Each defaults to the value shown.
 
 | Property | Default | Meaning |

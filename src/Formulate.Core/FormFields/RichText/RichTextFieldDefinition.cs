@@ -34,7 +34,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-rich-text";
+            public const string Icon = "icon-browser-window";
 
             /// <summary>
             /// The back office editor alias.

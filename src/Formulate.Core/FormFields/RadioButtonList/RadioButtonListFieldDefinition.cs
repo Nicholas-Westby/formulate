@@ -44,7 +44,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-radio-button-list";
+            public const string Icon = "icon-target";
         }
 
         /// <inheritdoc />

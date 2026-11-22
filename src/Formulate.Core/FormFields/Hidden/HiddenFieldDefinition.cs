@@ -34,7 +34,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-hidden";
+            public const string Icon = "icon-readonly";
 
             /// <summary>
             /// The back office editor alias.

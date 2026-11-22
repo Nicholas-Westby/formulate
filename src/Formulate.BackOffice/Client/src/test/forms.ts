@@ -52,14 +52,14 @@ export const FIELD_KINDS: Array<FormFieldDefinitionModel> = [
 	fieldKind({
 		kindId: DROP_DOWN,
 		name: 'Drop Down',
-		icon: 'icon-formulate-drop-down',
+		icon: 'icon-list',
 		editorAlias: 'formulate-drop-down-field',
 		defaultConfiguration: { dataValue: '00000000-0000-0000-0000-000000000000' },
 	}),
 	fieldKind({
 		kindId: HEADER,
 		name: 'Header',
-		icon: 'icon-formulate-header',
+		icon: 'icon-heading',
 		category: 'Content',
 		editorAlias: 'formulate-header-field',
 		supportsLabel: false,
@@ -72,7 +72,7 @@ export const FIELD_KINDS: Array<FormFieldDefinitionModel> = [
 	fieldKind({
 		kindId: BUTTON,
 		name: 'Button',
-		icon: 'icon-formulate-button',
+		icon: 'icon-mouse-cursor',
 		category: 'Actions',
 		editorAlias: 'formulate-button-field',
 		isTransitory: true,
@@ -84,7 +84,7 @@ export const HANDLER_KINDS: Array<FormHandlerDefinitionModel> = [
 	{
 		kindId: STORE_DATA,
 		name: 'Store Data',
-		icon: 'icon-formulate-store-data',
+		icon: 'icon-database',
 		category: 'Persistence',
 		editorAlias: 'formulate-store-data-handler',
 		defaultConfiguration: null,

@@ -26,7 +26,7 @@ namespace Formulate.Core.FormFields.Checkbox
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-checkbox-dotted";
+            public const string Icon = "icon-checkbox";
 
             /// <summary>
             /// The back office editor alias.

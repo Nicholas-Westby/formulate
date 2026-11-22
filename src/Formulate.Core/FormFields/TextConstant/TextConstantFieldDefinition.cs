@@ -34,7 +34,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-text-constant";
+            public const string Icon = "icon-tag";
 
             /// <summary>
             /// The back office editor alias.

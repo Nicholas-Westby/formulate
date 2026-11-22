@@ -38,7 +38,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-send-data";
+            public const string Icon = "icon-cloud-upload";
 
             /// <summary>
             /// The back office editor alias.

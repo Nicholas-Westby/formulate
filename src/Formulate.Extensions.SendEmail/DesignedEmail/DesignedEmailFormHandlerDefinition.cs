@@ -38,7 +38,7 @@ namespace Formulate.Extensions.SendEmail.DesignedEmail
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-message";
+            public const string Icon = "icon-newspaper";
 
             /// <summary>
             /// The back office editor alias.

@@ -38,7 +38,7 @@ namespace Formulate.Core.FormFields.ExtendedRadioButtonList
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-extended-radio-button-list";
+            public const string Icon = "icon-record";
         }
 
         /// <inheritdoc />

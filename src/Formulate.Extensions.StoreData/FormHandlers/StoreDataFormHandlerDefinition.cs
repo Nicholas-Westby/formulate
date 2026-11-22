@@ -34,7 +34,7 @@ namespace Formulate.Extensions.StoreData.FormHandlers
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-store-data";
+            public const string Icon = "icon-database";
 
             /// <summary>
             /// The back office editor alias.

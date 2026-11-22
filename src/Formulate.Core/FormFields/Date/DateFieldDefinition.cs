@@ -30,7 +30,7 @@ namespace Formulate.Core.FormFields.Date
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-date";
+            public const string Icon = "icon-calendar-alt";
 
             /// <summary>
             /// The back office editor alias.

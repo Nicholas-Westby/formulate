@@ -39,7 +39,7 @@ namespace Formulate.Core.FormFields.Recaptcha
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-recaptcha";
+            public const string Icon = "icon-shield";
 
             /// <summary>
             /// The back office editor alias.

@@ -48,7 +48,7 @@ function kind(kindId: string, name: string, flags: Partial<FormFieldDefinitionMo
 
 const FIELD_KINDS = [
 	kind(TEXT, 'Text'),
-	kind(HIDDEN, 'Hidden', { icon: 'icon-formulate-hidden' }),
+	kind(HIDDEN, 'Hidden', { icon: 'icon-readonly' }),
 	kind(DATE, 'Date'),
 	kind(HEADER, 'Header', { isStored: false, isTransitory: true }),
 	kind(BUTTON, 'Button', { isTransitory: true }),

@@ -44,7 +44,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-drop-down";
+            public const string Icon = "icon-list";
         }
 
         /// <inheritdoc />

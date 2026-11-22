@@ -37,7 +37,7 @@
             /// <summary>
             /// The icon.
             /// </summary>
-            public const string Icon = "icon-formulate-email";
+            public const string Icon = "icon-message";
 
             /// <summary>
             /// The back office editor alias.

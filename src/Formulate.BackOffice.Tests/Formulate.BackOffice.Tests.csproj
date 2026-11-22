@@ -23,6 +23,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Formulate.BackOffice\Formulate.BackOffice.csproj" />
+    <ProjectReference Include="..\Formulate.Extensions.SendEmail\Formulate.Extensions.SendEmail.csproj" />
+    <ProjectReference Include="..\Formulate.Extensions.SendData\Formulate.Extensions.SendData.csproj" />
+    <ProjectReference Include="..\Formulate.Extensions.StoreData\Formulate.Extensions.StoreData.csproj" />
   </ItemGroup>
 
 </Project>
