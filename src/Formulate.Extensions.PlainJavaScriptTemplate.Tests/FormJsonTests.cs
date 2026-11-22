@@ -8,6 +8,9 @@ using Formulate.Extensions.PlainJavaScriptTemplate.Core.Mapping.Layouts;
 using Umbraco.Cms.Core.DependencyInjection;
 using Umbraco.Cms.Core.Mapping;
 using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -149,6 +152,165 @@ public sealed class FormJsonTests
         var mapped = RunMap<IFormField, PlainJavaScriptFormField>(new DefaultFormFieldMapDefinition(), field);
 
         Assert.False(string.IsNullOrEmpty(mapped.FieldType));
+    }
+
+    [Fact]
+    public void Submit_url_includes_path_base()
+    {
+        var root = new FormJsonHarness();
+        var underPathBase = new FormJsonHarness { PathBase = "/site" };
+
+        Assert.Equal("/api/formulate/plain-js/submit", root.Build()["data"]!["url"]!.Value<string>());
+        Assert.Equal("/site/api/formulate/plain-js/submit", underPathBase.Build()["data"]!["url"]!.Value<string>());
+    }
+
+    [Fact]
+    public void Assets_respect_options()
+    {
+        var none = new FormJsonHarness { PathBase = "/site" }.Build()["assets"]!;
+        var basic = new FormJsonHarness { Theme = "Basic", PathBase = "/site" }.Build()["assets"]!;
+
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=HASH", none["script"]!.Value<string>());
+        Assert.Equal(JTokenType.Null, none["theme"]!.Type);
+        Assert.Equal("/site/App_Plugins/Formulate/PlainJavaScript/themes/basic.min.css?v=HASH", basic["theme"]!.Value<string>());
+    }
+
+    [Fact]
+    public void Unknown_theme_acts_as_none_and_warns_once()
+    {
+        var logger = new Mock<ILogger<PlainJavaScriptAssets>>();
+        var assets = new PlainJavaScriptAssets(
+            Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { Theme = "fancy" }),
+            new HashingFileVersionProvider(),
+            logger.Object);
+
+        var urls = new[] { assets.GetThemeUrl(default), assets.GetThemeUrl(default), assets.TakePageAssets(new DefaultHttpContext()).ThemeUrl };
+
+        Assert.All(urls, Assert.Null);
+        logger.Verify(
+            x => x.Log(LogLevel.Warning, It.IsAny<EventId>(), It.IsAny<It.IsAnyType>(), null, It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public void Script_url_falls_back_to_the_assembly_version_when_the_file_cannot_be_found()
+    {
+        var harness = new FormJsonHarness { FileVersionProvider = new MissingFileVersionProvider() };
+
+        var script = harness.Build()["assets"]!["script"]!.Value<string>()!;
+
+        Assert.StartsWith("/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=", script);
+        Assert.NotEqual("/App_Plugins/Formulate/PlainJavaScript/formulate.js?v=", script);
+    }
+
+    // The real provider, as asp-append-version uses it, with the site under a path base.
+    [Fact]
+    public void Script_url_carries_a_content_hash_under_a_path_base()
+    {
+        var webRoot = Path.Combine(Path.GetTempPath(), "formulate-" + Guid.NewGuid().ToString("N"));
+        var scriptFolder = Path.Combine(webRoot, "App_Plugins", "Formulate", "PlainJavaScript");
+        Directory.CreateDirectory(scriptFolder);
+        File.WriteAllText(Path.Combine(scriptFolder, "formulate.js"), "console.log(1);");
+
+        try
+        {
+            var environment = new Mock<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+            environment.SetupGet(x => x.WebRootFileProvider).Returns(new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRoot));
+            var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+            services.AddSingleton(environment.Object);
+            services.AddLogging();
+            services.AddMemoryCache();
+            services.AddControllersWithViews();
+            using var provider = services.BuildServiceProvider();
+            var assets = new PlainJavaScriptAssets(
+                Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions()),
+                provider.GetRequiredService<Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider>(),
+                Mock.Of<ILogger<PlainJavaScriptAssets>>());
+
+            var url = assets.GetScriptUrl(new PathString("/site"));
+
+            Assert.Matches(@"^/site/App_Plugins/Formulate/PlainJavaScript/formulate\.js\?v=[A-Za-z0-9_-]{20,}$", url);
+        }
+        finally
+        {
+            Directory.Delete(webRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Page_assets_are_taken_once_per_request()
+    {
+        var assets = new PlainJavaScriptAssets(
+            Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { Theme = "basic" }),
+            new HashingFileVersionProvider(),
+            Mock.Of<ILogger<PlainJavaScriptAssets>>());
+        var request = new DefaultHttpContext();
+        var otherRequest = new DefaultHttpContext();
+
+        var first = assets.TakePageAssets(request);
+        var second = assets.TakePageAssets(request);
+        var other = assets.TakePageAssets(otherRequest);
+
+        Assert.EndsWith("formulate.js?v=HASH", first.ScriptUrl);
+        Assert.EndsWith("themes/basic.min.css?v=HASH", first.ThemeUrl);
+        Assert.Null(second.ScriptUrl);
+        Assert.Null(second.ThemeUrl);
+        Assert.Equal(first, other);
+    }
+
+    [Fact]
+    public void Page_assets_leave_out_the_script_when_it_is_turned_off()
+    {
+        var assets = new PlainJavaScriptAssets(
+            Microsoft.Extensions.Options.Options.Create(new PlainJavaScriptOptions { IncludeScript = false }),
+            new HashingFileVersionProvider(),
+            Mock.Of<ILogger<PlainJavaScriptAssets>>());
+
+        var page = assets.TakePageAssets(new DefaultHttpContext());
+
+        Assert.Null(page.ScriptUrl);
+        Assert.Null(page.ThemeUrl);
+    }
+
+    [Fact]
+    public void Form_json_has_the_same_shape_as_the_renderer_fixture()
+    {
+        var fixture = JObject.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "fixtures", "multi-step.json")));
+        var harness = new FormJsonHarness();
+        harness.AddField("name", "Name", new PlainJavaScriptFormField("text"));
+        harness.AddField("message", "Message", new PlainJavaScriptFormField("textarea"));
+        harness.AddField("next", "Next", new PlainJavaScriptFormField(new { buttonKind = "Next" }, "button"));
+        harness.Rows.Add(new PlainJavaScriptLayoutRow { Cells = new[] { new PlainJavaScriptLayoutCell { ColumnSpan = 12 } } });
+        harness.Rows.Add(new PlainJavaScriptLayoutRow { IsStep = true, Cells = Array.Empty<PlainJavaScriptLayoutCell>() });
+
+        var actual = harness.Build();
+
+        Assert.Equal(Shape(fixture["data"]!, "fields", "rows"), Shape(actual["data"]!, "fields", "rows"));
+        Assert.Equal(Shape(fixture["assets"]!), Shape(actual["assets"]!));
+        foreach (var type in new[] { "text", "textarea", "button" })
+        {
+            var expected = fixture["data"]!["fields"]!.First(x => x["fieldType"]!.Value<string>() == type);
+            var found = actual["data"]!["fields"]!.First(x => x["fieldType"]!.Value<string>() == type);
+            Assert.Equal(Shape(expected, "validations"), Shape(found, "validations"));
+        }
+
+        var fixtureRow = fixture["data"]!["rows"]![0]!;
+        var actualRow = actual["data"]!["rows"]![0]!;
+        Assert.Equal(Shape(fixtureRow["cells"]![0]!, "fields"), Shape(actualRow["cells"]![0]!, "fields"));
+        Assert.Equal(Shape(fixtureRow, "cells"), Shape(actualRow, "cells"));
+    }
+
+    /// <summary>The property names and value types of a JSON object, without its values or the named properties.</summary>
+    private static string Shape(JToken token, params string[] skip)
+    {
+        return token switch
+        {
+            JObject o => "{" + string.Join(",", o.Properties().Where(p => !skip.Contains(p.Name)).OrderBy(p => p.Name).Select(p => p.Name + ":" + Shape(p.Value, skip))) + "}",
+            JArray => "array",
+            JValue v when v.Type == JTokenType.Null => "null",
+            JValue v => v.Type.ToString(),
+            _ => token.Type.ToString(),
+        };
     }
 
     /// <summary>Runs the map a definition registers, the way the mapper would.</summary>

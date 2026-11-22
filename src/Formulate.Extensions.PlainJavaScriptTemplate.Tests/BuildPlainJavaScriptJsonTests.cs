@@ -90,7 +90,8 @@ public sealed class BuildPlainJavaScriptJsonTests
             new HttpContextAccessor { HttpContext = new DefaultHttpContext() },
             antiforgery.Object,
             mapper.Object,
-            idKeyMap);
+            idKeyMap,
+            Mock.Of<IPlainJavaScriptAssets>());
         var renderModel = new FormLayoutRenderModel(
             new FormRenderModel(Guid.NewGuid(), "Contact", "contact"),
             Mock.Of<ILayout>());

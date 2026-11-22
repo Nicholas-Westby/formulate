@@ -24,8 +24,9 @@
         private readonly IAntiforgery _antiforgery;
         private readonly IUmbracoMapper _umbracoMapper;
         private readonly IIdKeyMap _idKeyMap;
+        private readonly IPlainJavaScriptAssets _assets;
 
-        public BuildPlainJavaScriptJson(IJsonUtility jsonUtility, IUmbracoContextAccessor umbracoContextAccessor, IHttpContextAccessor httpContextAccessor, IAntiforgery antiforgery, IUmbracoMapper umbracoMapper, IIdKeyMap idKeyMap)
+        public BuildPlainJavaScriptJson(IJsonUtility jsonUtility, IUmbracoContextAccessor umbracoContextAccessor, IHttpContextAccessor httpContextAccessor, IAntiforgery antiforgery, IUmbracoMapper umbracoMapper, IIdKeyMap idKeyMap, IPlainJavaScriptAssets assets)
         {
             _jsonUtility = jsonUtility;
             _umbracoContextAccessor = umbracoContextAccessor;
@@ -33,6 +34,7 @@
             _antiforgery = antiforgery;
             _umbracoMapper = umbracoMapper;
             _idKeyMap = idKeyMap;
+            _assets = assets;
         }
 
         public string Build(FormLayoutRenderModel renderModel, string containerId)
@@ -125,8 +127,16 @@
             payload["__RequestVerificationToken"] = csrfToken;
 
             // Convert to a JSON string that can be consumed by JavaScript.
+            var pathBase = _httpContextAccessor.HttpContext?.Request.PathBase ?? default;
+
             var json = _jsonUtility.Serialize(new
             {
+                // The URLs of the renderer script and the theme (null when there is no theme).
+                assets = new
+                {
+                    script = _assets.GetScriptUrl(pathBase),
+                    theme = _assets.GetThemeUrl(pathBase)
+                },
                 data = new
                 {
                     // The name of the form can be use for analytics.
@@ -141,7 +151,8 @@
                     // The rows that define the form layout.
                     rows = rowsData,
                     payload,
-                    url = "/api/formulate/plain-js/submit"
+                    // The site can be hosted under a path base (for example, "/site").
+                    url = pathBase.Add("/api/formulate/plain-js/submit").Value
                 }
             });
 

@@ -23,6 +23,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The renderer's sample JSON, so the server output can be compared with what the renderer expects. -->
+    <None Include="..\Formulate.Extensions.PlainJavaScriptTemplate\Client\test\fixtures\multi-step.json" Link="fixtures\multi-step.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Formulate.Extensions.PlainJavaScriptTemplate\Formulate.Extensions.PlainJavaScriptTemplate.csproj" />
   </ItemGroup>
 

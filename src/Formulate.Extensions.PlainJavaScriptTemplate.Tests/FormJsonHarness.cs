@@ -6,6 +6,9 @@ using Formulate.Extensions.PlainJavaScriptTemplate.Core;
 using Formulate.Web.RenderModels;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json.Linq;
 using Umbraco.Cms.Core.Mapping;
@@ -30,6 +33,16 @@ internal sealed class FormJsonHarness
     public string QueryString { get; set; } = string.Empty;
 
     public string PathBase { get; set; } = string.Empty;
+
+    public string Theme { get; set; } = "none";
+
+    public bool IncludeScript { get; set; } = true;
+
+    /// <summary>The logger the assets service writes to.</summary>
+    public Mock<ILogger<PlainJavaScriptAssets>> Logger { get; } = new();
+
+    /// <summary>Replaces the file version provider (by default it appends ?v=hash).</summary>
+    public IFileVersionProvider FileVersionProvider { get; set; } = new HashingFileVersionProvider();
 
     public Guid FormId { get; } = Guid.NewGuid();
 
@@ -77,7 +90,11 @@ internal sealed class FormJsonHarness
         httpContext.Request.QueryString = new QueryString(QueryString);
         httpContext.Request.PathBase = new PathString(PathBase);
 
-        var builder = CreateBuilder(umbracoContextAccessor.Object, httpContext, antiforgery.Object, mapper.Object, idKeyMap.Object);
+        var assets = new PlainJavaScriptAssets(
+            Options.Create(new PlainJavaScriptOptions { Theme = Theme, IncludeScript = IncludeScript }),
+            FileVersionProvider,
+            Logger.Object);
+        var builder = CreateBuilder(umbracoContextAccessor.Object, httpContext, antiforgery.Object, mapper.Object, idKeyMap.Object, assets);
 
         var features = Mock.Of<IFormFieldFeatures>();
         var renderModel = new FormLayoutRenderModel(
@@ -90,7 +107,7 @@ internal sealed class FormJsonHarness
         return builder.Build(renderModel, "container");
     }
 
-    private static BuildPlainJavaScriptJson CreateBuilder(IUmbracoContextAccessor umbracoContextAccessor, HttpContext httpContext, IAntiforgery antiforgery, IUmbracoMapper mapper, IIdKeyMap idKeyMap)
+    private static BuildPlainJavaScriptJson CreateBuilder(IUmbracoContextAccessor umbracoContextAccessor, HttpContext httpContext, IAntiforgery antiforgery, IUmbracoMapper mapper, IIdKeyMap idKeyMap, IPlainJavaScriptAssets assets)
     {
         return new BuildPlainJavaScriptJson(
             new JsonUtility(new NewtonsoftJsonSerializer()),
@@ -98,6 +115,19 @@ internal sealed class FormJsonHarness
             new HttpContextAccessor { HttpContext = httpContext },
             antiforgery,
             mapper,
-            idKeyMap);
+            idKeyMap,
+            assets);
     }
+}
+
+/// <summary>A file version provider that always finds the file: it appends a fixed hash, like asp-append-version does.</summary>
+internal sealed class HashingFileVersionProvider : IFileVersionProvider
+{
+    public string AddFileVersionToPath(PathString requestPathBase, string path) => path + "?v=HASH";
+}
+
+/// <summary>A file version provider that cannot find the file, so it returns the path as given.</summary>
+internal sealed class MissingFileVersionProvider : IFileVersionProvider
+{
+    public string AddFileVersionToPath(PathString requestPathBase, string path) => path;
 }

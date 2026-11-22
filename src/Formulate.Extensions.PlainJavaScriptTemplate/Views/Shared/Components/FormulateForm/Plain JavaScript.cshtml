@@ -1,4 +1,5 @@
-﻿@inject Formulate.Extensions.PlainJavaScriptTemplate.Core.IBuildPlainJavaScriptJson buildJson;
+@inject Formulate.Extensions.PlainJavaScriptTemplate.Core.IBuildPlainJavaScriptJson buildJson;
+@inject Formulate.Extensions.PlainJavaScriptTemplate.Core.IPlainJavaScriptAssets assets;
 @model Formulate.Core.RenderModels.FormLayoutRenderModel
 @{
     var randomFormId = Guid.NewGuid().ToString("N");
@@ -8,21 +9,20 @@
     {
         return;
     }
+
+    // The theme and the script are added once per request, however many forms the page has.
+    var pageAssets = assets.TakePageAssets(Context);
 }
-@* Render element to attach form meta data to, such as form name. *@
-
-<div class="formulate-wrapper">
-<div style="display: none;" data-form-name="@Model.Form.Name"></div>
-
-</div>
-<!-- Attach an ID to the script to act as a placeholder for the form. -->
+@* The wrapper holds the form's meta data (such as its name). The renderer replaces the script inside it with the form. *@
+<div class="formulate-wrapper" data-form-name="@Model.Form.Name">
 <script id="formulate-form-@(randomFormId)">
     (function() {
 
         // Variables.
         let formData, key;
 
-        // Get the form data into JavaScript.
+        // Get the form data into JavaScript. The JSON is escaped so that
+        // nothing in it (such as a label) can end the script block.
         formData = @Html.Raw(json);
 
         // Store the form data to an array on the window object.
@@ -34,3 +34,12 @@
 
     })();
 </script>
+</div>
+@if (pageAssets.ThemeUrl is not null)
+{
+    <link rel="stylesheet" href="@pageAssets.ThemeUrl" />
+}
+@if (pageAssets.ScriptUrl is not null)
+{
+    <script src="@pageAssets.ScriptUrl" defer></script>
+}
