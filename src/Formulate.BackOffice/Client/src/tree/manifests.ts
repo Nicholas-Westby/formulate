@@ -64,6 +64,19 @@ const trees: Array<UmbExtensionManifest> = [
 	},
 ];
 
+// How a tree shows its items outside the section's menu, such as in the move dialog. Umbraco falls back
+// to this view for a tree without one, but warns that the fallback goes in Umbraco 20.
+const treeViews: Array<UmbExtensionManifest> = [
+	{
+		type: 'treeView',
+		kind: 'classic',
+		alias: 'Formulate.TreeView.Classic',
+		name: 'Formulate Classic Tree View',
+		forTrees: [FORMULATE_FORMS_TREE_ALIAS, FORMULATE_DATA_VALUES_TREE_ALIAS, FORMULATE_VALIDATIONS_TREE_ALIAS],
+		meta: { label: '#tree_classicViewLabel', icon: 'icon-blockquote' },
+	},
+];
+
 const treeItems: Array<UmbExtensionManifest> = [
 	{
 		type: 'treeItem',
@@ -183,6 +196,7 @@ const entityActions: Array<UmbExtensionManifest> = [
 export const manifests: Array<UmbExtensionManifest> = [
 	...repositories,
 	...trees,
+	...treeViews,
 	...treeItems,
 	...menuItems,
 	...rootWorkspaces,
