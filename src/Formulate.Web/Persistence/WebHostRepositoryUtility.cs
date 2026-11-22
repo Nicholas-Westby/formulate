@@ -100,6 +100,17 @@ namespace Formulate.Web.Persistence
         }
 
         /// <summary>
+        /// Gets every entity of this type.
+        /// </summary>
+        /// <returns>
+        /// A read only collection of <typeparamref name="TPersistedEntity"/>.
+        /// </returns>
+        public IReadOnlyCollection<TPersistedEntity> GetAll()
+        {
+            return RetrieveAll();
+        }
+
+        /// <summary>
         /// Gets any root level items.
         /// </summary>
         /// <returns>

@@ -1,6 +1,7 @@
 namespace Formulate.BackOffice.DependencyInjection
 {
     // Namespaces.
+    using Formulate.BackOffice.Api.Services;
     using Formulate.BackOffice.Persistence;
     using Formulate.BackOffice.Utilities;
     using Formulate.BackOffice.Utilities.CreateOptions.DataValues;
@@ -37,6 +38,7 @@ namespace Formulate.BackOffice.DependencyInjection
             builder.Services.AddScoped<IGetFolderIconOrDefault, GetFolderIconOrDefault>();
 
             builder.Services.AddScoped<ITreeEntityRepository, TreeEntityRepository>();
+            builder.Services.AddScoped<IFormulateTreeService, FormulateTreeService>();
 
             builder.Services.AddScoped<ICreateFormsScaffoldingEntity, CreateFormsScaffoldingEntity>();
             builder.Services.AddScoped<IGetFormsChildEntityOptions, GetFormsChildEntityOptions>();

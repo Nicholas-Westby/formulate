@@ -134,6 +134,47 @@
             return entities.ToArray();
         }
 
+        /// <inheritdoc />
+        public IReadOnlyCollection<Guid> GetParentIds(TreeTypes treeType, bool foldersOnly)
+        {
+            var parentIds = new HashSet<Guid>();
+
+            // The first path ID is the tree's root, so only a path of three or more has an item as parent.
+            void AddParents(IEnumerable<IPersistedEntity> entities)
+            {
+                foreach (var entity in entities)
+                {
+                    if (entity.Path.Length > 2)
+                    {
+                        parentIds.Add(entity.Path[^2]);
+                    }
+                }
+            }
+
+            AddParents(_folderEntityRepository.GetAll());
+
+            if (foldersOnly)
+            {
+                return parentIds;
+            }
+
+            switch (treeType)
+            {
+                case TreeTypes.Forms:
+                    AddParents(_formEntityRepository.GetAll());
+                    AddParents(_layoutEntityRepository.GetAll());
+                    break;
+                case TreeTypes.DataValues:
+                    AddParents(_dataValuesEntityRepository.GetAll());
+                    break;
+                case TreeTypes.Validations:
+                    AddParents(_validationEntityRepository.GetAll());
+                    break;
+            }
+
+            return parentIds;
+        }
+
         public Guid GetRootId(TreeTypes treeRootType)
         {
             var rootId = GetRootIdString(treeRootType);

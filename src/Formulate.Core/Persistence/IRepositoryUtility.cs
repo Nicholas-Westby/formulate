@@ -50,6 +50,14 @@ namespace Formulate.Core.Persistence
         /// </returns>
         IReadOnlyCollection<TPersistedEntity> GetRootItems();
 
+        /// <summary>
+        /// Gets every entity of this type, reading the store once.
+        /// </summary>
+        /// <returns>
+        /// A read only collection of <typeparamref name="TPersistedEntity"/>.
+        /// </returns>
+        IReadOnlyCollection<TPersistedEntity> GetAll();
+
         Guid[] Move(TPersistedEntity entity, Guid[] newPath);
     }
 }

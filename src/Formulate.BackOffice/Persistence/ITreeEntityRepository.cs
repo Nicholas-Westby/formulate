@@ -52,6 +52,14 @@
         /// <param name="entity">The entity to delete.</param>
         IReadOnlyCollection<Guid> Delete(IPersistedEntity entity);
 
+        /// <summary>
+        /// Gets the IDs of every entity in a tree that has at least one child.
+        /// </summary>
+        /// <param name="treeType">The tree.</param>
+        /// <param name="foldersOnly">True to count only folders as children.</param>
+        /// <returns>The parent IDs. Each repository is read at most once.</returns>
+        IReadOnlyCollection<Guid> GetParentIds(TreeTypes treeType, bool foldersOnly);
+
         Guid[] Move(IPersistedEntity entity, Guid[] parentPath);
     }
 }

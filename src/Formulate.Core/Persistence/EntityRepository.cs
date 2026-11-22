@@ -70,6 +70,12 @@ namespace Formulate.Core.Persistence
         }
 
         /// <inheritdoc />
+        public virtual IReadOnlyCollection<TPersistedEntity> GetAll()
+        {
+            return _repositoryUtility.GetAll();
+        }
+
+        /// <inheritdoc />
         public virtual IReadOnlyCollection<TPersistedEntity> GetRootItems()
         {
             return _repositoryUtility.GetRootItems();
