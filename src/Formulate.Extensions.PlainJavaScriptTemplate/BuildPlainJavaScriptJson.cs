@@ -242,7 +242,7 @@
 
             var tokens = _antiforgery.GetAndStoreTokens(context);
 
-            return tokens.RequestToken;
+            return tokens.RequestToken ?? string.Empty;
         }
 
         private int? GetPageId()

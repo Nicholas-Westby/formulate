@@ -15,7 +15,7 @@
             foreach (var kvp in fields)
             {
                 var values = kvp.Value.GetValues();
-                var formatted = string.Join(", ", values);
+                var formatted = string.Join(", ", values.Select(x => x ?? string.Empty));
                 var field = form.Fields.FirstOrDefault(x => x.Id == kvp.Key);
 
                 if (field is null)

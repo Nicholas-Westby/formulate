@@ -8,6 +8,6 @@
         /// <summary>
         /// The kind of button.
         /// </summary>
-        public string Kind { get; set; }
+        public string Kind { get; set; } = string.Empty;
     }
 }

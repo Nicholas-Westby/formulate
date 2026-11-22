@@ -2,8 +2,8 @@
 {
     public sealed class FormFieldCategory
     {
-        public string Group { get; set; }
+        public string Group { get; set; } = string.Empty;
 
-        public string Kind { get; set; }
+        public string Kind { get; set; } = string.Empty;
     }
 }

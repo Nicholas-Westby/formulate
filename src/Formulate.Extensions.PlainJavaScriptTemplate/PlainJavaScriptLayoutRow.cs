@@ -4,6 +4,6 @@
     {
         public bool IsStep { get; set; } = false;
 
-        public IReadOnlyCollection<PlainJavaScriptLayoutCell> Cells { get; set; }
+        public IReadOnlyCollection<PlainJavaScriptLayoutCell> Cells { get; set; } = Array.Empty<PlainJavaScriptLayoutCell>();
     }
 }
