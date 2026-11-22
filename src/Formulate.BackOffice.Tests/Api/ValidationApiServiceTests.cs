@@ -20,7 +20,8 @@ public class ValidationApiServiceTests
         _tree.Repositories.Validations,
         _tree.Tree,
         new ValidationDefinitionCollection(() => new IValidationDefinition[] { new MandatoryValidationDefinition(_tree.Repositories.JsonUtility) }),
-        new ConfigurationJson(_tree.Repositories.JsonUtility, _logger));
+        new ConfigurationJson(_tree.Repositories.JsonUtility, _logger),
+        new ApiWriteLock());
 
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
 

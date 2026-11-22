@@ -41,7 +41,8 @@ public class LayoutApiServiceTests
             new LayoutDefinitionCollection(() => new ILayoutDefinition[] { new BasicLayoutDefinition(_harness.Forms, _harness.JsonUtility) }.Concat(_extraLayouts)),
             templates,
             new GetDefaultTemplateId(templates, Options.Create(new FormulateBackOfficeOptions())),
-            new ConfigurationJson(_harness.JsonUtility, _logger));
+            new ConfigurationJson(_harness.JsonUtility, _logger),
+            new ApiWriteLock());
     }
 
     private static ITemplateDefinition Template(Guid id, string name)

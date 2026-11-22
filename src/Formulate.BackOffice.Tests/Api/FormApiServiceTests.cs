@@ -61,7 +61,8 @@ public class FormApiServiceTests
             new FormFieldDefinitionCollection(() => new[] { textField.Object }.Concat(_extraFields)),
             new FormHandlerDefinitionCollection(() => new[] { handler.Object }.Concat(_extraHandlers)),
             new ConfigurationJson(_harness.JsonUtility, _logger),
-            new DefaultShortStringHelper(new DefaultShortStringHelperConfig()));
+            new DefaultShortStringHelper(new DefaultShortStringHelperConfig()),
+            new ApiWriteLock());
     }
 
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();

@@ -144,7 +144,8 @@ public class BuiltInKindDefaultsTests
             Fields,
             new FormHandlerDefinitionCollection(() => Array.Empty<IFormHandlerDefinition>()),
             ConfigurationJson,
-            new DefaultShortStringHelper(new DefaultShortStringHelperConfig()));
+            new DefaultShortStringHelper(new DefaultShortStringHelperConfig()),
+            new ApiWriteLock());
 
         Assert.Equal(11, kinds.Count);
 
@@ -167,7 +168,7 @@ public class BuiltInKindDefaultsTests
     [Fact]
     public void Every_built_in_validation_kind_accepts_its_default_configuration()
     {
-        var service = new ValidationApiService(_tree.Repositories.Validations, _tree.Tree, Validations, ConfigurationJson);
+        var service = new ValidationApiService(_tree.Repositories.Validations, _tree.Tree, Validations, ConfigurationJson, new ApiWriteLock());
         var kinds = Definitions().GetValidations();
 
         Assert.Equal(2, kinds.Count);
@@ -181,7 +182,7 @@ public class BuiltInKindDefaultsTests
     [Fact]
     public void Every_built_in_data_values_kind_that_can_be_created_accepts_its_default_configuration()
     {
-        var service = new DataValuesApiService(_tree.Repositories.DataValues, _tree.Tree, DataValues, ConfigurationJson);
+        var service = new DataValuesApiService(_tree.Repositories.DataValues, _tree.Tree, DataValues, ConfigurationJson, new ApiWriteLock());
         var kinds = Definitions().GetDataValues().Where(x => !x.IsLegacy).ToArray();
 
         Assert.Equal(3, kinds.Length);
@@ -204,7 +205,8 @@ public class BuiltInKindDefaultsTests
             Layouts,
             templates,
             new GetDefaultTemplateId(templates, Options.Create(new FormulateBackOfficeOptions())),
-            ConfigurationJson);
+            ConfigurationJson,
+            new ApiWriteLock());
 
         var kind = Assert.Single(Definitions().GetLayouts());
 

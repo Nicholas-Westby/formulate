@@ -16,7 +16,7 @@ public class MoveServiceTests
 
     private readonly FakeTreeEntityRepository _repository = new();
 
-    private MoveService CreateService() => new(_repository);
+    private MoveService CreateService() => new(_repository, new ApiWriteLock());
 
     private PersistedFolder AddFolder(Guid root, params Guid[] parents)
     {
@@ -171,7 +171,7 @@ public class MoveServiceTests
         var validationsFolder = tree.AddFolder(FormConstantsRoot.Validations);
         var validation = tree.AddValidation(validationsFolder.Id);
         var dataValues = tree.AddDataValues(dataValuesFolder.Id);
-        var service = new MoveService(tree.Tree);
+        var service = new MoveService(tree.Tree, new ApiWriteLock());
 
         var validationIntoForms = service.Move<PersistedValidation>(validation.Id, formsFolder.Id);
         var validationIntoDataValues = service.Move<PersistedValidation>(validation.Id, dataValuesFolder.Id);

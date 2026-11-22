@@ -30,6 +30,8 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly IValidationEntityRepository _validationRepository;
 
+        private readonly ApiWriteLock _writeLock;
+
         /// <inheritdoc cref="FolderApiService"/>
         public FolderApiService(
             ITreeEntityRepository treeRepository,
@@ -37,7 +39,8 @@ namespace Formulate.BackOffice.Api.Services
             IFormEntityRepository formRepository,
             ILayoutEntityRepository layoutRepository,
             IDataValuesEntityRepository dataValuesRepository,
-            IValidationEntityRepository validationRepository)
+            IValidationEntityRepository validationRepository,
+            ApiWriteLock writeLock)
         {
             _treeRepository = treeRepository;
             _folderRepository = folderRepository;
@@ -45,6 +48,7 @@ namespace Formulate.BackOffice.Api.Services
             _layoutRepository = layoutRepository;
             _dataValuesRepository = dataValuesRepository;
             _validationRepository = validationRepository;
+            _writeLock = writeLock;
         }
 
         /// <inheritdoc />
@@ -56,7 +60,10 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<FolderResponseModel> Create(CreateFolderRequestModel request)
+        // Writes run one at a time across the site (see ApiWriteLock); reads do not wait.
+        public ServiceResult<FolderResponseModel> Create(CreateFolderRequestModel request) => _writeLock.Run(() => CreateCore(request));
+
+        private ServiceResult<FolderResponseModel> CreateCore(CreateFolderRequestModel request)
         {
             if (request is null)
             {
@@ -93,7 +100,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<FolderResponseModel> Update(Guid id, UpdateFolderRequestModel request)
+        public ServiceResult<FolderResponseModel> Update(Guid id, UpdateFolderRequestModel request) => _writeLock.Run(() => UpdateCore(id, request));
+
+        private ServiceResult<FolderResponseModel> UpdateCore(Guid id, UpdateFolderRequestModel request)
         {
             if (request is null)
             {
@@ -125,7 +134,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<DeleteResponseModel> Delete(Guid id)
+        public ServiceResult<DeleteResponseModel> Delete(Guid id) => _writeLock.Run(() => DeleteCore(id));
+
+        private ServiceResult<DeleteResponseModel> DeleteCore(Guid id)
         {
             var folder = _folderRepository.Get(id);
 

@@ -27,13 +27,21 @@ internal sealed class InMemoryStore<TEntity> : IRepositoryUtility<TEntity>, IRep
     /// <summary>Gets how many full reads (children, root items, all) ran.</summary>
     public int FullReads { get; private set; }
 
+    /// <summary>Gets or sets what runs before each write (save, delete or move).</summary>
+    public Action? OnWrite { get; set; }
+
     public TEntity Save(TEntity entity)
     {
+        OnWrite?.Invoke();
         _entities[entity.Id] = entity;
         return entity;
     }
 
-    public void Delete(Guid entityId) => _entities.Remove(entityId);
+    public void Delete(Guid entityId)
+    {
+        OnWrite?.Invoke();
+        _entities.Remove(entityId);
+    }
 
     public TEntity Get(Guid entityId) => (_entities.TryGetValue(entityId, out var entity) ? entity : null)!;
 

@@ -17,7 +17,8 @@ public class FolderApiServiceTests
         _tree.Repositories.Forms,
         _tree.Repositories.Layouts,
         _tree.Repositories.DataValues,
-        _tree.Repositories.Validations);
+        _tree.Repositories.Validations,
+        new ApiWriteLock());
 
     private static Guid RootOf(string treeAlias) => treeAlias switch
     {
@@ -177,7 +178,7 @@ public class FolderApiServiceTests
         var target = _tree.AddFolder(root);
         var readsBefore = _tree.Repositories.FormStore.FullReads;
 
-        var result = new MoveService(_tree.Tree).Move<PersistedFolder>(folder.Id, target.Id);
+        var result = new MoveService(_tree.Tree, new ApiWriteLock()).Move<PersistedFolder>(folder.Id, target.Id);
 
         Assert.Equal(ServiceStatus.Success, result.Status);
         Assert.Equal(new[] { root, target.Id, folder.Id }, _tree.Repositories.Folders.Get(folder.Id).Path);
@@ -194,7 +195,7 @@ public class FolderApiServiceTests
         var folder = _tree.AddFolder(root);
         var sub = _tree.AddFolder(root, folder.Id);
 
-        var result = new MoveService(_tree.Tree).Move<PersistedFolder>(folder.Id, sub.Id);
+        var result = new MoveService(_tree.Tree, new ApiWriteLock()).Move<PersistedFolder>(folder.Id, sub.Id);
 
         Assert.Equal((ServiceStatus.Invalid, "targetId"), Tuple(result));
         Assert.Equal(new[] { root, folder.Id }, _tree.Repositories.Folders.Get(folder.Id).Path);
@@ -242,7 +243,8 @@ public class FolderApiServiceTests
             _tree.Repositories.Forms,
             _tree.Repositories.Layouts,
             _tree.Repositories.DataValues,
-            _tree.Repositories.Validations);
+            _tree.Repositories.Validations,
+            new ApiWriteLock());
 
         var result = service.Delete(folder.Id);
 

@@ -22,7 +22,8 @@ public class DataValuesApiServiceTests
         _tree.Repositories.DataValues,
         _tree.Tree,
         new DataValuesDefinitionCollection(() => new IDataValuesDefinition[] { new ListDataValuesDefinition(_tree.Repositories.JsonUtility), new LegacyDataValuesDefinition() }),
-        new ConfigurationJson(_tree.Repositories.JsonUtility, _logger));
+        new ConfigurationJson(_tree.Repositories.JsonUtility, _logger),
+        new ApiWriteLock());
 
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
 

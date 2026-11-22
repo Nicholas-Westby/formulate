@@ -22,8 +22,9 @@ namespace Formulate.BackOffice.Api.Services
             IDataValuesEntityRepository repository,
             ITreeEntityRepository treeRepository,
             DataValuesDefinitionCollection definitions,
-            ConfigurationJson configurationJson)
-            : base(repository, treeRepository, configurationJson)
+            ConfigurationJson configurationJson,
+            ApiWriteLock writeLock)
+            : base(repository, treeRepository, configurationJson, writeLock)
         {
             _definitions = definitions;
             _configurationJson = configurationJson;

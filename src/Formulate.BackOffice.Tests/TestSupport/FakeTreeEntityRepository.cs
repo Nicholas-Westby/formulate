@@ -67,8 +67,12 @@ internal sealed class FakeTreeEntityRepository : ITreeEntityRepository
     /// <summary>Gets the paths written, in order.</summary>
     public List<(Guid Id, Guid[] Path)> PathUpdates { get; } = new();
 
+    /// <summary>Gets or sets what runs at the start of each descendant lookup, such as a pause.</summary>
+    public Action? OnGetDescendants { get; set; }
+
     public IReadOnlyCollection<IPersistedEntity> GetDescendants(Guid id)
     {
+        OnGetDescendants?.Invoke();
         DescendantLookups++;
         return _entities.Where(x => x.Id != id && x.Path.Contains(id)).ToArray();
     }

@@ -25,12 +25,15 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly ConfigurationJson _configurationJson;
 
+        private readonly ApiWriteLock _writeLock;
+
         /// <inheritdoc cref="ConfiguredItemApiService{TEntity, TResponse}"/>
-        protected ConfiguredItemApiService(IEntityRepository<TEntity> repository, ITreeEntityRepository treeRepository, ConfigurationJson configurationJson)
+        protected ConfiguredItemApiService(IEntityRepository<TEntity> repository, ITreeEntityRepository treeRepository, ConfigurationJson configurationJson, ApiWriteLock writeLock)
         {
             _repository = repository;
             _treeRepository = treeRepository;
             _configurationJson = configurationJson;
+            _writeLock = writeLock;
         }
 
         /// <summary>
@@ -97,7 +100,22 @@ namespace Formulate.BackOffice.Api.Services
         /// <summary>
         /// Creates an item.
         /// </summary>
-        protected ServiceResult<TResponse> CreateItem(Guid id, Guid? parentId, Guid kindId, string name, string? alias, JsonElement? configuration)
+        /// <remarks>Writes run one at a time across the site (see <see cref="ApiWriteLock"/>); reads do not wait.</remarks>
+        protected ServiceResult<TResponse> CreateItem(Guid id, Guid? parentId, Guid kindId, string name, string? alias, JsonElement? configuration) =>
+            _writeLock.Run(() => CreateItemCore(id, parentId, kindId, name, alias, configuration));
+
+        /// <summary>
+        /// Replaces an item's name, alias and configuration, keeping its kind and place.
+        /// </summary>
+        protected ServiceResult<TResponse> UpdateItem(Guid id, string name, string? alias, JsonElement? configuration) =>
+            _writeLock.Run(() => UpdateItemCore(id, name, alias, configuration));
+
+        /// <summary>
+        /// Deletes an item. Whatever still refers to it is left alone.
+        /// </summary>
+        protected ServiceResult<DeleteResponseModel> DeleteItem(Guid id) => _writeLock.Run(() => DeleteItemCore(id));
+
+        private ServiceResult<TResponse> CreateItemCore(Guid id, Guid? parentId, Guid kindId, string name, string? alias, JsonElement? configuration)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -129,10 +147,7 @@ namespace Formulate.BackOffice.Api.Services
             return ServiceResult<TResponse>.Success(ToResponse(_repository.Save(entity)));
         }
 
-        /// <summary>
-        /// Replaces an item's name, alias and configuration, keeping its kind and place.
-        /// </summary>
-        protected ServiceResult<TResponse> UpdateItem(Guid id, string name, string? alias, JsonElement? configuration)
+        private ServiceResult<TResponse> UpdateItemCore(Guid id, string name, string? alias, JsonElement? configuration)
         {
             var existing = _repository.Get(id);
 
@@ -164,10 +179,7 @@ namespace Formulate.BackOffice.Api.Services
             return ServiceResult<TResponse>.Success(ToResponse(_repository.Save(entity)));
         }
 
-        /// <summary>
-        /// Deletes an item. Whatever still refers to it is left alone.
-        /// </summary>
-        protected ServiceResult<DeleteResponseModel> DeleteItem(Guid id)
+        private ServiceResult<DeleteResponseModel> DeleteItemCore(Guid id)
         {
             if (_repository.Get(id) is null)
             {

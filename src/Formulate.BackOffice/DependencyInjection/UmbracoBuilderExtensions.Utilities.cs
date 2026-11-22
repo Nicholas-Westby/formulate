@@ -36,6 +36,7 @@ namespace Formulate.BackOffice.DependencyInjection
             builder.Services.AddScoped<ICreateOptionsApiService, CreateOptionsApiService>();
             builder.Services.AddScoped<IConfigApiService, ConfigApiService>();
             builder.Services.AddScoped<ConfigurationJson>();
+            builder.Services.AddSingleton<ApiWriteLock>();
 
             builder.Services.AddSingleton<IGetDefaultTemplateId, GetDefaultTemplateId>();
 

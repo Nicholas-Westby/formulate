@@ -43,6 +43,8 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly IShortStringHelper _shortStringHelper;
 
+        private readonly ApiWriteLock _writeLock;
+
         /// <inheritdoc cref="FormApiService"/>
         public FormApiService(
             IFormEntityRepository formRepository,
@@ -52,7 +54,8 @@ namespace Formulate.BackOffice.Api.Services
             FormFieldDefinitionCollection fieldDefinitions,
             FormHandlerDefinitionCollection handlerDefinitions,
             ConfigurationJson configurationJson,
-            IShortStringHelper shortStringHelper)
+            IShortStringHelper shortStringHelper,
+            ApiWriteLock writeLock)
         {
             _formRepository = formRepository;
             _layoutRepository = layoutRepository;
@@ -62,6 +65,7 @@ namespace Formulate.BackOffice.Api.Services
             _handlerDefinitions = handlerDefinitions;
             _configurationJson = configurationJson;
             _shortStringHelper = shortStringHelper;
+            _writeLock = writeLock;
         }
 
         /// <inheritdoc />
@@ -73,7 +77,10 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<FormResponseModel> Create(CreateFormRequestModel request)
+        // Writes run one at a time across the site (see ApiWriteLock); reads do not wait.
+        public ServiceResult<FormResponseModel> Create(CreateFormRequestModel request) => _writeLock.Run(() => CreateCore(request));
+
+        private ServiceResult<FormResponseModel> CreateCore(CreateFormRequestModel request)
         {
             if (request is null)
             {
@@ -130,7 +137,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<FormResponseModel> Update(Guid id, UpdateFormRequestModel request)
+        public ServiceResult<FormResponseModel> Update(Guid id, UpdateFormRequestModel request) => _writeLock.Run(() => UpdateCore(id, request));
+
+        private ServiceResult<FormResponseModel> UpdateCore(Guid id, UpdateFormRequestModel request)
         {
             if (request is null)
             {
@@ -179,7 +188,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<DeleteResponseModel> Delete(Guid id)
+        public ServiceResult<DeleteResponseModel> Delete(Guid id) => _writeLock.Run(() => DeleteCore(id));
+
+        private ServiceResult<DeleteResponseModel> DeleteCore(Guid id)
         {
             var form = _formRepository.Get(id);
 
@@ -204,7 +215,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<FormResponseModel> Duplicate(Guid id, DuplicateFormRequestModel request)
+        public ServiceResult<FormResponseModel> Duplicate(Guid id, DuplicateFormRequestModel request) => _writeLock.Run(() => DuplicateCore(id, request));
+
+        private ServiceResult<FormResponseModel> DuplicateCore(Guid id, DuplicateFormRequestModel request)
         {
             if (request is null)
             {

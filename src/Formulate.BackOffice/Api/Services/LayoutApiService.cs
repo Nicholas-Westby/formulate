@@ -31,6 +31,8 @@ namespace Formulate.BackOffice.Api.Services
 
         private readonly ConfigurationJson _configurationJson;
 
+        private readonly ApiWriteLock _writeLock;
+
         /// <inheritdoc cref="LayoutApiService"/>
         public LayoutApiService(
             ILayoutEntityRepository layoutRepository,
@@ -39,7 +41,8 @@ namespace Formulate.BackOffice.Api.Services
             LayoutDefinitionCollection layoutDefinitions,
             TemplateDefinitionCollection templateDefinitions,
             IGetDefaultTemplateId defaultTemplateId,
-            ConfigurationJson configurationJson)
+            ConfigurationJson configurationJson,
+            ApiWriteLock writeLock)
         {
             _layoutRepository = layoutRepository;
             _formRepository = formRepository;
@@ -48,6 +51,7 @@ namespace Formulate.BackOffice.Api.Services
             _templateDefinitions = templateDefinitions;
             _defaultTemplateId = defaultTemplateId;
             _configurationJson = configurationJson;
+            _writeLock = writeLock;
         }
 
         /// <inheritdoc />
@@ -59,7 +63,10 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<LayoutResponseModel> Create(CreateLayoutRequestModel request)
+        // Writes run one at a time across the site (see ApiWriteLock); reads do not wait.
+        public ServiceResult<LayoutResponseModel> Create(CreateLayoutRequestModel request) => _writeLock.Run(() => CreateCore(request));
+
+        private ServiceResult<LayoutResponseModel> CreateCore(CreateLayoutRequestModel request)
         {
             if (request is null)
             {
@@ -125,7 +132,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<LayoutResponseModel> Update(Guid id, UpdateLayoutRequestModel request)
+        public ServiceResult<LayoutResponseModel> Update(Guid id, UpdateLayoutRequestModel request) => _writeLock.Run(() => UpdateCore(id, request));
+
+        private ServiceResult<LayoutResponseModel> UpdateCore(Guid id, UpdateLayoutRequestModel request)
         {
             if (request is null)
             {
@@ -175,7 +184,9 @@ namespace Formulate.BackOffice.Api.Services
         }
 
         /// <inheritdoc />
-        public ServiceResult<DeleteResponseModel> Delete(Guid id)
+        public ServiceResult<DeleteResponseModel> Delete(Guid id) => _writeLock.Run(() => DeleteCore(id));
+
+        private ServiceResult<DeleteResponseModel> DeleteCore(Guid id)
         {
             if (_layoutRepository.Get(id) is null)
             {

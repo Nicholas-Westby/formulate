@@ -13,14 +13,23 @@ namespace Formulate.BackOffice.Api.Services
     {
         private readonly ITreeEntityRepository _treeEntityRepository;
 
+        private readonly ApiWriteLock _writeLock;
+
         /// <inheritdoc cref="MoveService"/>
-        public MoveService(ITreeEntityRepository treeEntityRepository)
+        public MoveService(ITreeEntityRepository treeEntityRepository, ApiWriteLock writeLock)
         {
             _treeEntityRepository = treeEntityRepository;
+            _writeLock = writeLock;
         }
 
         /// <inheritdoc />
+        // Writes run one at a time across the site (see ApiWriteLock): two moves at once could each check
+        // a tree the other is changing, and two folders moved into each other would both succeed.
         public ServiceResult<bool> Move<TEntity>(Guid id, Guid? targetId)
+            where TEntity : class, IPersistedEntity =>
+            _writeLock.Run(() => MoveCore<TEntity>(id, targetId));
+
+        private ServiceResult<bool> MoveCore<TEntity>(Guid id, Guid? targetId)
             where TEntity : class, IPersistedEntity
         {
             if (_treeEntityRepository.Get(id) is not TEntity entity)
