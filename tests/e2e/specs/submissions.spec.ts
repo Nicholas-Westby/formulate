@@ -115,6 +115,8 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		const created = await createPage(page, 'Submissions test', layoutId);
 		pageId = created.id;
 		const pageUrl = new URL(created.path, origin).href;
+		// A page link shows where it goes: the host as well as the path.
+		const pageText = `${new URL(pageUrl).host}${created.path}`;
 		const problems = await watchPage(site);
 
 		// Two visitors send the form from its page: the first with a file, the second without one.
@@ -143,11 +145,11 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		await expect(table.locator('uui-table-head-cell')).toHaveText(['Created', 'Page', 'Name', 'Email', 'Files', '']);
 		const [graceDate, adaDate] = [await shownDate(page, grace!.creationDate), await shownDate(page, ada!.creationDate)];
 		expect(await cellsOf(table)).toEqual([
-			[graceDate, '/submissions-test/', 'Grace Hopper', 'grace@example.com', '', ''],
-			[adaDate, '/submissions-test/', 'Ada Lovelace', 'ada@example.com', 'notes.txt', ''],
+			[graceDate, pageText, 'Grace Hopper', 'grace@example.com', '', ''],
+			[adaDate, pageText, 'Ada Lovelace', 'ada@example.com', 'notes.txt', ''],
 		]);
 		// The page is the real page the form was sent from (its URL as Store Data recorded it), and opens in a new tab.
-		const pageLinks = table.getByRole('link', { name: '/submissions-test/', exact: true });
+		const pageLinks = table.getByRole('link', { name: pageText, exact: true });
 		await expect(pageLinks).toHaveCount(2);
 		await expect(pageLinks.first()).toHaveAttribute('href', pageUrl);
 		await expect(pageLinks.first()).toHaveAttribute('target', '_blank');
@@ -170,7 +172,7 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 			'Email',
 			'Attachment',
 		]);
-		await expect(sidebar.locator('umb-property-layout[label="Page"]').getByRole('link', { name: '/submissions-test/' })).toHaveAttribute(
+		await expect(sidebar.locator('umb-property-layout[label="Page"]').getByRole('link', { name: pageText })).toHaveAttribute(
 			'href',
 			pageUrl,
 		);
@@ -209,7 +211,7 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		await expect(confirm.locator('uui-button[color="danger"]')).toHaveAttribute('label', 'Delete');
 		await confirm.getByRole('button', { name: 'Delete', exact: true }).click();
 		await expect(table.locator('uui-table-row')).toHaveCount(1);
-		expect(await cellsOf(table)).toEqual([[adaDate, '/submissions-test/', 'Ada Lovelace', 'ada@example.com', 'notes.txt', '']]);
+		expect(await cellsOf(table)).toEqual([[adaDate, pageText, 'Ada Lovelace', 'ada@example.com', 'notes.txt', '']]);
 		const left = await readSubmissions(page, formId);
 		expect(left.total).toBe(1);
 		expect(left.items.map((submission) => submission.id)).toEqual([ada!.id]);

@@ -17,11 +17,17 @@ export interface FormulateSubmissionField {
 	name: string | null;
 }
 
-/** The page a submission was sent from, as a link. */
+/**
+ * The page a submission was sent from, as a link. The link shows where it goes, host and path, such as
+ * www.example.com/contact-us/: for content with no domain, Umbraco builds the address from the host the visitor's
+ * request named, so it can be another site's.
+ */
 export interface FormulateSubmissionPage {
 	/** The page's address, as Store Data stored it (an http or https URL). */
 	href: string;
-	/** The address's path, as people read it, such as /contact/. */
+	/** The address's host, with its port when it has one, such as www.example.com. */
+	host: string;
+	/** The address's path, as people read it, such as /contact-us/. */
 	path: string;
 }
 
@@ -112,7 +118,8 @@ export function previewText(value: string): string {
  * The page a submission was sent from, from the address Store Data stored: a link only to an http or https
  * address, so a stored address can never run script or open anything else.
  * @param url The stored address.
- * @returns The link, with the address's path to show; undefined for no address, or one a link must not open.
+ * @returns The link, with the address's host and path to show; undefined for no address, or one a link must not
+ * open.
  */
 export function submissionPage(url: string | null | undefined): FormulateSubmissionPage | undefined {
 	const address = absoluteUrl(url);
@@ -121,7 +128,9 @@ export function submissionPage(url: string | null | undefined): FormulateSubmiss
 		return undefined;
 	}
 
-	return { href: address.href, path: readablePath(address.pathname) };
+	// The host as the browser sends it: a name in another script shows in its ASCII form, so a look-alike shows as
+	// what it is. A user name before the host is left out, as it can look like a host.
+	return { href: address.href, host: address.host, path: readablePath(address.pathname) };
 }
 
 /** An absolute URL, or undefined for none or anything else. */
@@ -157,7 +166,8 @@ export function submissionRow(
 	return {
 		id: submission.id,
 		creationDate: submission.creationDate,
-		...(page ? { page } : {}),
+		// A long path is cut like a value; the host never is, as it says where the link goes.
+		...(page ? { page: { ...page, path: previewText(page.path) } } : {}),
 		values: columns.map((column) => previewText(valuesOf(submission, column.id).join(', '))),
 		files: submission.files.map((file) => file.fileName),
 	};

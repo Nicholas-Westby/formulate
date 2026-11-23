@@ -134,7 +134,7 @@ describe('Formulate Submissions view', () => {
 			[shown('2026-11-22T11:05:00Z'), '', 'Grace Hopper', 'VA', '', '', '', ''],
 			[
 				shown('2026-11-22T10:52:00Z'),
-				'/contact/',
+				'example.com/contact/',
 				'Ada Lovelace',
 				'',
 				'ada@example.com',
@@ -147,6 +147,20 @@ describe('Formulate Submissions view', () => {
 		const link = rowsOf(shadow)[1].querySelector('a')!;
 		expect([link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]).toStrictEqual([
 			'https://example.com/contact/',
+			'_blank',
+			'noopener noreferrer',
+		]);
+	});
+
+	it("shows where each page link goes, host and all, even when Store Data stored another site's address", async () => {
+		const ada = adaSubmission();
+		ada.url = 'https://evil.example.net/contact-us/';
+		const { shadow } = await openView([ada]);
+		const link = rowsOf(shadow)[0].querySelector('a')!;
+
+		expect([link.textContent, link.getAttribute('href'), link.getAttribute('target'), link.getAttribute('rel')]).toStrictEqual([
+			'evil.example.net/contact-us/',
+			'https://evil.example.net/contact-us/',
 			'_blank',
 			'noopener noreferrer',
 		]);

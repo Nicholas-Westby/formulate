@@ -123,17 +123,18 @@ describe('Formulate submission rows', () => {
 		expect(row).toStrictEqual({
 			id: SUBMISSION_ID,
 			creationDate: '2026-11-22T10:52:00Z',
-			page: { href: 'https://example.com/contact/', path: '/contact/' },
+			page: { href: 'https://example.com/contact/', host: 'example.com', path: '/contact/' },
 			values: ['Ada Lovelace'],
 			files: ['cv.pdf', 'cover letter.docx'],
 		});
 	});
 
-	it('shows the path of the page a submission was sent from, as a link only to an http or https address', () => {
-		expect(submissionPage('http://localhost:44334/')).toStrictEqual({ href: 'http://localhost:44334/', path: '/' });
+	it('shows the host and path of the page a submission was sent from, as a link only to an http or https address', () => {
+		expect(submissionPage('http://localhost:44334/')).toStrictEqual({ href: 'http://localhost:44334/', host: 'localhost:44334', path: '/' });
 		// The path as people read it, without the query string or fragment.
 		expect(submissionPage('https://example.com/caf%C3%A9/menu/?ref=mail#order')).toStrictEqual({
 			href: 'https://example.com/caf%C3%A9/menu/?ref=mail#order',
+			host: 'example.com',
 			path: '/café/menu/',
 		});
 		// A path that cannot be decoded shows as stored.
@@ -142,6 +143,27 @@ describe('Formulate submission rows', () => {
 		for (const url of [null, undefined, '', '/contact/', 'javascript:alert(1)', 'data:text/html,hi', 'not a url']) {
 			expect(submissionPage(url), String(url)).toBeUndefined();
 		}
+	});
+
+	it("shows the host a link really goes to, so another site's address never looks like the site's own page", () => {
+		// For content with no domain, Umbraco builds the address from the request's host, which a visitor can set.
+		expect(submissionPage('https://evil.example.net/contact-us/')).toStrictEqual({
+			href: 'https://evil.example.net/contact-us/',
+			host: 'evil.example.net',
+			path: '/contact-us/',
+		});
+		// Not the user name before the host, which can look like one.
+		expect(submissionPage('https://www.example.com@evil.example.net/contact-us/')?.host).toBe('evil.example.net');
+		// A name in another script shows as the browser sends it, so a look-alike (here with a Cyrillic a) shows as
+		// what it is.
+		expect(submissionPage('https://ex\u0430mple.com/')?.host).toBe('xn--exmple-4nf.com');
+	});
+
+	it("cuts a long path in a row like a value, but never the page's host", () => {
+		const page = submissionPage(`https://${'h'.repeat(120)}.example.com/${'p'.repeat(150)}/`)!;
+		const row = submissionRow({ ...submission([]), url: page.href }, []);
+
+		expect(row.page).toStrictEqual({ href: page.href, host: `${'h'.repeat(120)}.example.com`, path: `/${'p'.repeat(99)}…` });
 	});
 
 	it("lists every stored value and file in the form's order, then those of fields no longer on the form under their stored names", () => {

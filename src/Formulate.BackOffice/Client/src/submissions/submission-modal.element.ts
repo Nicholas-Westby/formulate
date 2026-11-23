@@ -39,7 +39,7 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 						? html`
 								<umb-property-layout label=${this.localize.term('formulate_submissionPage')} orientation="vertical">
 									<div slot="editor">
-										<a href=${page.href} target="_blank" rel="noopener noreferrer">${page.path}</a>
+										<a href=${page.href} target="_blank" rel="noopener noreferrer">${page.host}${page.path}</a>
 									</div>
 								</umb-property-layout>
 							`
@@ -87,6 +87,11 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 				flex-direction: column;
 				align-items: flex-start;
 				gap: var(--uui-size-space-2);
+			}
+
+			/* A long page address wraps rather than widen the sidebar. */
+			a {
+				overflow-wrap: anywhere;
 			}
 
 			/* A value shows as it was sent, with its line breaks. */

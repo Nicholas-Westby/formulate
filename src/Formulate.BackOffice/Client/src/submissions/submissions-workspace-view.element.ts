@@ -310,7 +310,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 					{
 						columnAlias: 'page',
 						value: row.page
-							? html`<a href=${row.page.href} target="_blank" rel="noopener noreferrer">${row.page.path}</a>`
+							? html`<a href=${row.page.href} target="_blank" rel="noopener noreferrer">${row.page.host}${row.page.path}</a>`
 							: nothing,
 					},
 					...fields.map((field, index) => ({ columnAlias: `field-${field.id}`, value: row.values[index] })),

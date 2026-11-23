@@ -81,7 +81,8 @@ describe('Formulate submission sidebar', () => {
 			`Submission from ${new Date('2026-11-22T10:52:00Z').toLocaleString('en-us')}`,
 		);
 		expect(propertiesOf(shadow)).toStrictEqual([
-			{ label: 'Page', description: '', text: '/contact/' },
+			// Where the link goes: the page's host as well as its path.
+			{ label: 'Page', description: '', text: 'example.com/contact/' },
 			{ label: 'Name', description: '', text: 'Ada Lovelace' },
 			{ label: 'CV', description: '', text: 'cv.pdf' },
 			{ label: 'Email address', description: '', text: 'ada@example.com' },
