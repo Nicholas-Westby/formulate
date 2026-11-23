@@ -30,7 +30,7 @@ export const STORE_DATA = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
 export const UNKNOWN_KIND = 'ffeeddcc-bbaa-4998-8776-655443322110';
 
 /** A field definition with the features most kinds have; each kind changes what it needs. */
-function fieldKind(definition: Partial<FormFieldDefinitionModel> & Pick<FormFieldDefinitionModel, 'kindId' | 'name'>) {
+export function fieldKind(definition: Partial<FormFieldDefinitionModel> & Pick<FormFieldDefinitionModel, 'kindId' | 'name'>) {
 	return {
 		icon: 'icon-document-dashed-line',
 		category: 'Inputs',

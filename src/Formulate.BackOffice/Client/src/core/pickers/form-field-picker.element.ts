@@ -2,6 +2,7 @@ import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { css, customElement, html, nothing, property } from '@umbraco-cms/backoffice/external/lit';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
+import type { FormFieldDefinitionModel } from '../../api/index.js';
 import { isSameGuid } from '../guid.js';
 import { findField, FormulateFormFieldKinds, pickFormFields, type FormulatePickableField } from './form-field-kinds.js';
 import type { FormulatePickFieldsModalData } from './pick-fields-modal.token.js';
@@ -11,7 +12,8 @@ import type { FormulatePickFieldsModalData } from './pick-fields-modal.token.js'
  * fields' IDs, as they are stored. Each picked field shows as a ref (its name, its alias under it, its kind's
  * icon) with a Remove button, and Choose opens a dialog of the form's fields. A field that is no longer on
  * the form says so, with its ID, and can be removed. The fields come from the form as the designer holds it,
- * so fields that are not saved yet can be picked.
+ * so fields that are not saved yet can be picked. A setting that only some fields fit, such as the fields an
+ * email can write a line for, gives offers: the dialog leaves out the other fields, except those picked already.
  */
 @customElement('formulate-form-field-picker')
 export class FormulateFormFieldPickerElement extends UmbLitElement {
@@ -30,6 +32,13 @@ export class FormulateFormFieldPickerElement extends UmbLitElement {
 	/** Whether nothing may be changed. */
 	@property({ type: Boolean, reflect: true })
 	readonly = false;
+
+	/**
+	 * Which fields the dialog offers, by each field and the definition of its kind (undefined when the kind is not
+	 * installed); a field picked already is offered all the same. Until the kinds are known, every field is.
+	 */
+	@property({ attribute: false })
+	offers?: (field: FormulatePickableField, definition: FormFieldDefinitionModel | undefined) => boolean;
 
 	#kinds = new FormulateFormFieldKinds(this);
 
@@ -52,7 +61,12 @@ export class FormulateFormFieldPickerElement extends UmbLitElement {
 		const current = this.value ?? [];
 		// The dialog knows the fields by the form's own IDs, which may be written another way than the stored ones.
 		const selection = current.map((id) => findField(this.fields, id)?.id).filter((id): id is string => id !== undefined);
-		const picked = await this.pickIds({ headline: this.headline, fields: this.#kinds.pickOptions(this.fields) }, selection);
+		const offers = this.offers;
+		const offered =
+			offers && this.#kinds.known
+				? this.fields.filter((field) => offers(field, this.#kinds.of(field)) || selection.includes(field.id))
+				: this.fields;
+		const picked = await this.pickIds({ headline: this.headline, fields: this.#kinds.pickOptions(offered) }, selection);
 
 		if (!picked) {
 			return;

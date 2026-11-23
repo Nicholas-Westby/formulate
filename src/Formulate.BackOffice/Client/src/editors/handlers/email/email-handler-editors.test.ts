@@ -1,14 +1,20 @@
 import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
+import { UmbModalManagerContext, type UmbModalContext } from '@umbraco-cms/backoffice/modal';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { FormulateFormFieldPickerElement } from '../../../core/pickers/form-field-picker.element.js';
+import type { FormulatePickFieldsModalData } from '../../../core/pickers/pick-fields-modal.token.js';
 import { FormulateDefinitionsContext } from '../../../core/definitions.context.js';
 import type { FormulateKindEditorElementBase } from '../../../core/kind-editor.js';
-import { HEADER, serveForms, TEXT } from '../../../test/forms.js';
+import { settle } from '../../../test/editors.js';
+import { fakeApi, jsonResponse } from '../../../test/fake-api.js';
+import { BUTTON, fieldKind, HEADER, serveForms, TEXT, UNKNOWN_KIND } from '../../../test/forms.js';
+import { API } from '../../../test/kind-items.js';
 import { loadFormulateEnglishTerms } from '../../../test/localization.js';
 import { SERVER_CONSTANTS } from '../../../test/server-constants.js';
 import { createTestHost } from '../../../test/test-host.js';
-import { typeInto } from '../../../test/ui.js';
+import { click, typeInto } from '../../../test/ui.js';
 import { FormulateDesignedEmailHandlerEditorElement } from './designed-email-handler-editor.element.js';
+import { givesEmailLine } from './email-fields.js';
 import type { FormulateEmailRecipientsInputElement } from './email-recipients-input.element.js';
 import { FORMULATE_SAMPLE_EMAIL_VIEWS } from './email-view-paths.js';
 import { FormulateSendEmailHandlerEditorElement } from './send-email-handler-editor.element.js';
@@ -225,6 +231,97 @@ describe('Formulate Email handler editor', () => {
 				(input) => (input as HTMLElement & { readonly: boolean }).readonly,
 			),
 		]).toStrictEqual([true, true, [true, true, true]]);
+	});
+});
+
+// The kinds as the definitions endpoint gives them, with the flags each definition has on the server.
+const HIDDEN = '3df6facd-2ffa-4055-b0be-94e8fa8e7c4a';
+const RICH_TEXT = '6fcdfdc9-293f-4913-b762-f4ba502216eb';
+const TEXT_CONSTANT = 'd9b1a60a-1186-4440-887b-93195c760b5e';
+const UPLOAD = 'dfefa5ec-0200-4806-a2ab-0ab22058021d';
+const RECAPTCHA = '80c0543d-419e-4ddf-ab05-2c2d052b97a2';
+const EMAIL_FIELD_KINDS = [
+	fieldKind({ kindId: TEXT, name: 'Text' }),
+	fieldKind({ kindId: HIDDEN, name: 'Hidden' }),
+	fieldKind({ kindId: HEADER, name: 'Header', isStored: false, isTransitory: true }),
+	fieldKind({ kindId: RICH_TEXT, name: 'Rich Text', isStored: false, isTransitory: true }),
+	fieldKind({ kindId: BUTTON, name: 'Button', isTransitory: true }),
+	fieldKind({ kindId: TEXT_CONSTANT, name: 'Text Constant', isServerSideOnly: true, isTransitory: true }),
+	fieldKind({ kindId: UPLOAD, name: 'Upload' }),
+	fieldKind({ kindId: RECAPTCHA, name: 'reCAPTCHA', isStored: false }),
+];
+
+/** A form with a field of each kind, and one of a kind that is not installed. */
+const EVERY_KIND_FIELDS = [
+	['Name', TEXT],
+	['Source', HIDDEN],
+	['Heading', HEADER],
+	['Intro', RICH_TEXT],
+	['Send', BUTTON],
+	['Campaign', TEXT_CONSTANT],
+	['CV', UPLOAD],
+	['Captcha', RECAPTCHA],
+	['Odd', UNKNOWN_KIND],
+].map(([name, kindId], index) => ({
+	id: `00000000-0000-4000-8000-0000000000${String(index + 10)}`,
+	kindId: kindId!,
+	name: name!,
+	alias: name!.toLowerCase(),
+	label: null,
+	category: null,
+	validations: [],
+}));
+
+describe('Formulate Email handler editor, the fields to include', () => {
+	it('can write a line for a field with a posted value, for an upload, and for a Text Constant, its text', () => {
+		const lines = EVERY_KIND_FIELDS.map((field) => [
+			field.name,
+			givesEmailLine(field, EMAIL_FIELD_KINDS.find((kind) => kind.kindId === field.kindId)),
+		]);
+
+		// SendEmailContentBuilder.Build: no value is posted for a transitory, hidden or not installed kind
+		// (AttemptSubmitForm.GetInputFieldIds), and the value of a kind that stores nothing is left out.
+		expect(lines).toStrictEqual([
+			['Name', true],
+			['Source', true],
+			['Heading', false],
+			['Intro', false],
+			['Send', false],
+			['Campaign', true],
+			['CV', true],
+			['Captcha', false],
+			['Odd', false],
+		]);
+	});
+
+	it('offers only the fields the email can write a line for, and still a field picked before', async () => {
+		fakeApi((request) => jsonResponse(new URL(request.url).pathname === `${API}/definition/form-field` ? EMAIL_FIELD_KINDS : []));
+		const host = createTestHost();
+		new FormulateDefinitionsContext(host);
+		// The dialogs the pickers open, as the back office's modal manager holds them.
+		const modals = new UmbModalManagerContext(host);
+		const opened: Array<UmbModalContext> = [];
+		modals.modals.subscribe((stack) => stack.forEach((modal) => opened.includes(modal) || opened.push(modal)));
+		const editor = new FormulateSendEmailHandlerEditorElement();
+		const heading = EVERY_KIND_FIELDS.find((field) => field.name === 'Heading')!;
+		editor.value = { ...SEND_EMAIL, fieldsToInclude: [{ id: heading.id }] };
+		editor.context = { formFields: EVERY_KIND_FIELDS };
+		host.append(editor);
+		await settle(editor);
+		const namesOffered = async (id: string) => {
+			const picker = editor.shadowRoot!.querySelector(`formulate-form-field-picker#${id}`)!;
+			const before = opened.length;
+			click(picker.shadowRoot!.querySelector('#btn-add')!);
+			await expect.poll(() => opened.length).toBe(before + 1);
+			const dialog = opened.at(-1)!;
+			dialog.reject();
+
+			return (dialog.data as FormulatePickFieldsModalData).fields.map((field) => field.name);
+		};
+
+		expect(await namesOffered('fields-to-include')).toStrictEqual(['Name', 'Source', 'Heading', 'Campaign', 'CV']);
+		// Who to send the email to can come from any field, as before.
+		expect(await namesOffered('recipient-fields')).toHaveLength(EVERY_KIND_FIELDS.length);
 	});
 });
 

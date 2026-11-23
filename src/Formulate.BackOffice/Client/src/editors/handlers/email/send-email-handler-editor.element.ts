@@ -1,9 +1,11 @@
 import { customElement, html } from '@umbraco-cms/backoffice/external/lit';
+import { givesEmailLine } from './email-fields.js';
 import { FormulateEmailHandlerEditorElementBase } from './email-handler-editor-base.js';
 
 /**
  * The editor of the Email handler (SendEmailConfiguration): who sends the email and who gets it, its subject
- * and message, and which of the submitted values are added below the message.
+ * and message, and which of the submitted values are added below the message. Its Fields to include offers
+ * the fields the email can write a line for (see givesEmailLine).
  */
 @customElement('formulate-send-email-handler-editor')
 export class FormulateSendEmailHandlerEditorElement extends FormulateEmailHandlerEditorElementBase {
@@ -14,7 +16,13 @@ export class FormulateSendEmailHandlerEditorElement extends FormulateEmailHandle
 			${this.renderToggle('include-hidden-fields', 'includeHiddenFields', 'formulate_includeHiddenFields', 'formulate_includeHiddenFieldsDescription')}
 			${this.renderToggle('exclude-field-labels', 'excludeFieldLabels', 'formulate_excludeFieldLabels', 'formulate_excludeFieldLabelsDescription')}
 			${this.renderToggle('append-payload', 'appendPayload', 'formulate_appendPayload', 'formulate_appendPayloadDescription')}
-			${this.renderFieldReferences('fields-to-include', 'fieldsToInclude', 'formulate_fieldsToInclude', 'formulate_fieldsToIncludeDescription')}
+			${this.renderFieldReferences(
+				'fields-to-include',
+				'fieldsToInclude',
+				'formulate_fieldsToInclude',
+				'formulate_fieldsToIncludeDescription',
+				givesEmailLine,
+			)}
 		`;
 	}
 }

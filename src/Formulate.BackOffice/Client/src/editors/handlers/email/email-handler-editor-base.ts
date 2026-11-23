@@ -95,8 +95,17 @@ export abstract class FormulateEmailHandlerEditorElementBase extends FormulateKi
 		`;
 	}
 
-	/** A setting of fields of the form ([{ id }]), and the picker that chooses them. */
-	protected renderFieldReferences(id: string, key: string, labelKey: string, descriptionKey: string) {
+	/**
+	 * A setting of fields of the form ([{ id }]), and the picker that chooses them.
+	 * @param offers Which fields the picker's dialog offers, when only some fit the setting.
+	 */
+	protected renderFieldReferences(
+		id: string,
+		key: string,
+		labelKey: string,
+		descriptionKey: string,
+		offers?: FormulateFormFieldPickerElement['offers'],
+	) {
 		const label = this.localize.term(labelKey);
 		const settings = readSettings(this.value);
 
@@ -107,6 +116,7 @@ export abstract class FormulateEmailHandlerEditorElementBase extends FormulateKi
 					id=${id}
 					headline=${label}
 					.fields=${this.context?.formFields ?? []}
+					.offers=${offers}
 					.value=${readFieldIds(settings[key])}
 					?readonly=${this.readonly}
 					@change=${(event: Event) =>

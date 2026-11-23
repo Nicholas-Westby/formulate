@@ -231,6 +231,17 @@ describe('Formulate form field picker', () => {
 		expect(refs(shadow).map((ref) => ref.name)).toStrictEqual(['Email', 'Heading']);
 	});
 
+	it('offers in the dialog only the fields it is told to, and those picked before', async () => {
+		const { shadow, element } = await render([HEADING_ID]);
+		// Such as the fields an email can write a line for: not a Header or a Button, which have no value.
+		element.offers = (_field, kind) => kind !== undefined && !kind.isTransitory;
+
+		click(shadow.querySelector('#btn-add')!);
+		await settle(element);
+
+		expect(element.opened.map(({ data }) => data.fields.map((field) => field.name))).toStrictEqual([['Name', 'Email', 'Heading']]);
+	});
+
 	it("opens the dialog on the form's fields, keeps those still picked in their order, and adds the new ones after", async () => {
 		const { shadow, element, changes } = await render([EMAIL_AS_STORED, GONE_ID, HEADING_ID]);
 		element.picks = [HEADING_ID, NAME_ID];
