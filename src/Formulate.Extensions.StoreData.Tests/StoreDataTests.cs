@@ -183,6 +183,19 @@ public sealed class StoreDataTests : IDisposable
         Assert.Equal("formulate-5-submissions-url", plan.FinalState);
     }
 
+    [Fact]
+    public void The_migration_plan_belongs_to_the_Formulate_package_and_keeps_its_name()
+    {
+        var plan = new FormulateStoreDataMigrationPlan();
+
+        // Umbraco's list of installed packages groups the plans by package name, and
+        // Formulate's own plan and umbraco-package.json are both named "Formulate".
+        Assert.Equal("Formulate", plan.PackageName);
+
+        // Umbraco keeps the plan's state under its name, so a new name would run it again.
+        Assert.Equal("Formulate.Extensions.StoreData", plan.Name);
+    }
+
     private static List<Type> Walk(MigrationPlan plan, string state)
     {
         var steps = new List<Type>();

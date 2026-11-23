@@ -11,7 +11,17 @@ namespace Formulate.Extensions.StoreData.Migrations
     /// </remarks>
     public sealed class FormulateStoreDataMigrationPlan : PackageMigrationPlan
     {
-        public FormulateStoreDataMigrationPlan() : base("Formulate.Extensions.StoreData")
+        /// <inheritdoc cref="FormulateStoreDataMigrationPlan"/>
+        /// <remarks>
+        /// The package name is "Formulate", as for Formulate's own plan, because Umbraco's list of
+        /// installed packages groups the plans by package name, and a name of its own would show
+        /// Store Data there as a second package. The plan name stays "Formulate.Extensions.StoreData":
+        /// Umbraco stores the plan's state in umbracoKeyValue under
+        /// "Umbraco.Core.Upgrader.State+" and the plan name, so a new plan name would lose that state
+        /// and run the plan again on every site that already ran it.
+        /// </remarks>
+        public FormulateStoreDataMigrationPlan()
+            : base("Formulate", "Formulate.Extensions.StoreData")
         {
         }
 
