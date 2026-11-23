@@ -6,7 +6,7 @@ title: Formulate Frequently Asked Questions
 # Frequently Asked Questions
 
 * Which versions of Umbraco does Formulate support?
-  * Formulate 5 supports Umbraco 17.6 or later 17.x, Umbraco 18 and the Umbraco 19 release candidate. See [Requirements](/requirements).
+  * Formulate 5 supports Umbraco 17.8.2 or later 17.x, Umbraco 18 and the Umbraco 19 release candidate. See [Requirements](/requirements).
 * Does Formulate require AngularJS?
   * No. Formulate 5 renders forms with plain JavaScript and has no front-end dependencies.
 * Can I use Formulate on a site built with jQuery, Foundation or some other framework?

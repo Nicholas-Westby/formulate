@@ -9,12 +9,12 @@ Formulate 5.0.0 supports these versions of Umbraco:
 
 | Umbraco | .NET |
 | --- | --- |
-| 17.6 or later (17 is the LTS release) | .NET 10 |
+| 17.8.2 or later (17 is the LTS release) | .NET 10 |
 | 18 | .NET 10 |
 | 19 (release candidate) | .NET 11 |
 
-* The packages say they work with Umbraco `[17.6.0, 20.0.0)`. Formulate is built against 17.6 and checked on 17.6, 17.8, 18.3 and 19.0.0-rc1.
-* Use the latest 17.x release of Umbraco that you can. The 17.6.0 floor pulls in dependencies that have published security advisories, and later 17.x releases fix them.
+* The packages say they work with Umbraco `[17.8.2, 20.0.0)`. Formulate is built against 17.8 and checked on 17.8, 18.3 and 19.0.0-rc1.
+* Use the latest 17.x release of Umbraco that you can.
 * Formulate 5 does not run on Umbraco 16 or earlier. For Umbraco 8, use Formulate 3.
 * Umbraco 19 runs on .NET 11, so a site on it needs the .NET 11 SDK.
 

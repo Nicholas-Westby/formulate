@@ -5,7 +5,7 @@ title: Formulate
 
 <div class="formulate-announcement">
     <h2>Formulate 5 is here</h2>
-    <p>Formulate 5 runs on Umbraco 17.6 or later 17.x, Umbraco 18 and the Umbraco 19 release candidate. Formulate Pro is now part of Formulate, for free. See <a href="/whats-new-in-5" title="What's new in Formulate 5">what's new in Formulate 5</a>.</p>
+    <p>Formulate 5 runs on Umbraco 17.8.2 or later 17.x, Umbraco 18 and the Umbraco 19 release candidate. Formulate Pro is now part of Formulate, for free. See <a href="/whats-new-in-5" title="What's new in Formulate 5">what's new in Formulate 5</a>.</p>
 </div>
 
 <style>
