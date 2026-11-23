@@ -312,7 +312,7 @@ npm run typecheck
 
 In `src/Formulate.BackOffice/Client`, `npm run typecheck:18` and `npm run typecheck:19` also type-check the back office client against the back office of Umbraco 18.3.2 and 19.0.0-rc1. They install that version in `Client/.typecheck`, which is not committed, and leave the client's own packages alone.
 
-Browser tests (Playwright, against the dev site on a new empty database), in `tests/e2e`:
+Browser tests (Playwright, against the dev site on new empty databases), in `tests/e2e`:
 
 ```
 npm ci
@@ -320,11 +320,13 @@ npm run install-browser
 npm test
 ```
 
-The site runs over HTTPS on `https://localhost:44331`, so trust the .NET development certificate first with `dotnet dev-certs https --trust`. It also listens on plain http on the port 1000 above (`http://localhost:45331`), where the tests' Send Data handlers send to its echo. The tests read the emails and the echoed requests from the run's own folders.
+A run builds the dev site once. Then each Playwright worker starts a site of its own from that build, on a new empty database, and runs its share of the tests on it, so the workers run at the same time without sharing a site. A run has one worker for each of the machine's processors but one, up to four, and no more than one for each 2.5 GB of memory. Pass `--workers` (as in `npm test -- --workers=2`) to choose.
+
+Each worker's site runs over HTTPS, the first on `https://localhost:44331` and each other one on the next port up, so trust the .NET development certificate first with `dotnet dev-certs https --trust`. Each also listens on plain http on its port plus 1000 (`http://localhost:45331` for the first), where the tests' Send Data handlers send to its echo. Each site keeps its database, its log, its emails, the echoed requests and uploaded files in a folder of its own, in the run's folder, where the tests read them.
 
 A run stops after three failures, since a site that stops answering would fail every later test slowly. Pass `--max-failures=0` (as in `npm test -- --max-failures=0`) to run every test anyway.
 
-Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco version, `FORMULATE_E2E_PORT` to use another port (so two runs can go at once), and `DOTNET_EXE` to point at a different `dotnet` (Umbraco 19 needs the .NET 11 SDK).
+Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco version, `FORMULATE_E2E_PORT` to start from another port, and `DOTNET_EXE` to point at a different `dotnet` (Umbraco 19 needs the .NET 11 SDK). Two runs at once need ports at least as far apart as the first run has workers, such as 44331 and 44341.
 
 `npm run test:packages` runs them on the packed packages, the way a site installs Formulate, instead of the source projects. It packs Formulate into `artifacts/packages` with a version of its own, such as `5.0.0-local.g1a2b3c4` (with the time added when there are uncommitted changes), because NuGet never looks again at a version it has already extracted. Then it runs the tests on the dev site built from those packages with `-p:FormulateFromPackages=true`. A test reads the site's log to check that the site loaded that version. `npm run pack:local` only packs, and prints how to run the tests or the dev site on the pack. A release version such as `5.0.0` is refused, since an old pack with that version could stand in for the new one.
 

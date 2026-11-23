@@ -57,11 +57,12 @@ export async function emptyTree(page: Page, treeAlias: string) {
  * Stores legacy data values at the top of the Data Values tree, as an older Formulate left them: the API
  * creates none, so the site's file of new List data values is copied with the Legacy kind and a new ID.
  * @param page A page of the signed-in browser context.
+ * @param siteFolder The folder of the worker's site (workerSite.folder), which holds its Formulate folder.
  * @param name The name of the legacy data values.
  * @returns Their ID.
  */
-export async function storeLegacyDataValues(page: Page, name: string): Promise<string> {
-	const folder = join(process.env.FORMULATE_E2E_RUN_FOLDER!, 'Formulate', 'DataValues');
+export async function storeLegacyDataValues(page: Page, siteFolder: string, name: string): Promise<string> {
+	const folder = join(siteFolder, 'Formulate', 'DataValues');
 	const fileOf = (id: string) => join(folder, `${id.replaceAll('-', '')}.dataValue`);
 	const templateId = await createKindItem(page, 'data-values', {
 		name: 'Legacy template',

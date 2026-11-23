@@ -283,7 +283,7 @@ jobs:
   # 17.8.2 and 18.3.2 do. The dev site installs the pack job's packages instead of building the
   # source projects (-p:FormulateFromPackages=true, see src/Website/Website.csproj), and a test
   # reads the site's log to check it loaded that version (tests/e2e/specs/loaded-formulate.spec.ts).
-  # Playwright boots its own throwaway site per run (SQLite, new folder).
+  # Playwright builds the site once and starts a throwaway site for each of its workers (SQLite, new folders).
   e2e:
     name: E2E (Umbraco ${{ matrix.umbraco }})
     runs-on: ubuntu-latest
@@ -322,8 +322,8 @@ jobs:
       # Kestrel serves the site over HTTPS on a development certificate.
       - name: Create the development certificate
         run: dotnet dev-certs https
-      # Built first (Debug, like the "dotnet run" Playwright starts), so restoring the site's packages
-      # does not count against Playwright's startup timeout.
+      # Built first (Debug, as the tests' global setup builds it, tests/e2e/support/global-setup.ts), so
+      # restoring the site's packages shows as a step of its own and the tests' build has nothing left to do.
       - name: Build the dev site on the packages
         run: >-
           dotnet build src/Website/Website.csproj
@@ -350,7 +350,8 @@ jobs:
       - name: Run the E2E tests
         working-directory: tests/e2e
         env:
-          # The run's database, Formulate's files and the site's log, in a folder the upload below knows.
+          # Each worker's site keeps its database, Formulate's files and its log in a folder of this one, which
+          # the upload below knows.
           FORMULATE_E2E_RUN_FOLDER: ${{ runner.temp }}/e2e-run
         run: npx playwright test
       - name: Upload screenshots and traces
@@ -363,11 +364,12 @@ jobs:
             tests/e2e/playwright-report
           if-no-files-found: ignore
           retention-days: 14
-      - name: Upload the site's log
+      - name: Upload the sites' logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-site-log-${{ matrix.umbraco }}
-          path: ${{ runner.temp }}/e2e-run/Logs
+          # One folder for each worker's site, such as worker-0/Logs.
+          path: ${{ runner.temp }}/e2e-run/*/Logs
           if-no-files-found: ignore
           retention-days: 14

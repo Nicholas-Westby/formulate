@@ -13,7 +13,7 @@ import {
 } from '../fixtures/site-forms.ts';
 import { readEchoRecords, type EchoRecord } from '../support/echo.ts';
 import { transmissionFormats } from '../support/server-constants.ts';
-import { runFolderPaths, siteAddresses } from '../support/site-environment.ts';
+import { siteFolderPaths } from '../support/site-environment.ts';
 
 /** The Send Data handler's kind. */
 const SEND_DATA_KIND_ID = 'c76e8d1d-5df2-44cb-8fa2-85c32312d688';
@@ -32,12 +32,13 @@ test("Send Data sends a page's submission to the echo in each transmission forma
 	page,
 	context,
 	seededPage,
+	workerSite,
 }) => {
 	void seededPage;
 	test.setTimeout(180_000);
 	const formats = transmissionFormats();
-	const { origin, plainOrigin } = siteAddresses(process.env.FORMULATE_E2E_PORT);
-	const echoFolder = runFolderPaths(process.env.FORMULATE_E2E_RUN_FOLDER!).echo;
+	const { origin, plainOrigin } = workerSite;
+	const echoFolder = siteFolderPaths(workerSite.folder).echo;
 	// Each handler sends to a path of its own under this test's, with a query value of the URL's own.
 	const run = `/dev/echo/${randomUUID()}/`;
 	const echoUrl = (name: string) => `${plainOrigin}${run}${name}?source=e2e`;

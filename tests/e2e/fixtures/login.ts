@@ -1,7 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { test as base, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { callManagementApi } from './management-api.ts';
+import { test as base, expect } from './site.ts';
 import { E2E_USER } from './user.ts';
 
 export { expect };
@@ -16,8 +17,8 @@ export async function logIn(page: Page) {
 }
 
 /**
- * Tests that start signed in to the back office. Each worker signs in once and saves the browser's
- * cookies and storage. Each test starts from the saved session and saves the one it ends with for the
+ * Tests that start signed in to the back office of the worker's site. Each worker signs in once and saves the
+ * browser's cookies and storage. Each test starts from the saved session and saves the one it ends with for the
  * next test, because the back office trades its refresh token for a new one every time it starts, and
  * Umbraco ends the whole session when a traded token comes back after a short grace period (it takes it
  * for a replay). When every test started from the sign-in's token, the session ended partway through a run.
@@ -34,12 +35,13 @@ export const test = base.extend<{ passSessionOn: void }, { signedInState: string
 	],
 
 	signedInState: [
-		async ({ browser }, use, workerInfo) => {
-			const file = join(workerInfo.project.outputDir, '.auth', `${workerInfo.parallelIndex}.json`);
-			const { baseURL, ignoreHTTPSErrors } = workerInfo.project.use;
+		async ({ browser, workerSite }, use, workerInfo) => {
+			// A worker that replaces one after a failure has a new site, so it signs in anew to a file of its own.
+			const file = join(workerInfo.project.outputDir, '.auth', `${workerInfo.workerIndex}.json`);
+			const { ignoreHTTPSErrors } = workerInfo.project.use;
 
 			// Sign in from a clean browser context, not one that already has a stored state.
-			const page = await browser.newPage({ baseURL, ignoreHTTPSErrors, storageState: undefined });
+			const page = await browser.newPage({ baseURL: workerSite.origin, ignoreHTTPSErrors, storageState: undefined });
 			await logIn(page);
 
 			// Say which Umbraco version the site runs, so every run's output shows what it tested.

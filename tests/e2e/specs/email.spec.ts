@@ -12,7 +12,7 @@ import {
 	watchPage,
 } from '../fixtures/site-forms.ts';
 import { addressesOf, readEmails, type Email } from '../support/eml.ts';
-import { runFolderPaths, siteAddresses } from '../support/site-environment.ts';
+import { siteFolderPaths } from '../support/site-environment.ts';
 
 /** The Email handler's kind. */
 const EMAIL_KIND_ID = 'a0c06033-cb94-424f-9c03-5b10a420db16';
@@ -53,11 +53,12 @@ test('a submission from a page is emailed to the To, Cc and Bcc recipients with 
 	page,
 	context,
 	seededPage,
+	workerSite,
 }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	const { origin } = siteAddresses(process.env.FORMULATE_E2E_PORT);
-	const emailFolder = runFolderPaths(process.env.FORMULATE_E2E_RUN_FOLDER!).email;
+	const { origin } = workerSite;
+	const emailFolder = siteFolderPaths(workerSite.folder).email;
 	// This test's emails are the ones whose subjects start with it.
 	const run = randomUUID().slice(0, 8);
 

@@ -13,7 +13,6 @@ import {
 	watchPage,
 } from '../fixtures/site-forms.ts';
 import { screenshotPath } from '../support/screenshots.ts';
-import { siteAddresses } from '../support/site-environment.ts';
 
 /** The Store Data handler's kind. */
 const STORE_DATA_KIND_ID = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
@@ -96,10 +95,11 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 	page,
 	context,
 	seededPage,
+	workerSite,
 }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	const { origin } = siteAddresses(process.env.FORMULATE_E2E_PORT);
+	const { origin } = workerSite;
 
 	// A form that is not saved yet has no submissions, so it has no Submissions view.
 	await page.goto(`/umbraco/section/formulate/workspace/formulate-form/create/parent/formulate-forms-root/null/${BASIC_LAYOUT_FORM_KIND_ID}`);

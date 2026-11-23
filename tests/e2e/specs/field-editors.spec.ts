@@ -109,10 +109,11 @@ async function submit(dialog: Locator) {
 
 /**
  * Saves the form.
+ * @param siteFolder The folder of the worker's site (workerSite.folder).
  * @returns The fields the back office sent, the fields as the API gives them back, and the fields as the site
  * stored them in the form's file.
  */
-async function saveAndRead(page: Page, formId: string) {
+async function saveAndRead(page: Page, siteFolder: string, formId: string) {
 	const saved = page.waitForResponse(
 		(response) => response.request().method() === 'PUT' && response.url().endsWith(`/formulate/form/${formId}`),
 	);
@@ -121,8 +122,8 @@ async function saveAndRead(page: Page, formId: string) {
 	expect(response.ok()).toBe(true);
 	const sent: Array<StoredField> = response.request().postDataJSON().fields;
 	const stored = (await callManagementApi<{ fields: Array<StoredField> }>(page, 'GET', `/formulate/form/${formId}`)).fields;
-	// The site keeps each form in a file of its own (Formulate.Web's WebHostRepositoryUtility), in the run's folder.
-	const file = join(process.env.FORMULATE_E2E_RUN_FOLDER!, 'Formulate', 'Forms', `${formId.replaceAll('-', '')}.form`);
+	// The site keeps each form in a file of its own (Formulate.Web's WebHostRepositoryUtility), in its folder.
+	const file = join(siteFolder, 'Formulate', 'Forms', `${formId.replaceAll('-', '')}.form`);
 	const inFile: Array<FileField> = JSON.parse(readFileSync(file, 'utf8')).Fields;
 
 	return { sent, stored, inFile };
@@ -148,7 +149,7 @@ test.afterEach(async ({ page }) => {
 	await emptyTree(page, 'data-values');
 });
 
-test('an Extended Radio Button List and a reCAPTCHA field are added in the designer, set up, and kept as set', async ({ page }) => {
+test('an Extended Radio Button List and a reCAPTCHA field are added in the designer, set up, and kept as set', async ({ page, workerSite }) => {
 	test.setTimeout(240_000);
 	const kinds = await findKinds(page);
 	const extendedList = fieldKind(kinds, 'Extended Radio Button List');
@@ -181,7 +182,7 @@ test('an Extended Radio Button List and a reCAPTCHA field are added in the desig
 
 	// Saved: the Extended Radio Button List as ExtendedRadioButtonListFieldPreValues reads it, and nothing for the
 	// reCAPTCHA field, which stores no configuration.
-	const { sent, stored, inFile } = await saveAndRead(page, formId);
+	const { sent, stored, inFile } = await saveAndRead(page, workerSite.folder, formId);
 	const sizeSettings = { dataValue: sizes, orientation: 'Horizontal' };
 	expect(sent.map(({ kindId, name }) => ({ kindId, name }))).toStrictEqual([
 		{ kindId: extendedList.kindId, name: 'Size' },
@@ -217,6 +218,7 @@ test('an Extended Radio Button List set up in the designer shows its choices, th
 	page,
 	context,
 	seededPage,
+	workerSite,
 }) => {
 	void seededPage;
 	test.setTimeout(240_000);
@@ -245,7 +247,7 @@ test('an Extended Radio Button List set up in the designer shows its choices, th
 		const dialog = await editField(page, 'Size');
 		await setUpExtendedList(page, dialog.locator('formulate-extended-radio-button-list-field-editor'), 'Sizes', 'Vertical');
 		await submit(dialog);
-		const { stored } = await saveAndRead(page, formId);
+		const { stored } = await saveAndRead(page, workerSite.folder, formId);
 		expect(named(stored, 'Size').configuration).toMatchObject({ orientation: 'Vertical' });
 
 		await waitForPage(site, created.path);

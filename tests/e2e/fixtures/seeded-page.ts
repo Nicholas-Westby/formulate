@@ -11,14 +11,14 @@ import { expect, test as loggedIn } from './login.ts';
 export const SEEDED_PAGE_ID = '5d3a0b0e-6a43-4a4f-9a3c-1f6f7b0f2a03';
 
 /**
- * The dev site seeds its test page when the application has started, and the specs start once the seed has
- * logged its last line (siteReadiness in support/site-environment.ts), which can say that it failed. So a test
+ * The dev site seeds its test page when the application has started, and a worker's tests start once the seed has
+ * logged its last line (startSite in support/sites.ts), which can say that it failed. So a test
  * that needs the page asks for the `seededPage` fixture: it waits until "/" serves the page, for up to 180 s, and
  * if it never does, fails saying so, with what "/" answered last and the seed's last line in the site log.
  */
 export const test = loggedIn.extend<{ seededPage: void }>({
 	seededPage: [
-		async ({ request }, use) => {
+		async ({ request, workerSite }, use) => {
 			await waitForSeededPage(
 				async () => {
 					try {
@@ -35,7 +35,7 @@ export const test = loggedIn.extend<{ seededPage: void }>({
 						return { served: false, answer: `the request failed: ${(error as Error).message.split('\n')[0]}` };
 					}
 				},
-				{ waitMs: SEEDED_PAGE_WAIT_MS, logFolder: join(process.env.FORMULATE_E2E_RUN_FOLDER!, 'Logs') },
+				{ waitMs: SEEDED_PAGE_WAIT_MS, logFolder: join(workerSite.folder, 'Logs') },
 			);
 			await use();
 		},

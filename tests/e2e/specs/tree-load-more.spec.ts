@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '../fixtures/login.ts';
+import { emptyTree } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { getUmbracoVersion, treePageSize } from '../fixtures/umbraco-version.ts';
 import { screenshotPath } from '../support/screenshots.ts';
@@ -15,6 +16,9 @@ interface CreateOption {
 
 test('Load more shows every form at the Forms root', async ({ page }) => {
 	test.setTimeout(120_000);
+	// The worker's site may have run other tests first. Each removes what it made, and this one makes sure: it counts
+	// every form at the root.
+	await emptyTree(page, 'forms');
 
 	const pageSize = treePageSize(await getUmbracoVersion(page));
 	const options = await callManagementApi<Array<CreateOption>>(page, 'GET', '/formulate/tree/forms/create-options');

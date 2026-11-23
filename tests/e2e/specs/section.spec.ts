@@ -1,3 +1,4 @@
+import { emptyTree } from '../fixtures/formulate-api.ts';
 import { expect, test } from '../fixtures/login.ts';
 import { getUmbracoVersion, rootWorkspaceUrlEnd } from '../fixtures/umbraco-version.ts';
 import { readBuildProperty } from '../support/repo.ts';
@@ -14,6 +15,12 @@ const TREES = [
 ];
 
 test('the Formulate section shows the welcome dashboard and the three trees', async ({ page }) => {
+	// The worker's site may have run other tests first. Each removes what it made, and this one makes sure: it needs
+	// every tree empty.
+	for (const tree of TREES) {
+		await emptyTree(page, tree.apiAlias);
+	}
+
 	// Each root reads one item of its tree, to learn whether it has anything to expand.
 	const rootReads = TREES.map((tree) =>
 		page.waitForResponse(
@@ -33,7 +40,7 @@ test('the Formulate section shows the welcome dashboard and the three trees', as
 		expect(new URL(response.url()).searchParams.get('take')).toBe('1');
 		expect(await response.json()).toMatchObject({ total: 0, items: [] });
 
-		// The site is new, so no tree has anything to expand.
+		// No tree has anything in it, so none has anything to expand.
 		const root = sidebar.locator(`uui-menu-item[label="${tree.label}"]`);
 		await expect(root).toBeVisible();
 		await expect(root.locator('#caret-button')).toHaveCount(0);

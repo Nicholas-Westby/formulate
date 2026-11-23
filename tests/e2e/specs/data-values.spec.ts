@@ -176,9 +176,9 @@ test('the US states are created with nothing to set, and stay that way after a r
 	expect([saved.name, saved.configuration ?? null]).toEqual(['US states', null]);
 });
 
-test('legacy data values open read-only', async ({ page }) => {
+test('legacy data values open read-only', async ({ page, workerSite }) => {
 	await page.goto('/umbraco/section/formulate');
-	const id = await storeLegacyDataValues(page, 'Old colors');
+	const id = await storeLegacyDataValues(page, workerSite.folder, 'Old colors');
 
 	await page.goto(`${WORKSPACE_URL}/formulate-data-values/edit/${id}`);
 

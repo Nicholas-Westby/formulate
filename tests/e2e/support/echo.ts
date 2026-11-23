@@ -19,7 +19,7 @@ export interface EchoRecord {
 
 /**
  * The requests the echo received under a path, in the order they arrived (the files are named by the time).
- * @param folder The echo's folder (runFolderPaths(...).echo).
+ * @param folder The echo's folder (siteFolderPaths(...).echo).
  * @param pathPrefix The start of the requests' paths, such as /dev/echo/run-1/.
  */
 export function readEchoRecords(folder: string, pathPrefix: string): Array<EchoRecord> {

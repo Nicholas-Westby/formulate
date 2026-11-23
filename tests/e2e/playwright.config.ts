@@ -4,10 +4,11 @@ import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { missingPackages, packageVersionProblem } from './support/local-packages.ts';
 import { RUN_FOLDER_PREFIX, removeOldRunFolders } from './support/run-folders.ts';
-import { siteAddresses, siteEnvironment, siteReadiness } from './support/site-environment.ts';
+import { defaultWorkers } from './support/sites.ts';
 
 /**
- * Starts the dev website (src/Website) on a new, empty database and drives its back office.
+ * Builds the dev website (src/Website) once, starts a site of it for each worker on a new, empty database, and
+ * drives the sites' back offices, several workers at once (see fixtures/site.ts).
  *
  * Environment variables:
  *   UMBRACO_SITE_VERSION       The Umbraco version to run the site on, such as 18.3.2 (default: the version in
@@ -16,19 +17,20 @@ import { siteAddresses, siteEnvironment, siteReadiness } from './support/site-en
  *                              (-p:FormulateFromPackages=true), instead of the source projects. It needs a
  *                              prerelease label, such as 5.0.0-local.g1a2b3c4, and CI (where CI is set) must
  *                              set it. "npm run test:packages" packs a new version and sets it.
- *   FORMULATE_E2E_PORT         The port the site listens on over HTTPS (default: 44331). The site also listens over
- *                              plain http on this port plus 1000 (45331 by default), where the Send Data specs reach
- *                              the dev site's echo (see support/site-environment.ts), so two runs need two ports.
+ *   FORMULATE_E2E_PORT         The port the first worker's site listens on over HTTPS (default: 44331). Each other
+ *                              worker's site listens on the next port up, and each site also listens over plain http
+ *                              on its port plus 1000 (45331 by default), where the Send Data specs reach the dev
+ *                              site's echo (see support/site-environment.ts). So two runs at once need ports at
+ *                              least as far apart as the first run has workers.
  *   DOTNET_EXE                 The dotnet executable (default: dotnet). Umbraco 19 needs the .NET 11 SDK.
+ *
+ * The run has as many workers as the machine has processors, less one, up to four, and no more than one for each
+ * 2.5 GB of memory (see defaultWorkers in support/sites.ts). Pass --workers to choose.
  */
 
-// Two runs at once (such as in two worktrees) need two ports.
-const ADDRESSES = siteAddresses(process.env.FORMULATE_E2E_PORT);
-const ORIGIN = ADDRESSES.origin;
-
-// Every run starts from nothing: a new folder holds the site's SQLite database and Formulate's JSON files.
-// (An in-memory database does not work: its tables are gone before Umbraco's install has finished.)
-// Playwright loads this file in its main process first, then in each test worker, which inherits the
+// Every run starts from nothing: a new folder holds a folder for each worker's site, with its SQLite database and
+// Formulate's JSON files. (An in-memory database does not work: its tables are gone before Umbraco's install has
+// finished.) Playwright loads this file in its main process first, then in each test worker, which inherits the
 // folder. Only the main process picks the folder, and removes the folders of runs a day old or more.
 if (!process.env.FORMULATE_E2E_RUN_FOLDER) {
 	const newRunFolder = join(tmpdir(), `${RUN_FOLDER_PREFIX}${Date.now()}`);
@@ -36,12 +38,9 @@ if (!process.env.FORMULATE_E2E_RUN_FOLDER) {
 	process.env.FORMULATE_E2E_RUN_FOLDER = newRunFolder;
 }
 
-const runFolder = process.env.FORMULATE_E2E_RUN_FOLDER;
-mkdirSync(runFolder, { recursive: true });
+mkdirSync(process.env.FORMULATE_E2E_RUN_FOLDER, { recursive: true });
 
-const siteVersion = process.env.UMBRACO_SITE_VERSION;
 const packageVersion = process.env.FORMULATE_PACKAGE_VERSION;
-const dotnet = process.env.DOTNET_EXE || 'dotnet';
 
 // CI tests only what is shipped, and a version needs a prerelease label of its own (see packageVersionProblem).
 const versionProblem = packageVersionProblem(packageVersion, { ci: !!process.env.CI });
@@ -58,17 +57,14 @@ if (missing.length > 0) {
 	);
 }
 
-const msbuildArgs = [
-	siteVersion ? ` -p:UmbracoSiteVersion=${siteVersion}` : '',
-	packageVersion ? ` -p:FormulateFromPackages=true -p:FormulatePackageVersion=${packageVersion}` : '',
-].join('');
-
 export default defineConfig({
 	testDir: './specs',
 	outputDir: './test-results',
-	// The tests share one site, so run them one at a time.
-	workers: 1,
-	fullyParallel: false,
+	// Builds the site once, before the workers start their sites from the build.
+	globalSetup: './support/global-setup.ts',
+	// Each worker has a site of its own, so any test can run in any worker, at the same time as the others.
+	workers: defaultWorkers(),
+	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
 	timeout: 60_000,
@@ -76,25 +72,11 @@ export default defineConfig({
 	// failures. Pass --max-failures=0 to run every test anyway.
 	maxFailures: 3,
 	expect: { timeout: 15_000 },
+	// The baseURL is the worker's site's (fixtures/site.ts).
 	use: {
-		baseURL: ORIGIN,
 		ignoreHTTPSErrors: true,
 		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
-	webServer: {
-		command: `"${dotnet}" run --project ../../src/Website --no-launch-profile${msbuildArgs}`,
-		// Ready when the dev site's seed has finished, which no request may race (see siteReadiness). A site that
-		// is already on the port makes this one fail to start.
-		...siteReadiness(),
-		timeout: 240_000,
-		// Show the site's warnings and errors (Umbraco's information messages are left out below).
-		stdout: 'pipe',
-		stderr: 'pipe',
-		// Ask the site to stop, so it can shut down cleanly; Playwright kills it if it is still running after 10 seconds.
-		gracefulShutdown: { signal: 'SIGTERM', timeout: 10_000 },
-		// Every name in it is a shell name: on Linux, the /bin/sh that starts the site drops any other.
-		env: siteEnvironment({ ...ADDRESSES, runFolder }),
-	},
 });

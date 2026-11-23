@@ -1,6 +1,8 @@
 import { existsSync, realpathSync } from 'node:fs';
 import { isAbsolute, join, relative } from 'node:path';
-import { expect, test } from '@playwright/test';
+// The same tests as the other specs', though this one does not sign in, so it runs in the same workers as theirs:
+// a test of another kind would need a worker, and so a site, of its own.
+import { expect, test } from '../fixtures/login.ts';
 import { REPO_ROOT, readBuildProperty } from '../support/repo.ts';
 import { type LoadedFormulate, loadedFormulate, readSiteLog } from '../support/site-log.ts';
 
@@ -29,9 +31,9 @@ function isInside(folder: string, file: string) {
 	return path !== '' && !path.startsWith('..') && !isAbsolute(path);
 }
 
-test(`the site runs Formulate ${PACKAGE_VERSION ? `from the ${PACKAGE_VERSION} packages` : 'from source'}`, async () => {
+test(`the site runs Formulate ${PACKAGE_VERSION ? `from the ${PACKAGE_VERSION} packages` : 'from source'}`, async ({ workerSite }) => {
 	// The site writes these lines to its log as it starts (src/Website/Composers/LoadedFormulateComposer.cs).
-	const logFolder = join(process.env.FORMULATE_E2E_RUN_FOLDER!, 'Logs');
+	const logFolder = join(workerSite.folder, 'Logs');
 	let loaded: LoadedFormulate = { assemblies: [] };
 	await expect
 		.poll(
