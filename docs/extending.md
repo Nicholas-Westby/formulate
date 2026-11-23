@@ -221,6 +221,8 @@ public sealed class NoUrlsValidation : Validation
 
 `ValidateFiles` is for upload fields. The definition is a class that implements `IValidationDefinition`. It has no base class, so it also implements `KindId`, `Name`, `IsLegacy` and `EditorAlias`. Its `CreateValidation(PersistedValidation entity)` returns the validation, and `GetBackOfficeConfiguration(PersistedValidation entity)` the editor's configuration.
 
+A message can use the field's own values. `ValidationMessage.ReplaceFieldTokens(message, field)` (in `Formulate.Core.Validations`) replaces `{name}`, `{alias}` and `{label}`, in any letter case, with the field's name, alias and label, and `{{}` with `{`. Formulate calls it on every message the server returns for a field, so a custom validation's messages get the replacement without any code. On the page, only the messages of the Mandatory and Regular Expression types are replaced. The configuration of a custom validation type is sent to the browser as its map gives it.
+
 The browser runs validations too, with a validator registered under the validation's type name (see [the browser section](#changing-how-forms-render-in-the-browser)). The server always runs them again. Regular Expression validations run on the server when `Formulate:Submissions:EnableServerSideValidation` is `true` (the default). The setting does not affect Mandatory validations. The server and the browser can disagree on a few characters: .NET's ECMAScript `\s` is narrower than JavaScript's, and does not match no-break space or U+2028 and U+2029.
 
 A validation of a kind that is not installed is skipped, with a warning that names the field and the validation.

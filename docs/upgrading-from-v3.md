@@ -105,6 +105,7 @@ Check the whitelist when you move it. Formulate 3 checked addresses only when `E
 - The JSON file layout of forms, validations, data values and folders, and their ids.
 - The Plain JavaScript template's id, and its CSS class names, events and custom-field hooks. A site's own scripts that listen to `formulate form: submit: success` and the other events keep working.
 - Send Data reads Formulate 3's saved handler settings (url, method, transmission format and fields). Query String, Form Body and HubSpot JSON send what Formulate 3 sent (HubSpot's `pageUri` is now absolute). JSON is the exception: it now sends a plain object. Set `Formulate:SendData:JsonMode` to `WrappedArray` to keep Formulate 3's default `[ {...} ]`. Check any receiver that expects an array.
+- Placeholders in validation messages. `{name}`, `{alias}` and `{label}` in the message of a Mandatory or Regular Expression validation are replaced with the field's values, as in Formulate 3, and `{{}` gives `{`.
 - The fields. Formulate 5 has the four that were missing from version 4: Checkbox, Date, Extended Radio Button List and reCAPTCHA (v2).
 
 ## What changed for editors and site builders

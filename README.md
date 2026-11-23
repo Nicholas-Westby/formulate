@@ -162,6 +162,10 @@ When a visitor submits a form, Formulate does these things in order:
 
 Values posted for display-only fields (Header, Rich Text, Text Constant and Button) are ignored.
 
+### Validation messages
+
+The message of a Mandatory or Regular Expression validation can hold placeholders. Formulate replaces them with the field's own values, in the browser and in the errors the server returns, and the match ignores letter case: `{name}` is the field's name, `{alias}` its alias and `{label}` its label (its name when it has no label). `{{}` gives a literal `{`. Anything else in braces stays as it is. "This field, {name}, is mandatory" on a field named "First Name" shows "This field, First Name, is mandatory".
+
 ### Email
 
 The Send Email and Designed Email handlers send through Umbraco's email sender, so set up SMTP in `Umbraco:CMS:Global:Smtp`.
