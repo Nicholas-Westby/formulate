@@ -53,6 +53,12 @@
             // a form is rendered outside a request that Umbraco handles. The text is then shown as it is stored.
             if (_umbracoContextAccessor.TryGetUmbracoContext(out _) == false)
             {
+                // Only text with a link or an image to resolve is worth a warning: other text is shown right as stored.
+                if (HasSomethingToResolve(text) == false)
+                {
+                    return text;
+                }
+
                 _logger.LogWarning(
                     "Form field {FieldName} ({FieldId}) shows its text as stored: with no Umbraco context, its links to pages and its images from the media library cannot be resolved.",
                     field.Name,
@@ -63,5 +69,9 @@
 
             return _imageSourceParser.EnsureImageSources(_linkParser.EnsureInternalLinks(text));
         }
+
+        /// <summary>Whether the text has a link to a content page ({localLink:) or an image from the media library (data-udi).</summary>
+        private static bool HasSomethingToResolve(string text) =>
+            text.Contains("{localLink:", StringComparison.Ordinal) || text.Contains("data-udi", StringComparison.Ordinal);
     }
 }

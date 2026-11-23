@@ -288,6 +288,44 @@ public sealed class FieldMapDefinitionTests
             Times.Once());
     }
 
+    /// <summary>Maps <paramref name="text"/> with no Umbraco context, and gives the text and the logger that saw it.</summary>
+    private static (string? Mapped, Mock<ILogger<RichTextFieldMapDefinition>> Logger) MapRichTextWithNoContext(string? text)
+    {
+        var accessor = new Mock<IUmbracoContextAccessor>();
+        IUmbracoContext? none = null;
+        accessor.Setup(x => x.TryGetUmbracoContext(out none)).Returns(false);
+        var urls = UmbracosUrlProvider(accessor.Object);
+        var logger = new Mock<ILogger<RichTextFieldMapDefinition>>();
+        var definition = new RichTextFieldMapDefinition(
+            new HtmlLocalLinkParser(urls), new HtmlImageSourceParser(urls, UnsignedImageUrls()), accessor.Object, logger.Object);
+
+        return (MapRichText(definition, Mock.Of<IFormFieldSettings>(), text), logger);
+    }
+
+    [Theory]
+    [InlineData("<h2 class=\"intro\">Hello</h2><p>Fill <b>this</b> in. <a href=\"https://example.com/\">More</a> <img src=\"/images/a.png\" alt=\"\"></p>")]
+    [InlineData("<p><img src=\"https://example.com/a.png\" alt=\"A\"></p>")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Rich_text_with_nothing_to_resolve_rendered_with_no_Umbraco_context_maps_as_stored_and_logs_no_warning(string? text)
+    {
+        var (mapped, logger) = MapRichTextWithNoContext(text);
+
+        Assert.Equal(text, mapped);
+        VerifyWarnings(logger, Times.Never());
+    }
+
+    [Theory]
+    [InlineData("<p><a href=\"/{localLink:5d3a0b0e-6a43-4a4f-9a3c-1f6f7b0f2a03}\" title=\"Contact Us\" type=\"document\">Contact us</a></p>")]
+    [InlineData("<p><img src=\"/media/yptj3z3h/logo.png\" alt=\"Our logo\" data-udi=\"umb://media/51c82d4c71ce4bc8a8494c6edf056062\"></p>")]
+    public void Rich_text_with_a_content_link_or_a_media_image_rendered_with_no_Umbraco_context_maps_as_stored_and_logs_a_warning(string text)
+    {
+        var (mapped, logger) = MapRichTextWithNoContext(text);
+
+        Assert.Equal(text, mapped);
+        VerifyWarnings(logger, Times.Once());
+    }
+
     [Theory]
     [InlineData("<h2 class=\"intro\">Hello</h2><p>Fill <b>this</b> in. <a href=\"https://example.com/\">More</a> <img src=\"/images/a.png\" alt=\"\"></p>")]
     [InlineData("")]
