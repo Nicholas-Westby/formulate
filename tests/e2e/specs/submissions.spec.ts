@@ -215,6 +215,12 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		const left = await readSubmissions(page, formId);
 		expect(left.total).toBe(1);
 		expect(left.items.map((submission) => submission.id)).toEqual([ada!.id]);
+
+		// Reloaded on its own address, the view shows its rows again.
+		await expect(page).toHaveURL(new RegExp(`/workspace/formulate-form/edit/${formId}/view/submissions$`));
+		await page.reload();
+		await expect(table.locator('uui-table-row')).toHaveCount(1);
+		expect(await cellsOf(table)).toEqual([['', adaDate, pageText, 'Ada Lovelace', 'ada@example.com', 'notes.txt', '']]);
 	} finally {
 		await site.close();
 		await openBackOffice(page);
