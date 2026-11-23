@@ -4,7 +4,7 @@ import { kindItemWorkspaceManifests } from '../../core/kind-item/manifests.js';
 export const manifests: Array<UmbExtensionManifest> = kindItemWorkspaceManifests({
 	alias: FORMULATE_VALIDATION_WORKSPACE_ALIAS,
 	name: 'Validation',
-	label: 'Validation',
+	manifestName: 'Validation',
 	entityType: FORMULATE_VALIDATION_ENTITY_TYPE,
 	api: () => import('./validation-workspace.context.js'),
 });

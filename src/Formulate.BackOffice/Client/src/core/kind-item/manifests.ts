@@ -6,8 +6,8 @@ export interface FormulateKindItemWorkspace {
 	alias: string;
 	/** The name in the aliases of its view and action, such as Validation. */
 	name: string;
-	/** The name in the names of its manifests, such as Validation. */
-	label: string;
+	/** The name in the names of its manifests, such as Data Values. */
+	manifestName: string;
 	entityType: string;
 	/** Loads the workspace context. */
 	api: ManifestWorkspaceRoutableKind['api'];
@@ -27,14 +27,14 @@ export function kindItemWorkspaceManifests(workspace: FormulateKindItemWorkspace
 			type: 'workspace',
 			kind: 'routable',
 			alias: workspace.alias,
-			name: `Formulate ${workspace.label} Workspace`,
+			name: `Formulate ${workspace.manifestName} Workspace`,
 			api: workspace.api,
 			meta: { entityType: workspace.entityType },
 		},
 		{
 			type: 'workspaceView',
 			alias: `Formulate.WorkspaceView.${workspace.name}.Settings`,
-			name: `Formulate ${workspace.label} Settings Workspace View`,
+			name: `Formulate ${workspace.manifestName} Settings Workspace View`,
 			element: () => import('./kind-item-workspace-view-settings.element.js'),
 			meta: { label: '#general_settings', pathname: 'settings', icon: 'icon-settings' },
 			conditions: inWorkspace(),
@@ -43,7 +43,7 @@ export function kindItemWorkspaceManifests(workspace: FormulateKindItemWorkspace
 			type: 'workspaceAction',
 			kind: 'default',
 			alias: `Formulate.WorkspaceAction.${workspace.name}.Save`,
-			name: `Save Formulate ${workspace.label} Workspace Action`,
+			name: `Save Formulate ${workspace.manifestName} Workspace Action`,
 			api: () => import('./kind-item-save.action.js'),
 			meta: { label: '#buttons_save', look: 'primary', color: 'positive' },
 			conditions: inWorkspace(),
