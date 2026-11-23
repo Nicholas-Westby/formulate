@@ -17,9 +17,7 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 	@state()
 	private _downloading: ReadonlyArray<string> = [];
 
-	async #download(submission: SubmissionResponseModel, file: SubmissionFileModel) {
-		const key = fileKey(file);
-
+	async #download(submission: SubmissionResponseModel, file: SubmissionFileModel, key: string) {
 		if (this._downloading.includes(key)) {
 			return;
 		}
@@ -75,18 +73,20 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 				orientation="vertical">
 				<div slot="editor">
 					${entry.values.map((value) => html`<div class="value">${value}</div>`)}
-					${entry.files.map(
-						(file) => html`
+					${entry.files.map((file, index) => {
+						const key = fileKey(entry.fieldId, index);
+
+						return html`
 							<uui-button
 								look="secondary"
 								label=${this.localize.term('formulate_downloadFile', file.fileName)}
-								.state=${this._downloading.includes(fileKey(file)) ? 'waiting' : undefined}
-								@click=${() => this.#download(submission, file)}>
+								.state=${this._downloading.includes(key) ? 'waiting' : undefined}
+								@click=${() => this.#download(submission, file, key)}>
 								<uui-icon name="icon-download-alt"></uui-icon>
 								${file.fileName}
 							</uui-button>
-						`,
-					)}
+						`;
+					})}
 				</div>
 			</umb-property-layout>
 		`;
@@ -120,9 +120,14 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 	];
 }
 
-/** A file of the submission, as one key: the field it was sent with, and its name. */
-function fileKey(file: SubmissionFileModel) {
-	return JSON.stringify([file.fieldId, file.fileName]);
+/**
+ * A file of the submission, as one key: the field it was sent with, and its place in that field's files. Not its
+ * name, which two files of a field can share, and the API gives a file no ID.
+ * @param fieldId The ID of the file's field, as the sidebar's entry has it.
+ * @param index The file's place in the entry's files.
+ */
+function fileKey(fieldId: string, index: number) {
+	return JSON.stringify([fieldId, index]);
 }
 
 export { FormulateSubmissionModalElement as element };

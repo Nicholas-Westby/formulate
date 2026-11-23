@@ -186,6 +186,37 @@ describe('Formulate submission sidebar', () => {
 		expect(downloads.map((download) => download.name)).toStrictEqual(['cv.pdf']);
 	});
 
+	it('shows each download as busy by itself, when two files of a field have the same name', async () => {
+		let answerFile = () => {};
+		const fileAnswered = new Promise<void>((resolve) => (answerFile = resolve));
+		const cv = { fieldId: CV_ID, fieldName: 'CV', fileName: 'cv.pdf' };
+		const submission = { ...adaSubmission(), files: [cv, { ...cv }] };
+		const { shadow, requests, element } = await openSidebar(submission, formFields(), async (_request, path) => {
+			if (path.includes('/file/')) await fileAnswered;
+			return undefined;
+		});
+		const downloads = recordDownloads();
+		const [first, second] = [...shadow.querySelectorAll<HTMLElement & { state?: string }>('uui-button[label="Download cv.pdf"]')];
+		const fileRequests = () => requests.filter((request) => pathAndQuery(request).includes('/file/')).length;
+
+		click(first!);
+		await settle(element);
+
+		expect([first!.state, second!.state, fileRequests()]).toStrictEqual(['waiting', undefined, 1]);
+
+		// The other file is not busy, so a click downloads it too.
+		click(second!);
+		await settle(element);
+
+		expect([first!.state, second!.state, fileRequests()]).toStrictEqual(['waiting', 'waiting', 2]);
+
+		answerFile();
+		await settle(element);
+
+		expect([first!.state, second!.state]).toStrictEqual([undefined, undefined]);
+		expect(downloads.map((download) => download.name)).toStrictEqual(['cv.pdf', 'cv.pdf']);
+	});
+
 	it('says so when a file cannot be downloaded', async () => {
 		const { shadow, peek, element } = await openSidebar(adaSubmission(), formFields(), (_request, path) =>
 			path.includes('/file/') ? problemResponse(404, 'Item not found', 'There is no such file.') : undefined,
