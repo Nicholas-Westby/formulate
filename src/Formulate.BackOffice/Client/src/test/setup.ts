@@ -4,6 +4,14 @@
 const lit = globalThis as typeof globalThis & { litIssuedWarnings?: Set<string> };
 (lit.litIssuedWarnings ??= new Set()).add('dev-mode');
 
+// jsdom has no ResizeObserver, which Umbraco UI's elements use to watch their size, such as the pagination,
+// and the loader that a uui-button shows while it waits. They only need it to be there.
+globalThis.ResizeObserver ??= class {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+};
+
 // jsdom's ElementInternals has none of the form methods that Umbraco UI's form controls (such as
 // uui-button) call each time they render. Give them versions that keep the validity a control sets, as
 // browsers do, so those elements can render and report their validation messages in tests.

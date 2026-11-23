@@ -160,6 +160,32 @@ describe('Formulate submission sidebar', () => {
 		expect(new Uint8Array(await downloads[0].blob.arrayBuffer())).toStrictEqual(CV_BYTES);
 	});
 
+	it('shows a download as busy until its file is saved, and saves it once when it is clicked twice', async () => {
+		let answerFile = () => {};
+		const fileAnswered = new Promise<void>((resolve) => (answerFile = resolve));
+		const { shadow, requests, element } = await openSidebar(adaSubmission(), formFields(), async (_request, path) => {
+			// A big file is slow to come.
+			if (path.includes('/file/')) await fileAnswered;
+			return undefined;
+		});
+		const downloads = recordDownloads();
+		const button = shadow.querySelector<HTMLElement & { state?: string }>('uui-button[label="Download cv.pdf"]')!;
+
+		click(button);
+		await settle(element);
+		click(button);
+		await settle(element);
+
+		expect(button.state).toBe('waiting');
+		expect(requests).toHaveLength(1);
+
+		answerFile();
+		await settle(element);
+
+		expect(button.state).toBeUndefined();
+		expect(downloads.map((download) => download.name)).toStrictEqual(['cv.pdf']);
+	});
+
 	it('says so when a file cannot be downloaded', async () => {
 		const { shadow, peek, element } = await openSidebar(adaSubmission(), formFields(), (_request, path) =>
 			path.includes('/file/') ? problemResponse(404, 'Item not found', 'There is no such file.') : undefined,

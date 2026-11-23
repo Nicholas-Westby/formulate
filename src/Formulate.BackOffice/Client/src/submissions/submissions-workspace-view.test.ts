@@ -31,12 +31,6 @@ const API = '/umbraco/management/api/v1/formulate';
 beforeAll(() => {
 	registerFormRepositories();
 	loadFormulateEnglish();
-	// Umbraco UI's pagination watches its size; jsdom has no ResizeObserver.
-	globalThis.ResizeObserver ??= class {
-		observe() {}
-		unobserve() {}
-		disconnect() {}
-	};
 });
 
 afterEach(() => {

@@ -1,4 +1,4 @@
-import { css, customElement, html, ifDefined, nothing, repeat } from '@umbraco-cms/backoffice/external/lit';
+import { css, customElement, html, ifDefined, nothing, repeat, state } from '@umbraco-cms/backoffice/external/lit';
 import { UmbModalBaseElement } from '@umbraco-cms/backoffice/modal';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import type { SubmissionFileModel, SubmissionResponseModel } from '../api/index.js';
@@ -13,8 +13,20 @@ import { submissionEntries, submissionPage, type FormulateSubmissionEntry } from
  */
 @customElement('formulate-submission-modal')
 export class FormulateSubmissionModalElement extends UmbModalBaseElement<FormulateSubmissionModalData, never> {
+	/** The files being downloaded, by fileKey: each one's button shows it is busy, and does nothing more till then. */
+	@state()
+	private _downloading: ReadonlyArray<string> = [];
+
 	async #download(submission: SubmissionResponseModel, file: SubmissionFileModel) {
+		const key = fileKey(file);
+
+		if (this._downloading.includes(key)) {
+			return;
+		}
+
+		this._downloading = [...this._downloading, key];
 		const error = await downloadSubmissionFile(this, submission.id, file);
+		this._downloading = this._downloading.filter((downloading) => downloading !== key);
 
 		if (error) {
 			await reportProblem(this, this.localize.term('formulate_fileNotDownloaded', file.fileName), error);
@@ -68,6 +80,7 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 							<uui-button
 								look="secondary"
 								label=${this.localize.term('formulate_downloadFile', file.fileName)}
+								.state=${this._downloading.includes(fileKey(file)) ? 'waiting' : undefined}
 								@click=${() => this.#download(submission, file)}>
 								<uui-icon name="icon-download-alt"></uui-icon>
 								${file.fileName}
@@ -105,6 +118,11 @@ export class FormulateSubmissionModalElement extends UmbModalBaseElement<Formula
 			}
 		`,
 	];
+}
+
+/** A file of the submission, as one key: the field it was sent with, and its name. */
+function fileKey(file: SubmissionFileModel) {
+	return JSON.stringify([file.fieldId, file.fileName]);
 }
 
 export { FormulateSubmissionModalElement as element };
