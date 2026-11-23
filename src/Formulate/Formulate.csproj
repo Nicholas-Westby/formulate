@@ -18,6 +18,13 @@
           its range.
         -->
         <PackageReference Include="Umbraco.Cms.Core" VersionOverride="$(UmbracoSupportedRange)" />
+        <!--
+          Makes NuGet refuse Formulate on a site below the supported range. A site references Umbraco.Cms itself, so
+          a higher minimum here fails its restore as a downgrade (NU1605). With Umbraco.Cms.Core alone, NuGet raises
+          only the parts of Umbraco that Formulate asks for, and the site gets a mix of Umbraco versions. Umbraco's
+          build steps are left out, so building this project does not copy Umbraco's JSON schema files into it.
+        -->
+        <PackageReference Include="Umbraco.Cms" VersionOverride="$(UmbracoSupportedRange)" ExcludeAssets="buildTransitive" />
     </ItemGroup>
 
     <ItemGroup>

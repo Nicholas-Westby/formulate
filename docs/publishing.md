@@ -31,7 +31,7 @@ Eight packages, all at the same version, all from this repository:
 
 The IDs come from `src/Directory.Build.props` (`Umbraco.Community.` plus the project name). The old IDs `Formulate`, `Formulate.Binaries` and `Formulate.Deploy` belong to Rhythm Agency's NuGet account, and `Formulate.Core` belongs to an unrelated account. That is why Formulate 5 has new IDs.
 
-The version is `5.0.0`, set in `src/Directory.Build.props` as `VersionPrefix`. A release overrides it with the tag (see below). `Umbraco.Community.Formulate` depends on Umbraco `[17.8.2, 20.0.0)`, the versions sites may run (`UmbracoSupportedRange`). The other packages are built against Umbraco 17.7.2 and depend on `[17.7.2, 20.0.0)` (`UmbracoCompileRange`), because Umbraco 18.0.0 to 18.3.0 ship an older NPoco than 17.8.2. Both ranges are set in `src/Directory.Build.props`.
+The version is `5.0.0`, set in `src/Directory.Build.props` as `VersionPrefix`. A release overrides it with the tag (see below). `Umbraco.Community.Formulate` depends on Umbraco `[17.8.2, 20.0.0)`, the versions sites may run (`UmbracoSupportedRange`). It depends on `Umbraco.Cms` as well as `Umbraco.Cms.Core`, so NuGet refuses to install it on a site below 17.8.2 (a downgrade, NU1605) instead of raising only some of the site's Umbraco packages. The other packages are built against Umbraco 17.7.2 and depend on `[17.7.2, 20.0.0)` (`UmbracoCompileRange`), because Umbraco 18.0.0 to 18.3.0 ship an older NPoco than 17.8.2. Both ranges are set in `src/Directory.Build.props`.
 
 ## One-time setup
 
@@ -135,7 +135,7 @@ Packing needs Node.js 24, because `dotnet pack` builds both TypeScript clients.
 
 ## Umbraco Marketplace
 
-The Umbraco Marketplace lists a package when its NuGet package carries the tag `umbraco-marketplace` and depends on an Umbraco package. Formulate meets both. Only the main package has the tag, so only it is listed. The `Umbraco.Community.Formulate` meta package depends on `Umbraco.Cms.Core` directly, so the Marketplace can read the supported Umbraco versions from the dependency range.
+The Umbraco Marketplace lists a package when its NuGet package carries the tag `umbraco-marketplace` and depends on an Umbraco package. Formulate meets both. Only the main package has the tag, so only it is listed. The `Umbraco.Community.Formulate` meta package depends on `Umbraco.Cms.Core` and `Umbraco.Cms` directly, both with the supported range, so the Marketplace can read the supported Umbraco versions from the dependency range.
 
 1. The Marketplace scans NuGet for newly tagged packages every 24 hours at 04:00 UTC. Known packages refresh every 2 hours. Wait for the first scan, or trigger one by hand. Send a `POST` to `https://functions.marketplace.umbraco.com/api/InitiateSinglePackageSyncFunction` with the header `Content-Type: application/json` and the body `{"PackageId": "Umbraco.Community.Formulate"}`. Umbraco limits this to one request a minute per package.
 2. The listing's details come from `umbraco-marketplace.json`. It has the title, description, category, license, tags and author. Anything it leaves out falls back to the NuGet package's data.
