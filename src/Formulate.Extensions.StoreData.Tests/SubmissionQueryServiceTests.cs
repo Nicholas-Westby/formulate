@@ -43,8 +43,23 @@ public sealed class SubmissionQueryServiceTests : IDisposable
         }
     }
 
+    private readonly List<IFormFieldDefinition> _definitions = new();
+
     private SubmissionQueryService CreateService() =>
-        new(_repository, _forms.Object, new TestJsonUtility(), _folders, _logger);
+        new(_repository, _forms.Object, new TestJsonUtility(), _folders, new FormFieldDefinitionCollection(() => _definitions), _logger);
+
+    /// <summary>A definition of a kind of field, with the flags that decide what Store Data keeps of it.</summary>
+    private static IFormFieldDefinition Definition(Guid kindId, bool isStored = true, bool isTransitory = false, bool isHidden = false, bool isServerSideOnly = false)
+    {
+        var definition = new Mock<IFormFieldDefinition>();
+        definition.SetupGet(x => x.KindId).Returns(kindId);
+        definition.SetupGet(x => x.IsStored).Returns(isStored);
+        definition.SetupGet(x => x.IsTransitory).Returns(isTransitory);
+        definition.SetupGet(x => x.IsHidden).Returns(isHidden);
+        definition.SetupGet(x => x.IsServerSideOnly).Returns(isServerSideOnly);
+
+        return definition.Object;
+    }
 
     /// <summary>
     /// Stores a submission as the Store Data handler does, including its files on disk.
@@ -337,6 +352,41 @@ public sealed class SubmissionQueryServiceTests : IDisposable
     }
 
     [Fact]
+    public void Export_leaves_out_fields_that_store_no_value_and_keeps_hidden_and_server_side_only_fields()
+    {
+        // A Button, a Header or a Text Constant is transitory, and reCAPTCHA is not stored: each would be a column that is always empty.
+        // A kind with no definition (not installed) and the fields that Store Data does keep stay.
+        PersistedFormField Field(string name, bool isStored = true, bool isTransitory = false, bool isHidden = false, bool isServerSideOnly = false)
+        {
+            var kindId = Guid.NewGuid();
+            _definitions.Add(Definition(kindId, isStored, isTransitory, isHidden, isServerSideOnly));
+
+            return new PersistedFormField { Id = Guid.NewGuid(), KindId = kindId, Name = name };
+        }
+
+        var form = new PersistedForm
+        {
+            Id = Guid.NewGuid(),
+            Name = "Mixed",
+            Fields = new[]
+            {
+                Field("Email"),
+                Field("Send", isTransitory: true),
+                Field("Robot", isStored: false),
+                Field("Heading", isStored: false, isTransitory: true),
+                Field("Source", isHidden: true),
+                Field("Campaign", isServerSideOnly: true),
+                new PersistedFormField { Id = Guid.NewGuid(), KindId = Guid.NewGuid(), Name = "Gone kind" },
+            },
+        };
+        _forms.Setup(x => x.Get(form.Id)).Returns(form);
+
+        var lines = ReadCsv(CreateService().Export(form.Id).Value!);
+
+        Assert.Equal("Submission Id,Created,Page Id,URL,Email,Source,Campaign,Gone kind", lines[0]);
+    }
+
+    [Fact]
     public void Export_of_an_unknown_form_with_no_submissions_is_not_found()
     {
         Assert.Equal(ServiceStatus.NotFound, CreateService().Export(Guid.NewGuid()).Status);
@@ -350,7 +400,7 @@ public sealed class SubmissionQueryServiceTests : IDisposable
             .Select(i => new FormulateSubmissionDto { SubmissionId = Guid.NewGuid(), FormId = _form.Id, CreationDate = DateTime.UtcNow, DataValues = "[]", FileValues = "[]" })
             .ToArray();
         var repository = new FakeSubmissionRepository { OnPageAfter = _ => rows };
-        var service = new SubmissionQueryService(repository, _forms.Object, new TestJsonUtility(), _folders, _logger);
+        var service = new SubmissionQueryService(repository, _forms.Object, new TestJsonUtility(), _folders, new FormFieldDefinitionCollection(() => _definitions), _logger);
 
         var lines = ReadCsv(service.Export(_form.Id).Value!);
 

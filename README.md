@@ -199,7 +199,7 @@ Send Data sends the submitted values to a URL. Formulate 3's formats are all the
 
 Store Data saves each submission to the `FormulateSubmissions` database table, with the page's URL. Uploaded files go to the uploads folder, outside the web root, with sanitized, length-limited names.
 
-- The submissions API lists, downloads, exports to CSV, and deletes submissions. The CSV is safe to open in Excel, starts with a UTF-8 byte order mark, and includes fields that have since been removed from the form.
+- The submissions API lists, downloads, exports to CSV, and deletes submissions. The CSV is safe to open in Excel, starts with a UTF-8 byte order mark, has no column for fields that store no value (buttons, headers, text constants, reCAPTCHA), and includes fields that have since been removed from the form.
 - Formulate 3 kept submissions in a table called `FormulateSubmission` and its files in `App_Data/Formulate/FileStorage/Files`. Formulate 5 leaves them where they are and does not read them.
 
 <!-- pass 2: describe the submissions screen in the back office. -->

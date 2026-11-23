@@ -4,6 +4,7 @@ namespace Formulate.Extensions.StoreData.Services
     using Formulate.BackOffice.Api.Services;
     using Formulate.Core.FormFields;
     using Formulate.Core.Forms;
+    using Formulate.Core.Types;
     using Formulate.Core.Utilities;
     using Formulate.Extensions.StoreData.Api.Models;
     using Formulate.Extensions.StoreData.Models;
@@ -27,6 +28,7 @@ namespace Formulate.Extensions.StoreData.Services
         private readonly IFormEntityRepository _forms;
         private readonly IJsonUtility _json;
         private readonly UploadFolders _folders;
+        private readonly FormFieldDefinitionCollection _fieldDefinitions;
         private readonly ILogger<SubmissionQueryService> _logger;
 
         public SubmissionQueryService(
@@ -34,12 +36,14 @@ namespace Formulate.Extensions.StoreData.Services
             IFormEntityRepository forms,
             IJsonUtility json,
             UploadFolders folders,
+            FormFieldDefinitionCollection fieldDefinitions,
             ILogger<SubmissionQueryService> logger)
         {
             _repository = repository;
             _forms = forms;
             _json = json;
             _folders = folders;
+            _fieldDefinitions = fieldDefinitions;
             _logger = logger;
         }
 
@@ -136,6 +140,17 @@ namespace Formulate.Extensions.StoreData.Services
 
             foreach (var field in form?.Fields ?? Array.Empty<PersistedFormField>())
             {
+                // A field whose kind never stores a value (a button, a header, a text constant, reCAPTCHA) would be a
+                // column that is always empty. Hidden and server side only fields do store values, and a kind that is
+                // not installed has no definition to ask, as in StoreFields. Should values be stored for such a field
+                // anyway, the loop below gives them a column.
+                var definition = _fieldDefinitions.FirstOrDefault(field.KindId);
+
+                if (definition is not null && (definition.IsStored == false || definition.IsTransitory))
+                {
+                    continue;
+                }
+
                 if (known.Add(field.Id))
                 {
                     columns.Add((field.Id, field.Name ?? string.Empty));

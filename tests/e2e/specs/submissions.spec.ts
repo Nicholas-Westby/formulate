@@ -188,16 +188,17 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		await sidebar.getByRole('button', { name: 'Close', exact: true }).click();
 		await expect(sidebar).toHaveCount(0);
 
-		// The export has a header and a row for each submission, newest first, with the page and the file's name.
+		// The export has a header and a row for each submission, newest first, with the page and the file's name, and no
+		// column for the Send button, which stores no value.
 		const [csv] = await Promise.all([page.waitForEvent('download'), view.getByRole('button', { name: 'Export to CSV', exact: true }).click()]);
 		expect(csv.suggestedFilename()).toBe('submissions.csv');
 		const bytes = readFileSync(await csv.path());
 		expect(bytes.subarray(0, 3)).toEqual(BOM);
 		const utc = (submission: Submission) => `${submission.creationDate.slice(0, 19)}Z`;
 		expect(bytes.subarray(3).toString('utf8').split('\r\n')).toEqual([
-			'Submission Id,Created,Page Id,URL,Name,Email,Attachment,Send',
-			`${grace!.id},${utc(grace!)},${grace!.pageId},${pageUrl},Grace Hopper,grace@example.com,,`,
-			`${ada!.id},${utc(ada!)},${ada!.pageId},${pageUrl},Ada Lovelace,ada@example.com,notes.txt,`,
+			'Submission Id,Created,Page Id,URL,Name,Email,Attachment',
+			`${grace!.id},${utc(grace!)},${grace!.pageId},${pageUrl},Grace Hopper,grace@example.com,`,
+			`${ada!.id},${utc(ada!)},${ada!.pageId},${pageUrl},Ada Lovelace,ada@example.com,notes.txt`,
 			'',
 		]);
 
