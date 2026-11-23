@@ -149,11 +149,13 @@ describe('Formulate Submissions view', () => {
 
 		// Umbraco's collections show 50 items a page.
 		expect(submissionRequests(requests)).toStrictEqual([`GET ${LIST}&skip=0&take=50`]);
-		// The first four fields that store a value, by their names: not the heading, the upload or the button.
-		expect(headingsOf(shadow)).toStrictEqual(['Created', 'Page', 'Name', 'State', 'Email', 'Message', 'Files', '']);
+		// The first four fields that store a value, by their names: not the heading, the upload or the button. Each row
+		// starts with its icon, as the rows of Umbraco's collections do.
+		expect(headingsOf(shadow)).toStrictEqual(['', 'Created', 'Page', 'Name', 'State', 'Email', 'Message', 'Files', '']);
 		expect(cellsOf(shadow)).toStrictEqual([
-			[shown('2026-11-22T11:05:00Z'), '', 'Grace Hopper', 'VA', '', '', '', ''],
+			['', shown('2026-11-22T11:05:00Z'), '', 'Grace Hopper', 'VA', '', '', '', ''],
 			[
+				'',
 				shown('2026-11-22T10:52:00Z'),
 				'example.com/contact/',
 				'Ada Lovelace',
@@ -171,6 +173,25 @@ describe('Formulate Submissions view', () => {
 			'_blank',
 			'noopener noreferrer',
 		]);
+	});
+
+	it("shows each submission as Umbraco's collections show an item: its icon, then a link-like button that opens it", async () => {
+		const { shadow } = await openView([graceSubmission(), adaSubmission()]);
+		const [grace] = rowsOf(shadow);
+		const date = shown('2026-11-22T11:05:00Z');
+		const open = grace.querySelector('uui-table-cell formulate-submission-open-button')!;
+		await (open as Element & { updateComplete: Promise<unknown> }).updateComplete;
+		// In a shadow root of its own, with its own styles: the table draws its cells where the view's do not reach.
+		const button = open.shadowRoot?.querySelector('button');
+
+		expect(grace.querySelector('uui-table-cell umb-icon')?.getAttribute('name')).toBe('icon-inbox');
+		// The date is what shows, and the start of the cells; the name says what the button does.
+		expect([open.textContent?.trim(), button?.getAttribute('aria-label'), button?.getAttribute('type')]).toStrictEqual([
+			date,
+			`Open submission 1 of 2, from ${date}`,
+			'button',
+		]);
+		expect(open.closest('uui-table-cell')).toBe(grace.querySelectorAll('uui-table-cell')[1]);
 	});
 
 	it("shows where each page link goes, host and all, even when Store Data stored another site's address", async () => {
@@ -213,7 +234,7 @@ describe('Formulate Submissions view', () => {
 
 		expect(
 			rowsOf(shadow).map((row) => [
-				row.querySelector('uui-button[label^="Open"]')?.getAttribute('label'),
+				row.querySelector('formulate-submission-open-button')?.getAttribute('label'),
 				row.querySelector('uui-action-bar uui-button')?.getAttribute('aria-label'),
 			]),
 		).toStrictEqual([
@@ -229,7 +250,7 @@ describe('Formulate Submissions view', () => {
 		shadow.querySelector('uui-pagination')!.goToPage(3);
 		await settle(view);
 
-		expect(rowsOf(shadow).map((row) => row.querySelector('uui-button[label^="Open"]')?.getAttribute('label'))).toStrictEqual(
+		expect(rowsOf(shadow).map((row) => row.querySelector('formulate-submission-open-button')?.getAttribute('label'))).toStrictEqual(
 			Array.from({ length: 20 }, (_, index) =>
 				expect.stringMatching(new RegExp(`^Open submission ${index + 101} of 120, from `)),
 			),
@@ -241,7 +262,7 @@ describe('Formulate Submissions view', () => {
 		const [grace, ada] = rowsOf(shadow);
 
 		// The date's button opens it once: the row leaves a click on a button to the button.
-		clickInRow(grace.querySelector('uui-button[label^="Open"]')!);
+		clickInRow(grace.querySelector('formulate-submission-open-button')!);
 		clickInRow(ada.querySelectorAll('uui-table-cell')[4]);
 		await settle(shadow.host as FormulateFormSubmissionsWorkspaceViewElement);
 
@@ -318,7 +339,7 @@ describe('Formulate Submissions view', () => {
 		await settle(view);
 
 		expect(shadow.querySelector('#failed')).toBeNull();
-		expect(cellsOf(shadow).map((cells) => cells[2])).toStrictEqual(['Ada Lovelace']);
+		expect(cellsOf(shadow).map((cells) => cells[3])).toStrictEqual(['Ada Lovelace']);
 		expect(submissionRequests(requests)).toStrictEqual([`GET ${LIST}&skip=0&take=50`, `GET ${LIST}&skip=0&take=50`]);
 	});
 
@@ -372,7 +393,7 @@ describe('Formulate Submissions view', () => {
 			`DELETE /submission/${GRACE_ID}`,
 			`GET ${LIST}&skip=0&take=50`,
 		]);
-		expect(cellsOf(shadow).map((cells) => cells[2])).toStrictEqual(['Ada Lovelace']);
+		expect(cellsOf(shadow).map((cells) => cells[3])).toStrictEqual(['Ada Lovelace']);
 	});
 
 	it('deletes nothing when the question is closed', async () => {
@@ -410,7 +431,7 @@ describe('Formulate Submissions view', () => {
 		await settle(view);
 
 		expect(peek).not.toHaveBeenCalled();
-		expect(cellsOf(shadow).map((cells) => cells[2])).toStrictEqual(['Ada Lovelace']);
+		expect(cellsOf(shadow).map((cells) => cells[3])).toStrictEqual(['Ada Lovelace']);
 	});
 
 	it('pages through the submissions 50 at a time, as Umbraco collections do, and hides the pages when there is one', async () => {
@@ -424,7 +445,7 @@ describe('Formulate Submissions view', () => {
 		await settle(view);
 
 		expect(submissionRequests(requests).at(-1)).toBe(`GET ${LIST}&skip=100&take=50`);
-		expect(cellsOf(shadow).map((cells) => cells[2])).toStrictEqual(
+		expect(cellsOf(shadow).map((cells) => cells[3])).toStrictEqual(
 			Array.from({ length: 20 }, (_, index) => `Visitor ${index + 101}`),
 		);
 		expect(pagination.current).toBe(3);
@@ -452,7 +473,7 @@ describe('Formulate Submissions view', () => {
 		answerPageTwo();
 		await settle(view);
 
-		expect(cellsOf(shadow).map((cells) => cells[2])).toStrictEqual(
+		expect(cellsOf(shadow).map((cells) => cells[3])).toStrictEqual(
 			Array.from({ length: 20 }, (_, index) => `Visitor ${index + 101}`),
 		);
 		expect(pagination.current).toBe(3);

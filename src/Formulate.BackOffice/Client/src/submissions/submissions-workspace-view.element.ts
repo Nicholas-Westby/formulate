@@ -18,6 +18,7 @@ import { isSameKind } from '../core/kind-id.js';
 import { FORMULATE_FORM_WORKSPACE_CONTEXT } from '../forms/workspace/form-workspace.context-token.js';
 import type { FormulateFormFieldModel } from '../forms/types.js';
 import { FORMULATE_SUBMISSION_MODAL } from './submission-modal.token.js';
+import './submission-open-button.element.js';
 import { exportSubmissions, reportProblem } from './submission-requests.js';
 import {
 	submissionColumns,
@@ -32,11 +33,14 @@ const STORE_DATA_KIND_ID = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
 /** How many submissions a page shows: as many as Umbraco's collections show (UmbDefaultCollectionContext). */
 const PAGE_SIZE = 50;
 
-/** A table of rows that are not picked, with no icons. */
-const TABLE_CONFIG: UmbTableConfig = { allowSelection: false, hideIcon: true };
+/** A table of rows that are not picked, each with its icon first, as the rows of Umbraco's collections have. */
+const TABLE_CONFIG: UmbTableConfig = { allowSelection: false, hideIcon: false };
+
+/** The icon of each row: the Submissions view's own. */
+const ROW_ICON = 'icon-inbox';
 
 /** What a click in a row does by itself, rather than open the row's submission. */
-const CONTROLS = 'a[href], button, input, select, textarea, label, uui-button, uui-action-bar';
+const CONTROLS = 'a[href], button, input, select, textarea, label, uui-button, uui-action-bar, formulate-submission-open-button';
 
 /**
  * The Submissions view of the form workspace (Formulate.WorkspaceView.Form.Submissions): the submissions Store Data
@@ -385,14 +389,14 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 
 			return {
 				id: row.id,
+				icon: ROW_ICON,
 				data: [
 					{
 						columnAlias: 'created',
-						value: html`<uui-button
-							compact
+						value: html`<formulate-submission-open-button
 							label=${this.localize.term('formulate_openSubmission', position, total, date)}
 							@click=${() => this.#open(submission)}
-							>${date}</uui-button
+							>${date}</formulate-submission-open-button
 						>`,
 					},
 					{
@@ -401,7 +405,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 							? html`<a href=${row.page.href} target="_blank" rel="noopener noreferrer">${row.page.host}${row.page.path}</a>`
 							: nothing,
 					},
-					...fields.map((field, index) => ({ columnAlias: `field-${field.id}`, value: row.values[index] })),
+					...fields.map((field, column) => ({ columnAlias: `field-${field.id}`, value: row.values[column] })),
 					{ columnAlias: 'files', value: row.files },
 					{
 						columnAlias: 'actions',
@@ -459,10 +463,6 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 				height: 80%;
 				align-content: center;
 				text-align: center;
-			}
-
-			uui-button[compact] {
-				text-align: left;
 			}
 
 			uui-pagination {
