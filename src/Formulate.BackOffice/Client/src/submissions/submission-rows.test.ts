@@ -125,8 +125,21 @@ describe('Formulate submission rows', () => {
 			creationDate: '2026-11-22T10:52:00Z',
 			page: { href: 'https://example.com/contact/', host: 'example.com', path: '/contact/' },
 			values: ['Ada Lovelace'],
-			files: ['cv.pdf', 'cover letter.docx'],
+			files: 'cv.pdf, cover letter.docx',
 		});
+	});
+
+	it("cuts the names of a row's files like a value", () => {
+		const names = ['a', 'b', 'c'].map((letter) => `${letter.repeat(40)}.pdf`);
+		const row = submissionRow(
+			submission(
+				[],
+				names.map((fileName) => ({ fieldId: CV_ID, fieldName: 'CV', fileName })),
+			),
+			[],
+		);
+
+		expect(row.files).toBe(`${names[0]}, ${names[1]},…`);
 	});
 
 	it('shows the host and path of the page a submission was sent from, as a link only to an http or https address', () => {

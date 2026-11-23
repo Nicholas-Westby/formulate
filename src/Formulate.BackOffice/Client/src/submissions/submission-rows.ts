@@ -40,8 +40,8 @@ export interface FormulateSubmissionRow {
 	page?: FormulateSubmissionPage;
 	/** A value for each column, cut short when it is long. */
 	values: Array<string>;
-	/** The names of its files. */
-	files: Array<string>;
+	/** The names of its files, cut short like a value when they are long. */
+	files: string;
 }
 
 /** What the sidebar shows of a field of a submission: its stored values and files. */
@@ -169,7 +169,7 @@ export function submissionRow(
 		// A long path is cut like a value; the host never is, as it says where the link goes.
 		...(page ? { page: { ...page, path: previewText(page.path) } } : {}),
 		values: columns.map((column) => previewText(valuesOf(submission, column.id).join(', '))),
-		files: submission.files.map((file) => file.fileName),
+		files: previewText(submission.files.map((file) => file.fileName).join(', ')),
 	};
 }
 

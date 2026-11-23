@@ -354,7 +354,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 							: nothing,
 					},
 					...fields.map((field, index) => ({ columnAlias: `field-${field.id}`, value: row.values[index] })),
-					{ columnAlias: 'files', value: row.files.join(', ') },
+					{ columnAlias: 'files', value: row.files },
 					{
 						columnAlias: 'actions',
 						value: html`
