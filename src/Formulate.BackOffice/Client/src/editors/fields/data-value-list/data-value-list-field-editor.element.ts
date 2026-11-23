@@ -1,8 +1,8 @@
 import { customElement } from '@umbraco-cms/backoffice/external/lit';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
-import { FormulateKindEditorElementBase } from '../../../core/kind-editor.js';
+import { FormulateKindEditorElementBase, readSettings } from '../../../core/kind-editor.js';
 import { FORMULATE_SETTINGS_STYLES } from '../../../core/settings-styles.js';
-import { renderDataValuesSetting } from './data-values-setting.js';
+import { renderDataValuesSetting, withDataValue } from './data-values-setting.js';
 
 /**
  * The editor of the fields whose choices are a data values item, such as Drop Down and Checkbox List:
@@ -11,7 +11,9 @@ import { renderDataValuesSetting } from './data-values-setting.js';
 @customElement('formulate-data-value-list-field-editor')
 export class FormulateDataValueListFieldEditorElement extends FormulateKindEditorElementBase {
 	override render() {
-		return renderDataValuesSetting(this, this.value, this.readonly, (settings) => this.updateValue(settings));
+		return renderDataValuesSetting(this, this.value, this.readonly, (id) =>
+			this.updateValue(withDataValue(readSettings(this.value), id)),
+		);
 	}
 
 	static override styles = [UmbTextStyles, FORMULATE_SETTINGS_STYLES];

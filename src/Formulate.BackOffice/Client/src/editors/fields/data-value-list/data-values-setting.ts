@@ -19,18 +19,20 @@ export function withDataValue(settings: Readonly<Record<string, unknown>>, id: s
 }
 
 /**
- * The data values setting of a field: its label, description and picker.
+ * The data values setting of a field: its label, description and picker. The editor merges the pick into its
+ * value as it is when the pick is made (see withDataValue), as another setting may have changed it since it was
+ * shown.
  * @param host The editor.
  * @param value The editor's value.
  * @param readonly Whether nothing may be changed.
- * @param onChange Told of the settings with the new pick.
+ * @param onChange Told of the data values picked, or undefined for none.
  * @param descriptionKey The term that describes the setting, for a kind that shows the data values its own way.
  */
 export function renderDataValuesSetting(
 	host: UmbLitElement,
 	value: unknown,
 	readonly: boolean,
-	onChange: (settings: Record<string, unknown>) => void,
+	onChange: (id: string | undefined) => void,
 	descriptionKey = 'formulate_dataValuesDescription',
 ) {
 	const settings = readSettings(value);
@@ -45,8 +47,7 @@ export function renderDataValuesSetting(
 				id="data-value"
 				.value=${readText(settings, 'dataValue') || undefined}
 				?readonly=${readonly}
-				@change=${(event: Event) =>
-					onChange(withDataValue(readSettings(value), (event.target as FormulateDataValuesPickerElement).value))}></formulate-data-values-picker>
+				@change=${(event: Event) => onChange((event.target as FormulateDataValuesPickerElement).value)}></formulate-data-values-picker>
 		</umb-property-layout>
 	`;
 }

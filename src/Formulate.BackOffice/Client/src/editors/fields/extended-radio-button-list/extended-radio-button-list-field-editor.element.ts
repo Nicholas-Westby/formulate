@@ -2,7 +2,7 @@ import { customElement, html } from '@umbraco-cms/backoffice/external/lit';
 import { UmbTextStyles } from '@umbraco-cms/backoffice/style';
 import { FormulateKindEditorElementBase, readSettings } from '../../../core/kind-editor.js';
 import { FORMULATE_SETTINGS_STYLES } from '../../../core/settings-styles.js';
-import { renderDataValuesSetting } from '../data-value-list/data-values-setting.js';
+import { renderDataValuesSetting, withDataValue } from '../data-value-list/data-values-setting.js';
 import { ORIENTATION_SETTING_STYLES, renderOrientationSetting, withOrientation } from '../radio-button-list/orientation-setting.js';
 
 /**
@@ -18,7 +18,7 @@ export class FormulateExtendedRadioButtonListFieldEditorElement extends Formulat
 				this,
 				this.value,
 				this.readonly,
-				(settings) => this.updateValue(settings),
+				(id) => this.updateValue(withDataValue(readSettings(this.value), id)),
 				'formulate_extendedRadioButtonListDataValuesDescription',
 			)}
 			${renderOrientationSetting(this, this.value, this.readonly, (orientation) =>

@@ -169,6 +169,34 @@ describe('Formulate Radio Button List field editor', () => {
 	});
 });
 
+// The data values setting, which the Drop Down, Checkbox List and both radio button lists share.
+describe('Formulate data values setting', () => {
+	it.each([
+		['Radio Button List', () => new FormulateRadioButtonListFieldEditorElement()],
+		['Extended Radio Button List', () => new FormulateExtendedRadioButtonListFieldEditorElement()],
+	])('of the %s keeps an orientation picked just before, before the editor is shown again', async (_name, create) => {
+		const { shadow, changes } = await render(create(), { dataValue: NO_ID, orientation: null, extra: 1 });
+
+		// Both in one go, so the editor has not been shown again with the orientation.
+		choose(shadow.querySelector('uui-select#orientation')!, 'Vertical');
+		pickDataValues(shadow.querySelector('formulate-data-values-picker#data-value')!, SIZES_ID);
+
+		expect(changes).toStrictEqual([
+			{ dataValue: NO_ID, orientation: 'Vertical', extra: 1 },
+			{ dataValue: SIZES_ID, orientation: 'Vertical', extra: 1 },
+		]);
+	});
+
+	it('of the Drop Down keeps a configuration set from outside just before', async () => {
+		const { element, shadow, changes } = await render(new FormulateDataValueListFieldEditorElement(), { dataValue: NO_ID });
+
+		element.value = { dataValue: NO_ID, extra: 2 };
+		pickDataValues(shadow.querySelector('formulate-data-values-picker#data-value')!, COLORS_ID);
+
+		expect(changes).toStrictEqual([{ dataValue: COLORS_ID, extra: 2 }]);
+	});
+});
+
 // The server reads ExtendedRadioButtonListFieldPreValues: { dataValue } (a Guid) and { orientation } (a string). Each
 // item's primary text is the choice, and its secondary text its description (ExtendedRadioButtonListFieldDefinition).
 describe('Formulate Extended Radio Button List field editor', () => {
