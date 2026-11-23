@@ -825,8 +825,9 @@ The renderer dispatches events on the form's `.formulate-wrapper` element. They 
 
 ## Compatibility rules
 
-Formulate's packages are built against Umbraco 17.8 and run on 17, 18 and 19. If your extension also needs to run on all three:
+Formulate's packages are built against Umbraco 17.7.2 and run on 17.8.2 or later, 18 and 19. If your extension also needs to run on all three:
 
+- Build against an Umbraco that ships an NPoco no newer than any version you support, and do not depend on NPoco yourself. Umbraco 17.8.2 ships NPoco 6.4.0, but 18.0.0 to 18.2.2 ship 6.2.0 and 18.3.0 ships 6.3.0. .NET does not load an older version of an assembly than the one yours was built against, so an extension built against 17.8.2 that uses NPoco fails on those sites with `FileNotFoundException`. A package that depends on a newer NPoco raises it on those sites under Umbraco's own `NPoco.SqlServer`, and the site then fails to start with `TypeLoadException`. Formulate builds against 17.7.2, the newest Umbraco 17 with NPoco 6.2.0.
 - Do not call members Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`: `Id`, `Name`, `SortOrder`, `CreatorId`, `CreateDate`, `WriterId`, `UpdateDate`, `Cultures` and `ItemType`. The source compiles against both, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` (with `IIdKeyMap`) or an extension method.
 - Do not use an `[Obsolete]` member. Formulate's own build treats using one as an error.
 - Do not register an OpenAPI or Swagger library in a package. Umbraco 18 replaced the library that 17 uses, and a package that registers the old one crashes an 18 site when it starts.

@@ -14,11 +14,14 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Migrations, scopes and the submissions table. -->
+        <!--
+          Migrations, scopes and the submissions table. NPoco, for the table attributes on the submission DTO, comes
+          from Umbraco.Cms.Infrastructure, so a site keeps the NPoco its Umbraco ships. Depending on NPoco here would
+          raise it on Umbraco versions that ship an older one, under Umbraco's own NPoco.SqlServer, which then fails
+          to load (see UmbracoCompileRange in src/Directory.Build.props).
+        -->
         <PackageReference Include="Umbraco.Cms.Infrastructure" />
         <PackageReference Include="Umbraco.Cms.Web.Common" />
-        <!-- The table attributes on the submission DTO. -->
-        <PackageReference Include="NPoco.Abstractions" />
     </ItemGroup>
 
     <ItemGroup>

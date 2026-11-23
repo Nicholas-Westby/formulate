@@ -4,18 +4,21 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <!-- Umbraco libraries the packages build against. The range lives in Directory.Build.props. -->
+  <!--
+    Umbraco libraries the packages and tests build against, at the compile range (src/Directory.Build.props).
+    The meta package overrides its own Umbraco reference with the supported range (src/Formulate/Formulate.csproj).
+  -->
   <ItemGroup>
-    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoVersionRange)" />
-    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoVersionRange)" />
-    <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoVersionRange)" />
-    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="$(UmbracoVersionRange)" />
-    <PackageVersion Include="Umbraco.Cms.Persistence.SqlServer" Version="$(UmbracoVersionRange)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoVersionRange)" />
-    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="$(UmbracoVersionRange)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Common" Version="$(UmbracoCompileRange)" />
+    <PackageVersion Include="Umbraco.Cms.Api.Management" Version="$(UmbracoCompileRange)" />
+    <PackageVersion Include="Umbraco.Cms.Core" Version="$(UmbracoCompileRange)" />
+    <PackageVersion Include="Umbraco.Cms.Infrastructure" Version="$(UmbracoCompileRange)" />
+    <PackageVersion Include="Umbraco.Cms.Persistence.SqlServer" Version="$(UmbracoCompileRange)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Common" Version="$(UmbracoCompileRange)" />
+    <PackageVersion Include="Umbraco.Cms.Web.Website" Version="$(UmbracoCompileRange)" />
   </ItemGroup>
 
-  <!-- The dev site. -->
+  <!-- The dev site, and the Umbraco-only site of the compatibility check. -->
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoSiteVersion)" />
     <PackageVersion Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="$(UmbracoSiteVersion)" />
@@ -25,12 +28,6 @@
 
   <ItemGroup>
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
-    <!--
-      The version the range's floor depends on through NPoco (Umbraco 17.8.2 asks for 6.4.0; later versions bring
-      newer ones to sites). A lower direct reference than the one Umbraco brings fails restore as a downgrade
-      (NU1605).
-    -->
-    <PackageVersion Include="NPoco.Abstractions" Version="6.4.0" />
   </ItemGroup>
 
   <!--

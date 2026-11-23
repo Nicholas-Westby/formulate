@@ -13,21 +13,36 @@
     <NuGetAuditMode>direct</NuGetAuditMode>
   </PropertyGroup>
 
-  <!-- Umbraco versions. Override on the command line, e.g. -p:UmbracoSiteVersion=18.3.2 -->
+  <!--
+    Umbraco versions. Override them on the command line, such as -p:UmbracoSiteVersion=18.3.2.
+
+    UmbracoSupportedRange  The Umbraco versions a site may run Formulate on. Umbraco.Community.Formulate, the
+                           package sites install, depends on Umbraco with this range (src/Formulate/Formulate.csproj).
+    UmbracoCompileRange    The range the libraries and their tests depend on. NuGet compiles them against its lowest
+                           version, 17.7.2, which no site gets: the supported range keeps sites on 17.8.2 or later.
+
+    The libraries compile against an older Umbraco than the supported minimum because of NPoco. Umbraco 17.8.2
+    ships NPoco 6.4.0, but 18.0.0 to 18.2.2 ship 6.2.0 and 18.3.0 ships 6.3.0, and .NET does not load a lower
+    version of an assembly than the one a library was built against. 17.7.2 is the newest Umbraco 17 that ships
+    NPoco 6.2.0. src/Formulate.CompatibilityCheck checks the built assemblies against each Umbraco version in CI.
+  -->
   <PropertyGroup>
-    <!-- Every library depends on this range: compiled against the floor, allowed on later majors. -->
-    <UmbracoVersionRange Condition="'$(UmbracoVersionRange)' == ''">[17.8.2, 20.0.0)</UmbracoVersionRange>
     <!--
-      The range's floor without a prerelease label, such as 17.8.2. CI's compile checks build the libraries
-      against a later Umbraco with an exact range, such as -p:UmbracoVersionRange=[19.0.0-rc1], and the
-      settings below follow it (Directory.Packages.props uses it too).
+      CI's compile checks build the libraries against one exact version, such as
+      -p:UmbracoCompileRange=[19.0.0-rc1]. A compile range given like that is the supported range too (unless that
+      is given as well), since a lower Umbraco for the meta package than its libraries ask for fails restore as a
+      downgrade (NU1605). At this line, a compile range can only have come from the command line.
     -->
-    <UmbracoFloorVersion>$([System.Text.RegularExpressions.Regex]::Match('$(UmbracoVersionRange)', '\d+\.\d+\.\d+').Value)</UmbracoFloorVersion>
+    <UmbracoSupportedRange Condition="'$(UmbracoSupportedRange)' == '' and '$(UmbracoCompileRange)' != ''">$(UmbracoCompileRange)</UmbracoSupportedRange>
+    <UmbracoSupportedRange Condition="'$(UmbracoSupportedRange)' == ''">[17.8.2, 20.0.0)</UmbracoSupportedRange>
+    <UmbracoCompileRange Condition="'$(UmbracoCompileRange)' == ''">[17.7.2, 20.0.0)</UmbracoCompileRange>
+    <!-- The version the libraries compile against: the compile range's lowest, without a prerelease label. -->
+    <UmbracoCompileVersion>$([System.Text.RegularExpressions.Regex]::Match('$(UmbracoCompileRange)', '\d+\.\d+\.\d+').Value)</UmbracoCompileVersion>
     <!--
       Umbraco 19 targets .NET 11 only, so a build against it does too. The packages stay one net10.0 build.
       Set here rather than only by -p:TargetFramework, which neither restore nor project references pass on.
     -->
-    <TargetFramework Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoFloorVersion)', '19.0.0'))">net11.0</TargetFramework>
+    <TargetFramework Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoCompileVersion)', '19.0.0'))">net11.0</TargetFramework>
     <!-- The exact version the dev site runs. -->
     <UmbracoSiteVersion Condition="'$(UmbracoSiteVersion)' == ''">17.8.2</UmbracoSiteVersion>
     <!-- First segment of the site version. Split as a string, since "19.0.0-rc1" is not a System.Version. -->

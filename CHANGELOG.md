@@ -24,7 +24,7 @@ Read [Upgrading from Formulate 3](docs/upgrading-from-v3.md) for the steps.
 
 ### Requirements
 
-- Umbraco 17.8.2 or later 17.x (LTS), on .NET 10. It also runs on Umbraco 18 and on the Umbraco 19 release candidate (.NET 11). The packages depend on Umbraco `[17.8.2, 20.0.0)`.
+- Umbraco 17.8.2 or later 17.x (LTS), on .NET 10. It also runs on Umbraco 18 and on the Umbraco 19 release candidate (.NET 11). `Umbraco.Community.Formulate` depends on Umbraco `[17.8.2, 20.0.0)`. The packages it brings in are built against Umbraco 17.7.2 and depend on `[17.7.2, 20.0.0)`, because Umbraco 18.0.0 to 18.3.0 ship an older NPoco than 17.8.2 does, and a package built against 17.8.2 would not start on them.
 - Use the latest 17.x.
 
 ### Packages

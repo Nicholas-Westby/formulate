@@ -31,7 +31,7 @@ Eight packages, all at the same version, all from this repository:
 
 The IDs come from `src/Directory.Build.props` (`Umbraco.Community.` plus the project name). The old IDs `Formulate`, `Formulate.Binaries` and `Formulate.Deploy` belong to Rhythm Agency's NuGet account, and `Formulate.Core` belongs to an unrelated account. That is why Formulate 5 has new IDs.
 
-The version is `5.0.0`, set in `src/Directory.Build.props` as `VersionPrefix`. A release overrides it with the tag (see below). The packages depend on Umbraco `[17.8.2, 20.0.0)`.
+The version is `5.0.0`, set in `src/Directory.Build.props` as `VersionPrefix`. A release overrides it with the tag (see below). `Umbraco.Community.Formulate` depends on Umbraco `[17.8.2, 20.0.0)`, the versions sites may run (`UmbracoSupportedRange`). The other packages are built against Umbraco 17.7.2 and depend on `[17.7.2, 20.0.0)` (`UmbracoCompileRange`), because Umbraco 18.0.0 to 18.3.0 ship an older NPoco than 17.8.2. Both ranges are set in `src/Directory.Build.props`.
 
 ## One-time setup
 

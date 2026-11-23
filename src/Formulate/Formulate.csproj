@@ -11,8 +11,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- The Umbraco Marketplace lists a package only with a direct Umbraco dependency, and reads the supported versions from its range. -->
-        <PackageReference Include="Umbraco.Cms.Core" />
+        <!--
+          The Umbraco versions a site may run Formulate on (UmbracoSupportedRange in src/Directory.Build.props). The
+          libraries this package brings in ask for less, as they compile against an older Umbraco. The Umbraco
+          Marketplace lists a package only with a direct Umbraco dependency, and reads the supported versions from
+          its range.
+        -->
+        <PackageReference Include="Umbraco.Cms.Core" VersionOverride="$(UmbracoSupportedRange)" />
     </ItemGroup>
 
     <ItemGroup>
