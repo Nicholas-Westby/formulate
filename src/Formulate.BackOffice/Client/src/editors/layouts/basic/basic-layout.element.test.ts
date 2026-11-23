@@ -392,6 +392,16 @@ describe('Formulate Basic layout designer, a layout that shows no fields', () =>
 		expect(notice()).not.toBeNull();
 	});
 
+	it('for a form without fields, says it has none yet and where they are added', async () => {
+		const { shadow, pool } = await render({ autoPopulate: false, rows: [row([12])] }, { context: { formFields: [], formId: FORM_ID } });
+
+		expect(shadow.querySelector('#no-fields-shown')?.textContent?.trim()).toBe(
+			"The form has no fields yet. Add them in the form's Fields view, then drag them into the cells here, or turn on Auto Populate.",
+		);
+		// Not "Every field of the form is in the layout".
+		expect(pool()!.shadowRoot!.querySelector('.empty')?.textContent?.trim()).toBe('No fields yet.');
+	});
+
 	it('says nothing with Auto Populate on, or with a field in a cell', async () => {
 		const notices: Array<Element | null> = [];
 

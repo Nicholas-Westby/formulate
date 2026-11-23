@@ -78,6 +78,8 @@ export default {
 		autoPopulatedDescription:
 			'The form shows its fields one under another, in the order of the form, and the fields added to it later too. Turn off Auto Populate to lay them out in rows, columns and steps.',
 		noFieldsShown: 'The form shows no fields until you drag them into the cells, or turn on Auto Populate.',
+		formHasNoFields:
+			"The form has no fields yet. Add them in the form's Fields view, then drag them into the cells here, or turn on Auto Populate.",
 		layoutRows: 'Rows',
 		layoutRowsDescription:
 			'Drag the fields into the cells, and the rows up and down. A step divider starts a new step of the form: visitors see one step at a time.',
@@ -91,6 +93,7 @@ export default {
 		unusedFields: 'Unused fields',
 		unusedFieldsDescription: 'The form does not show these fields. Drag them into a cell to show them.',
 		allFieldsUsed: 'Every field of the form is in the layout.',
+		noFieldsYet: 'No fields yet.',
 		emptyCell: 'Drop fields here',
 		layoutCell: (row: number, cell: number, columns: number) => `Row ${row}, cell ${cell}, ${columns} of 12 columns`,
 		layoutCellPlace: (row: number, cell: number, position: number, count: number) =>

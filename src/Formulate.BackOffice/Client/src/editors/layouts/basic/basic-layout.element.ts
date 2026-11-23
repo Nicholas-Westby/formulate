@@ -427,6 +427,8 @@ export class FormulateBasicLayoutEditorElement extends FormulateKindEditorElemen
 		const view = this.#view();
 		// The site shows nothing for a field that is no longer on the form either.
 		const showsFields = view.rows.some((row) => row.kind === 'row' && row.cells.some((cell) => cell.fields.some((field) => !field.missing)));
+		// A form without fields yet gets them in its Fields view, not by dragging.
+		const hasFields = (this.#formFields()?.length ?? 0) > 0;
 
 		return html`
 			<section id="rows-section">
@@ -448,11 +450,15 @@ export class FormulateBasicLayoutEditorElement extends FormulateKindEditorElemen
 					.place=${UNUSED}
 					.fields=${view.unused}
 					.pickedUp=${this.#fieldKeyboard.pickedUp}
-					.empty=${this.localize.term('formulate_allFieldsUsed')}
+					.empty=${this.localize.term(hasFields ? 'formulate_allFieldsUsed' : 'formulate_noFieldsYet')}
 					?readonly=${this.readonly}></formulate-basic-layout-cell>
 			</section>
 			<!-- Below the cells and the unused fields: it comes and goes as fields are dragged, and moves none of them. -->
-			${showsFields ? nothing : html`<p id="no-fields-shown" role="note">${this.localize.term('formulate_noFieldsShown')}</p>`}
+			${showsFields
+				? nothing
+				: html`<p id="no-fields-shown" role="note">
+						${this.localize.term(hasFields ? 'formulate_noFieldsShown' : 'formulate_formHasNoFields')}
+					</p>`}
 			${this.readonly ? nothing : this.#renderAddRow()}
 			${this.readonly ? nothing : this.#fieldKeyboard.renderStatus()}
 		`;
