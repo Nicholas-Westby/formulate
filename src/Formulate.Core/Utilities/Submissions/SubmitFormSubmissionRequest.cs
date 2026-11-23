@@ -126,7 +126,10 @@
             using (var scope = _coreScopeProvider.CreateCoreScope())
             {
                 var notification = new FormSubmittingNotification(input);
-                scope.Notifications.Publish(notification);
+
+                // Publish holds the notification until the outermost scope completes, which is after a site's
+                // own scope has read Cancel. PublishCancelable runs the handlers at once.
+                scope.Notifications.PublishCancelable(notification);
                 scope.Complete();
 
                 return notification;

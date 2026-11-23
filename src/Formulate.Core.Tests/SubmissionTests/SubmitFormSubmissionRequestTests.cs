@@ -259,18 +259,26 @@ namespace Formulate.Core.Tests.SubmissionTests
 
             private Task<SubmitFormSubmissionResult> SubmitResultWithToken(FormSubmissionRequest request, CancellationToken cancellationToken)
             {
-                var notifications = new Mock<IScopedNotificationPublisher>();
-                notifications
-                    .Setup(x => x.Publish(It.IsAny<INotification>()))
-                    .Callback<INotification>(x =>
+                // The real publisher, which holds Publish until its scope exits and runs PublishCancelable at
+                // once. The scope below never exits, as when the site's own scope is the outer one.
+                var events = new Mock<IEventAggregator>();
+                void Run(INotification x)
+                {
+                    if (x is FormSubmittingNotification submitting)
                     {
-                        if (x is FormSubmittingNotification submitting)
-                        {
-                            OnSubmitting?.Invoke(submitting);
-                        }
-                    });
+                        OnSubmitting?.Invoke(submitting);
+                    }
+                }
+
+                events.Setup(x => x.Publish(It.IsAny<INotification>())).Callback<INotification>(Run);
+                events.Setup(x => x.Publish(It.IsAny<FormSubmittingNotification>())).Callback<FormSubmittingNotification>(Run);
+                events.Setup(x => x.PublishCancelable(It.IsAny<ICancelableNotification>()))
+                    .Callback<ICancelableNotification>(x => Run(x)).Returns<ICancelableNotification>(x => x.Cancel);
+                events.Setup(x => x.PublishCancelable(It.IsAny<FormSubmittingNotification>()))
+                    .Callback<FormSubmittingNotification>(x => Run(x)).Returns<FormSubmittingNotification>(x => x.Cancel);
+                var notifications = new ScopedNotificationPublisher(events.Object);
                 var scope = new Mock<ICoreScope>() { DefaultValue = DefaultValue.Mock };
-                scope.SetupGet(x => x.Notifications).Returns(notifications.Object);
+                scope.SetupGet(x => x.Notifications).Returns(notifications);
                 var scopeProvider = new Mock<ICoreScopeProvider>();
                 scopeProvider
                     .Setup(x => x.CreateCoreScope(It.IsAny<IsolationLevel>(), It.IsAny<RepositoryCacheMode>(), It.IsAny<IEventDispatcher>(), It.IsAny<IScopedNotificationPublisher>(), It.IsAny<bool?>(), It.IsAny<bool>(), It.IsAny<bool>()))
