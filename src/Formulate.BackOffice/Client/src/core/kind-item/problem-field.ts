@@ -20,10 +20,15 @@ export interface FormulateFieldProblem {
 /**
  * Finds the field a failed save is about. The API's ProblemDetails names the field in a `field`
  * extension and starts its detail with "field: ".
- * @param error What the save threw; Umbraco's workspaces throw an Error whose cause is the API's error.
+ * @param error What the save threw. Umbraco's workspaces throw an Error whose cause is the API's error, except in
+ * Umbraco 18.0, whose workspaces throw only that error's message: the detail, such as "name: The name is required.".
  * @returns The field's input and the message to show on it, or undefined when no input is at fault.
  */
 export function findFieldProblem(error: unknown): FormulateFieldProblem | undefined {
+	if (typeof error === 'string') {
+		return findFieldInDetail(error);
+	}
+
 	const cause = error instanceof Error ? error.cause : error;
 
 	// isUmbApiError reads the error's name, so it needs an error to look at.
@@ -46,4 +51,15 @@ export function findFieldProblem(error: unknown): FormulateFieldProblem | undefi
 	const message = detail.startsWith(prefix) ? detail.slice(prefix.length) : detail || String(problem?.title ?? '');
 
 	return { path, message };
+}
+
+/** Finds the field a detail starts with, such as name in "name: The name is required.", if an input shows it. */
+function findFieldInDetail(detail: string): FormulateFieldProblem | undefined {
+	const match = /^(\w+): (.+)$/s.exec(detail);
+
+	if (!match || !Object.hasOwn(FIELD_PATHS, match[1]!)) {
+		return undefined;
+	}
+
+	return { path: FIELD_PATHS[match[1]!]!, message: match[2]! };
 }
