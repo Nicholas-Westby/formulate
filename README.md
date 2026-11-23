@@ -212,7 +212,9 @@ Store Data saves each submission to the `FormulateSubmissions` database table, w
 - The submissions API lists, downloads, exports to CSV, and deletes submissions. The CSV is safe to open in Excel, starts with a UTF-8 byte order mark, has no column for fields that store no value (buttons, headers, text constants, reCAPTCHA), and includes fields that have since been removed from the form.
 - Formulate 3 kept submissions in a table called `FormulateSubmission` and its files in `App_Data/Formulate/FileStorage/Files`. Formulate 5 leaves them where they are and does not read them.
 
-<!-- pass 2: describe the submissions screen in the back office. -->
+To read the submissions in the back office, open the form in the Formulate section and choose its Submissions tab. The view lists the submissions Store Data kept for the form, newest first, 50 to a page. Only a form with an enabled Store Data handler keeps what visitors send. Each row shows when the submission was sent (Created), the page it was sent from (Page), the values of the form's first four fields that store a value, and the names of its files (Files). Click a row, or its date, to open the submission in a sidebar with all of its values. Each file shows there as a button with its name: choose it to download the file. Export to CSV downloads all of the form's submissions. To delete a submission and its files, choose the trash can at the end of its row, then Delete.
+
+![The Submissions tab of the Contact Us form, with four submissions and the Export to CSV button](assets/images/v5/submissions.png?raw=true "The Submissions view")
 
 ### Fields that need a note
 
