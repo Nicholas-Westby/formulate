@@ -28,7 +28,6 @@ You can add more kinds in C#. See [Extending Formulate](https://github.com/Nicho
 * **Client side only.** When it is on, only the browser checks that the field is filled in, and the server accepts the form without it. Leave it off to have the server check too.
 
 ![A Mandatory validation](/images/v5/tutorials/validations-mandatory.png)
-<!-- screenshot: the Mandatory validation open in the Validation Library, named "Message is required", with its Error message filled in -->
 
 ## Regular Expression
 
@@ -60,4 +59,3 @@ For example, a Mandatory validation with the message "{label} is required." show
 When a field fails a validation, the form shows that validation's message with the field. Errors from the server come back to the browser and are shown on their fields in the same way.
 
 ![A validation message on the form](/images/v5/tutorials/validations-message.png)
-<!-- screenshot: the rendered Contact Us form after a submit with an empty Message and a bad Email, showing both messages beside their fields -->

@@ -8,7 +8,6 @@ title: Creating a Complex Form in Formulate
 This tutorial builds on the Contact Us form from [Creating a Simple Form](/simple-form). It makes the form a two step form, with validations, a drop down and a layout in rows and columns, and then reads what visitors sent.
 
 ![The rendered complex form](/images/v5/tutorials/complex-form-rendered.png)
-<!-- screenshot: the published Contact Us form on its first step, with two cells in a row, a Topic drop down and a Next button -->
 
 The steps are:
 
@@ -44,7 +43,6 @@ Validations are made once in the Validation Library, then picked on fields. The 
 4. Choose Submit to close each dialog, then Save the form.
 
 ![Validations picked on a field](/images/v5/tutorials/complex-form-validations.png)
-<!-- screenshot: the Email field's dialog open, with the email Regular Expression validation shown in its Validations setting -->
 
 # Make a List of Data Values
 
@@ -57,7 +55,6 @@ A drop down gets its choices from a list of data values.
 5. Choose Submit, then Save the form.
 
 ![A data values list](/images/v5/tutorials/complex-form-data-values.png)
-<!-- screenshot: the Topics List open under Data Values in the Formulate section, with Sales, Support and Other as its items -->
 
 # Arrange the Layout
 
@@ -71,7 +68,6 @@ A form with Form with Basic Layout has a layout that shows every field, one unde
 6. Put the Next button at the end of the first step and the Send button at the end of the last, then choose Save.
 
 ![The layout designer](/images/v5/tutorials/complex-form-layout.png)
-<!-- screenshot: the Contact Us layout open with Auto Populate off, showing a row of two cells, a step divider and a second row, with Unused fields below -->
 
 # Store the Submissions
 
