@@ -1,7 +1,9 @@
 import '@umbraco-cms/backoffice/components';
 import { UmbModalManagerContext, type UmbModalContext } from '@umbraco-cms/backoffice/modal';
 import { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
+import { UmbApiInterceptorController } from '@umbraco-cms/backoffice/resources';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { client } from '../api/client.gen.js';
 import type { SubmissionResponseModel } from '../api/index.js';
 import { pathAndQuery } from '../test/fake-api.js';
 import { loadFormulateEnglish } from '../test/localization.js';
@@ -26,6 +28,9 @@ const API = '/umbraco/management/api/v1/formulate';
 
 beforeAll(() => {
 	loadFormulateEnglish();
+	// The back office's own handling of failed requests, which the sign-in binds to the client in the app
+	// (configureClient), so the sidebar says what the app really says.
+	new UmbApiInterceptorController(createTestHost()).addErrorInterceptor(client as never);
 });
 
 afterEach(() => {
@@ -165,8 +170,9 @@ describe('Formulate submission sidebar', () => {
 		await settle(element);
 
 		expect(downloads).toStrictEqual([]);
+		// The back office puts its own words in place of what the API says about a 404.
 		expect(peek.mock.calls).toStrictEqual([
-			['danger', { data: { headline: 'cv.pdf could not be downloaded.', message: 'There is no such file.' } }],
+			['danger', { data: { headline: 'cv.pdf could not be downloaded.', message: 'The requested resource was not found.' } }],
 		]);
 	});
 
