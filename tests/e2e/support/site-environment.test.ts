@@ -93,3 +93,10 @@ test("the dev site's Development settings give an address to send from, and leav
 	assert.deepEqual(Object.keys(smtp), ['From']);
 	assert.match(smtp.From, /^[^@\s]+@[^@\s]+$/);
 });
+
+test("the site gets no reCAPTCHA keys, whatever appsettings.Local.json sets", () => {
+	// A developer's file with real keys must not change what the specs see (the reCAPTCHA dialog says the keys are not
+	// set), and an environment variable, even an empty one, is read after that file.
+	assert.equal(ENVIRONMENT.Formulate__Recaptcha__SiteKey, '');
+	assert.equal(ENVIRONMENT.Formulate__Recaptcha__SecretKey, '');
+});

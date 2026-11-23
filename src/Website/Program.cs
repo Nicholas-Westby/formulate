@@ -1,8 +1,10 @@
 
+using Website;
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 #if DEBUG
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddLocalSettings("appsettings.Local.json");
 #endif
 
 builder.CreateUmbracoBuilder()

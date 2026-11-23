@@ -97,6 +97,11 @@ export function siteEnvironment(options: SiteAddresses & { runFolder: string }):
 		DevEcho__Folder: folders.echo,
 		// Store Data keeps uploaded files in the run's folder too, not in the dev site's App_Data.
 		Formulate__StoreData__UploadsFolderPath: folders.uploads,
+		// The site has no reCAPTCHA keys, as appsettings.json says, whatever a developer's appsettings.Local.json sets
+		// (specs/field-editors.spec.ts reads what the dialog says without keys). An environment variable, even an
+		// empty one, is read after that file.
+		Formulate__Recaptcha__SiteKey: '',
+		Formulate__Recaptcha__SecretKey: '',
 		// Leave no MSBuild or compiler server running after the build that "dotnet run" does.
 		MSBUILDDISABLENODEREUSE: '1',
 		UseSharedCompilation: 'false',

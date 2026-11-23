@@ -34,7 +34,9 @@ const SIZES = [
 
 /**
  * What the reCAPTCHA field's dialog says on the dev site, whose appsettings.json leaves both keys blank
- * (Formulate:Recaptcha:SiteKey and SecretKey).
+ * (Formulate:Recaptcha:SiteKey and SecretKey). The run's environment sets both to empty too (see
+ * support/site-environment.ts), and the dev site reads environment variables after appsettings.Local.json (see
+ * src/Website/LocalSettings.cs), so real keys in a developer's own file do not change this.
  */
 const KEYS_NOT_SET = 'This site does not have both reCAPTCHA keys set, so this field rejects every submission.';
 
