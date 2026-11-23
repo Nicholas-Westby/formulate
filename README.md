@@ -66,7 +66,7 @@ Formulate sends no telemetry. It makes no network calls of its own, apart from t
 
 ### In the back office
 
-1. **Create a form.** Open the Formulate section. Under Forms, open the menu of the Forms root and choose Create. The dialog offers Folder, Form and Form with Basic Layout. Form with Basic Layout is the quickest: when you save it, Formulate also makes a layout for it (see step 3). Give the form a name.
+1. **Create a form.** Open the Formulate section. Under Forms, open the menu of the Forms root and choose Create. The dialog offers Form with Basic Layout, Form and Folder. Form with Basic Layout is the quickest: when you save it, Formulate also makes a layout for it (see step 3). Give the form a name.
 2. **Add fields.** On the Fields tab, choose Add field, pick a kind (Text, Drop Down, Button and so on), and fill in the dialog: name, alias, label, validations and the kind's own settings. Submit closes the dialog. Drag the fields into the order you want. A Button field has a Button kind setting, such as Submit, which sends the form. Add handlers on the Handlers tab the same way: Send Email, Designed Email, Send Data, Store Data and so on. Choose Save. Nothing is stored until you save.
 
    ![The Contact Us form on its Fields tab, with each field's kind and validations](assets/images/v5/form-fields.png?raw=true "The Fields tab")
