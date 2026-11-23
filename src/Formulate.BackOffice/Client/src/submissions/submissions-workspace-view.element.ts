@@ -20,7 +20,9 @@ import type { FormulateFormFieldModel } from '../forms/types.js';
 import { FORMULATE_SUBMISSION_MODAL } from './submission-modal.token.js';
 import './submission-open-button.element.js';
 import { exportSubmissions, reportProblem } from './submission-requests.js';
+import './submission-value.element.js';
 import {
+	splitDateAndTime,
 	submissionColumns,
 	submissionRow,
 	type FormulateSubmissionField,
@@ -364,6 +366,12 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 		`;
 	}
 
+	/**
+	 * The table's columns. The page, the values and the files show in value cells (formulate-submission-value), which
+	 * break a long word anywhere it must and show at most three lines: no value pushes the table past its box, so each
+	 * row's date and actions stay on the screen, and a value reads at a glance. No column clips its text to one line,
+	 * as a clipped column gives up its width before any other; the date gives up width by putting its time under it.
+	 */
 	#tableColumns(fields: ReadonlyArray<FormulateSubmissionField>): Array<UmbTableColumn> {
 		return [
 			{ name: this.localize.term('formulate_submissionCreated'), alias: 'created' },
@@ -384,6 +392,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 		return rows.map((row, index) => {
 			const submission = submissions[index]!;
 			const date = this.#dateOf(submission);
+			const [first, between, second] = splitDateAndTime(new Date(submission.creationDate), this.localize.lang());
 			// The row's place in the list makes its actions' names its own: two submissions can share a date.
 			const position = this.localize.number(this._skip + index + 1);
 
@@ -396,17 +405,22 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 						value: html`<formulate-submission-open-button
 							label=${this.localize.term('formulate_openSubmission', position, total, date)}
 							@click=${() => this.#open(submission)}
-							>${date}</formulate-submission-open-button
+							><span>${first}</span>${between}<span>${second}</span></formulate-submission-open-button
 						>`,
 					},
 					{
 						columnAlias: 'page',
 						value: row.page
-							? html`<a href=${row.page.href} target="_blank" rel="noopener noreferrer">${row.page.host}${row.page.path}</a>`
+							? html`<formulate-submission-value
+									><a href=${row.page.href} target="_blank" rel="noopener noreferrer">${row.page.host}${row.page.path}</a></formulate-submission-value
+								>`
 							: nothing,
 					},
-					...fields.map((field, column) => ({ columnAlias: `field-${field.id}`, value: row.values[column] })),
-					{ columnAlias: 'files', value: row.files },
+					...fields.map((field, column) => ({
+						columnAlias: `field-${field.id}`,
+						value: html`<formulate-submission-value>${row.values[column]}</formulate-submission-value>`,
+					})),
+					{ columnAlias: 'files', value: html`<formulate-submission-value>${row.files}</formulate-submission-value>` },
 					{
 						columnAlias: 'actions',
 						value: html`

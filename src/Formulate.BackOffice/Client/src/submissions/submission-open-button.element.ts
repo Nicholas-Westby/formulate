@@ -5,7 +5,8 @@ import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
  * When a submission was sent, in the first column of the submissions table, as a button that opens the submission in
  * a sidebar. It looks like the name links of Umbraco's collections, as UmbTextStyles show a link, but it is a button:
  * it opens a sidebar, not a page. The table draws its cells in a shadow root of its own, where the view's styles do
- * not reach, so the button brings its own. The date goes in its slot.
+ * not reach, so the button brings its own. The date goes in its slot, its date and its time each in a span that stays
+ * on one line (see splitDateAndTime), so a narrow table puts the time under the date.
  */
 @customElement('formulate-submission-open-button')
 export class FormulateSubmissionOpenButtonElement extends UmbLitElement {
@@ -26,8 +27,11 @@ export class FormulateSubmissionOpenButtonElement extends UmbLitElement {
 			color: var(--uui-color-interactive);
 			text-align: left;
 			text-decoration: underline;
-			white-space: nowrap;
 			cursor: pointer;
+		}
+
+		::slotted(span) {
+			white-space: nowrap;
 		}
 
 		button:hover,

@@ -192,6 +192,43 @@ describe('Formulate Submissions view', () => {
 			'button',
 		]);
 		expect(open.closest('uui-table-cell')).toBe(grace.querySelectorAll('uui-table-cell')[1]);
+		// The date and the time are two pieces that each stay on one line, so a narrow table puts the time under the date.
+		const sent = new Date('2026-11-22T11:05:00Z');
+		expect([...open.children].map((piece) => [piece.localName, piece.textContent])).toStrictEqual([
+			['span', sent.toLocaleDateString('en-us')],
+			['span', sent.toLocaleTimeString('en-us')],
+		]);
+	});
+
+	it('wraps the page, each value and the files over up to three lines, in value cells, rather than clip them to one', async () => {
+		const { shadow } = await openView([graceSubmission(), adaSubmission()]);
+		const columns = (shadow.querySelector('umb-table') as Element & { columns: Array<{ alias: string; clipText?: boolean }> }).columns;
+		// What each cell holds in a value cell (formulate-submission-value), which breaks a long word anywhere it must
+		// and shows at most three lines; null for a cell without one.
+		const wrapped = rowsOf(shadow).map((row) =>
+			[...row.querySelectorAll('uui-table-cell')].map(
+				(cell) => cell.querySelector(':scope > formulate-submission-value')?.textContent ?? null,
+			),
+		);
+
+		// No column clips its values to one line: clipped columns give up their width before any other, which left a
+		// few letters of each value at 1280 pixels.
+		expect(columns.filter((column) => column.clipText).map((column) => column.alias)).toStrictEqual([]);
+		// The icon, the date (which wraps between its date and its time) and the actions stay as they are.
+		expect(wrapped).toStrictEqual([
+			[null, null, null, 'Grace Hopper', 'VA', '', '', '', null],
+			[
+				null,
+				null,
+				'example.com/contact/',
+				'Ada Lovelace',
+				'',
+				'ada@example.com',
+				'Hello, I would like to apply for the analyst role you advertised, and I have attached my CV with the…',
+				'cv.pdf',
+				null,
+			],
+		]);
 	});
 
 	it("shows where each page link goes, host and all, even when Store Data stored another site's address", async () => {

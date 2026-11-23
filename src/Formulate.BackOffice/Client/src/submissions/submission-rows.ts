@@ -99,6 +99,49 @@ const SPACE = /^\s+$/;
 /** The spaces, commas, semicolons and colons at the end of a cut value, which the ellipsis takes the place of. */
 const CUT_SEPARATORS = /[\s,;:]+$/;
 
+/** The parts of a date and time that are the time's, by the names Intl.DateTimeFormat gives them. */
+const TIME_PARTS: ReadonlyArray<string> = ['hour', 'minute', 'second', 'fractionalSecond', 'dayPeriod'];
+
+/**
+ * When a submission was sent, as the user's language writes it (as Date.prototype.toLocaleString does), split where
+ * its date and its time meet: the first of them, what the language puts between, and the second. The table shows
+ * each of the two on one line, so a narrow table can put the time under the date, rather than be pushed wider than
+ * its box.
+ * @param date When the submission was sent.
+ * @param lang The user's language, such as en-us.
+ * @returns The three pieces; joined, they are the text toLocaleString gives. A date that cannot be split is the first.
+ */
+export function splitDateAndTime(date: Date, lang: string): [first: string, between: string, second: string] {
+	const shown = date.toLocaleString(lang);
+	// The same text in parts, with the options toLocaleString takes when it is given none. Only where the parts start
+	// is taken from them: an engine can write another space in them (V8 puts a narrow no-break space before PM).
+	const parts = new Intl.DateTimeFormat(lang, {
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
+		hour: 'numeric',
+		minute: 'numeric',
+		second: 'numeric',
+	}).formatToParts(date);
+	const offset = (index: number) => parts.slice(0, index).reduce((length, part) => length + part.value.length, 0);
+	const isTime = (part: Intl.DateTimeFormatPart) => TIME_PARTS.includes(part.type);
+	const first = parts.find((part) => part.type !== 'literal');
+	// Where the second of the two starts: the time, or the date in a language that writes the time first.
+	const second = first ? parts.findIndex((part) => part.type !== 'literal' && isTime(part) !== isTime(first)) : -1;
+
+	if (second === -1 || offset(parts.length) !== shown.length) {
+		return [shown, '', ''];
+	}
+
+	let between = second;
+
+	while (parts[between - 1]?.type === 'literal') {
+		between--;
+	}
+
+	return [shown.slice(0, offset(between)), shown.slice(offset(between), offset(second)), shown.slice(offset(second))];
+}
+
 /**
  * A value as the table shows it, on one line: its line breaks and runs of spaces as single spaces. Up to 100
  * characters show whole. A longer value is cut at the last word boundary in its first 100 characters, and ends

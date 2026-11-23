@@ -40,12 +40,24 @@ function readSubmissions(page: Page, formId: string) {
 	return callManagementApi<{ total: number; items: Array<Submission> }>(page, 'GET', `/formulate/submission?formId=${formId}&take=10`);
 }
 
+/** What a visitor sends: a name and an email, maybe the values of other fields by their labels, and maybe a file. */
+interface Visitor {
+	name: string;
+	email: string;
+	more?: Record<string, string>;
+	file?: { name: string; buffer: Buffer };
+}
+
 /** Sends the form from its page, as a visitor does, and waits for the page's thank-you. */
-async function sendForm(site: Page, path: string, values: { name: string; email: string; file?: { name: string; buffer: Buffer } }) {
+async function sendForm(site: Page, path: string, values: Visitor) {
 	await site.goto(path);
 	const form = site.locator('form.formulate__form');
 	await form.getByLabel('Name', { exact: true }).fill(values.name);
 	await form.getByLabel('Email', { exact: true }).fill(values.email);
+
+	for (const [label, value] of Object.entries(values.more ?? {})) {
+		await form.getByLabel(label, { exact: true }).fill(value);
+	}
 
 	if (values.file) {
 		await form.getByLabel('Attachment', { exact: true }).setInputFiles({ ...values.file, mimeType: 'text/plain' });
@@ -221,6 +233,140 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		await page.reload();
 		await expect(table.locator('uui-table-row')).toHaveCount(1);
 		expect(await cellsOf(table)).toEqual([['', adaDate, pageText, 'Ada Lovelace', 'ada@example.com', 'notes.txt', '']]);
+	} finally {
+		await site.close();
+		await openBackOffice(page);
+		await deleteSubmissions(page, formId).catch(() => undefined);
+		await cleanUp(page, { documentIds: pageId ? [pageId] : [], formIds: [formId] });
+	}
+});
+
+/** An address as most visitors send one, which a window 1280 pixels wide shows whole. */
+const ORDINARY_EMAIL = 'maria.lopez@example.com';
+
+/**
+ * Visitors who send long values: a long message, a long email address and a file with a long name. Maria's address is
+ * an ordinary one, in the same column as the long one.
+ */
+const LONG_VISITORS: Array<Visitor> = [
+	{
+		name: 'Maria Lopez',
+		email: ORDINARY_EMAIL,
+		more: {
+			Topic: 'Prices for charities and schools',
+			Message:
+				'Could you send me a price list for 20 seats? We would also like to know whether you give charities and schools a discount, and for how long a quote stays valid.',
+		},
+	},
+	{
+		name: 'Sam Patel',
+		email: 'samuel.patel.customer.support@example-company.com',
+		more: { Topic: 'Support', Message: 'The download link on the pricing page shows an error. My notes on the error are attached.' },
+		file: { name: 'notes-on-the-error-from-the-pricing-page-on-my-laptop.txt', buffer: NOTES },
+	},
+];
+
+/** The window widths of a small laptop and of a tablet on its side. */
+const NARROW_WIDTHS = [1280, 1024];
+
+/** How far the content of the table that umb-table draws reaches past the table's own box, in pixels. */
+function tableOverflow(table: Locator) {
+	return table.evaluate((element) => {
+		const uuiTable = element.shadowRoot!.querySelector('uui-table')!;
+		return uuiTable.scrollWidth - uuiTable.clientWidth;
+	});
+}
+
+/** What is cut of a table cell: the cell and each element in it whose content reaches past its box, across or down. */
+function cutParts(cell: Locator) {
+	return cell.evaluate((element) =>
+		[element, ...element.querySelectorAll('*')]
+			.filter((part) => part.scrollWidth > part.clientWidth || part.scrollHeight > part.clientHeight)
+			.map((part) => `${part.localName} ${part.scrollWidth}x${part.scrollHeight} in ${part.clientWidth}x${part.clientHeight}`),
+	);
+}
+
+test("at 1280 and 1024 pixels each row's actions stay on screen, however long its values are, and at 1280 an ordinary address shows whole", async ({
+	page,
+	context,
+	seededPage,
+}) => {
+	void seededPage;
+	test.setTimeout(180_000);
+	await openBackOffice(page);
+	const kinds = await findKinds(page);
+	const { formId, layoutId } = await createForm(page, kinds, {
+		name: 'Long submissions test form',
+		fields: [
+			formField(fieldKind(kinds, 'Text'), 'Name', 'name'),
+			formField(fieldKind(kinds, 'Text'), 'Email', 'email'),
+			formField(fieldKind(kinds, 'Text'), 'Topic', 'topic'),
+			formField(fieldKind(kinds, 'Text Area'), 'Message', 'message'),
+			formField(fieldKind(kinds, 'Upload'), 'Attachment', 'attachment'),
+			formField(fieldKind(kinds, 'Button'), 'Send', 'send', { configuration: { buttonKind: 'Submit' } }),
+		],
+		handlers: [{ kindId: STORE_DATA_KIND_ID, name: 'Store Data', alias: 'storeData' }],
+	});
+	const site = await context.newPage();
+	let pageId: string | undefined;
+
+	try {
+		const created = await createPage(page, 'Long submissions test', layoutId);
+		pageId = created.id;
+		await waitForPage(site, created.path);
+		for (const visitor of LONG_VISITORS) {
+			await sendForm(site, created.path, visitor);
+		}
+
+		await page.goto(`/umbraco/section/formulate/workspace/formulate-form/edit/${formId}`);
+		await page.locator('umb-workspace-editor').getByRole('tab', { name: 'Submissions', exact: true }).click();
+		const table = page.locator('formulate-form-submissions-workspace-view umb-table');
+		const rows = table.locator('uui-table-row');
+		await expect(rows).toHaveCount(LONG_VISITORS.length);
+		await expect(table.locator('uui-table-head-cell')).toHaveText(['', 'Created', 'Page', 'Name', 'Email', 'Topic', 'Message', 'Files', '']);
+
+		// Each row's date, which opens it, and its Delete are whole on the screen, and the table is no wider than its box.
+		for (const width of NARROW_WIDTHS) {
+			await page.setViewportSize({ width, height: 900 });
+			for (const [index, row] of (await rows.all()).entries()) {
+				const where = `row ${index + 1} at ${width} px`;
+				await expect.soft(row.getByRole('button', { name: /^Open submission / }), `the date of ${where}`).toBeInViewport({ ratio: 1 });
+				await expect.soft(row.getByRole('button', { name: /^Delete submission / }), `Delete in ${where}`).toBeInViewport({ ratio: 1 });
+			}
+			expect.soft(await tableOverflow(table), `the table's overflow at ${width} px`).toBe(0);
+			// At 1280 pixels the ordinary address reads in full: nothing in its cell is cut, across or down.
+			if (width === 1280) {
+				const email = rows.filter({ hasText: ORDINARY_EMAIL }).locator('uui-table-cell').nth(4);
+				await expect(email).toHaveText(ORDINARY_EMAIL);
+				expect.soft(await cutParts(email), `what is cut of ${ORDINARY_EMAIL} at ${width} px`).toEqual([]);
+				// A value its three lines cut shows in full as a title on hover.
+				const longEmail = LONG_VISITORS[1]!.email;
+				const cut = rows.filter({ hasText: longEmail }).locator('uui-table-cell').nth(4).locator('formulate-submission-value');
+				await cut.hover();
+				await expect.soft(cut, `the title of ${longEmail} at ${width} px`).toHaveAttribute('title', longEmail);
+				await page.mouse.move(0, 0);
+			}
+			await page.screenshot({ path: screenshotPath(`submissions-long-${width}.png`), animations: 'disabled' });
+		}
+
+		// Delete asks first, from each row at each width. Nothing is deleted here: the dialog is closed with Cancel.
+		const confirm = page.locator('umb-confirm-modal');
+		for (const width of NARROW_WIDTHS) {
+			await page.setViewportSize({ width, height: 900 });
+			for (const row of await rows.all()) {
+				await row.getByRole('button', { name: /^Delete submission / }).click();
+				await expect(confirm).toContainText('Are you sure you want to delete the submission from');
+				await confirm.locator('uui-button#cancel').click();
+				await expect(confirm).toHaveCount(0);
+			}
+		}
+
+		// The date opens the submission at the narrower width too.
+		await rows.first().getByRole('button', { name: /^Open submission / }).click();
+		const sidebar = page.locator('formulate-submission-modal');
+		await expect(sidebar.locator('umb-property-layout[label="Email"] .value')).toHaveText(LONG_VISITORS[1]!.email);
+		await sidebar.getByRole('button', { name: 'Close', exact: true }).click();
+		await expect(rows).toHaveCount(LONG_VISITORS.length);
 	} finally {
 		await site.close();
 		await openBackOffice(page);

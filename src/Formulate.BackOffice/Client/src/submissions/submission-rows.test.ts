@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FormFieldDefinitionModel, SubmissionResponseModel } from '../api/index.js';
 import { FIELD_KINDS, FORM_ID, TEXT } from '../test/forms.js';
-import { previewText, submissionColumns, submissionEntries, submissionPage, submissionRow } from './submission-rows.js';
+import {
+	previewText,
+	splitDateAndTime,
+	submissionColumns,
+	submissionEntries,
+	submissionPage,
+	submissionRow,
+} from './submission-rows.js';
 
 const SUBMISSION_ID = '7d1e3f5a-9b2c-4d6e-8f0a-1b3c5d7e9f01';
 const NAME_ID = '0f5a3c1e-8b2d-4e6f-9a7c-1d3e5f7a9b01';
@@ -141,6 +148,19 @@ describe('Formulate submission rows', () => {
 
 		expect(previewText(`${'a'.repeat(99)}${family}`)).toBe(`${'a'.repeat(99)}${family}`);
 		expect(previewText(`${'a'.repeat(99)}${family}${family}`)).toBe(`${'a'.repeat(99)}${family}…`);
+	});
+
+	it('splits when a submission was sent where its date and its time meet, as the language writes them', () => {
+		// In the time zone the tests run in, so the clock shows these numbers wherever they run.
+		const sent = new Date(2026, 10, 22, 18, 53, 51);
+
+		expect(splitDateAndTime(sent, 'en-us')).toStrictEqual(['11/22/2026', ', ', expect.stringMatching(/^6:53:51\sPM$/u)]);
+		expect(splitDateAndTime(sent, 'de-de')).toStrictEqual(['22.11.2026', ', ', '18:53:51']);
+		expect(splitDateAndTime(sent, 'fr-fr')).toStrictEqual(['22/11/2026', ' ', '18:53:51']);
+		// Joined again, the pieces are the text the rest of the view shows, in any language.
+		for (const lang of ['en-us', 'en-gb', 'da-dk', 'nl-nl', 'cs-cz', 'ja-jp', 'ko-kr', 'ar-eg']) {
+			expect(splitDateAndTime(sent, lang).join(''), lang).toBe(sent.toLocaleString(lang));
+		}
 	});
 
 	it('gives a row the names of its files', () => {
