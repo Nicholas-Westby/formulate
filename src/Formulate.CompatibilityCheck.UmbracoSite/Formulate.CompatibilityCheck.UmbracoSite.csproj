@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Gathers the assemblies of a site on one Umbraco version, without Formulate, into one folder for the
+    compatibility check (src/Formulate.CompatibilityCheck):
+
+      dotnet build src/Formulate.CompatibilityCheck.UmbracoSite -c Release -p:UmbracoSiteVersion=18.0.0 -o <folder>
+
+    The dev site's folder would not do for the check: it also holds what Formulate's own packages bring, and a
+    dependency they raise there (as NPoco.Abstractions once was) hides the lower version Umbraco ships.
+    It has no code, nothing runs it, and it is not part of Formulate.sln.
+  -->
+
+  <PropertyGroup>
+    <!-- Umbraco 19 targets .NET 11 only. -->
+    <TargetFramework Condition="$([System.Int32]::Parse('$(UmbracoMajor)')) &gt;= 19">net11.0</TargetFramework>
+    <!-- Copies every assembly the site gets through NuGet into the output folder. -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Nothing runs these assemblies, so an advisory against an old Umbraco version needs no warning here. -->
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      At UmbracoSiteVersion (src/Directory.Packages.props). Without buildTransitive, so Umbraco's build does not
+      copy its JSON schema files into this folder.
+    -->
+    <PackageReference Include="Umbraco.Cms" ExcludeAssets="buildTransitive" />
+  </ItemGroup>
+
+</Project>

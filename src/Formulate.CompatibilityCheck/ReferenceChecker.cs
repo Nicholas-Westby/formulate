@@ -126,7 +126,7 @@ internal sealed class ReferenceChecker
 }
 
 /// <summary>
-/// The type definitions in the target assemblies, by full name.
+/// The type definitions in the target assemblies, by full name, and the assemblies themselves, by name.
 /// </summary>
 internal sealed class TargetIndex : IDisposable
 {
@@ -134,9 +134,16 @@ internal sealed class TargetIndex : IDisposable
 
     private readonly Dictionary<string, (MetadataReader Metadata, TypeDefinitionHandle Handle)> _types = new(StringComparer.Ordinal);
 
+    private readonly Dictionary<string, Version> _assemblies = new(StringComparer.OrdinalIgnoreCase);
+
     private TargetIndex()
     {
     }
+
+    /// <summary>
+    /// The version of each assembly in the target folders, by name. Of two copies, the higher version counts.
+    /// </summary>
+    public IReadOnlyDictionary<string, Version> Assemblies => _assemblies;
 
     public static TargetIndex Load(IEnumerable<string> directories)
     {
@@ -159,6 +166,17 @@ internal sealed class TargetIndex : IDisposable
             foreach (var handle in md.TypeDefinitions)
             {
                 index._types.TryAdd(MetadataNames.Of(md, handle), (md, handle));
+            }
+
+            if (md.IsAssembly)
+            {
+                var assembly = md.GetAssemblyDefinition();
+                var name = md.GetString(assembly.Name);
+
+                if (!index._assemblies.TryGetValue(name, out var version) || version < assembly.Version)
+                {
+                    index._assemblies[name] = assembly.Version;
+                }
             }
         }
 

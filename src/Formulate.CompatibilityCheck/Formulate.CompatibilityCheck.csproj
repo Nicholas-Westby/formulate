@@ -8,4 +8,13 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Runs on the shared frameworks a site runs on, to tell which assemblies the runtime gives a site (SharedFramework.cs). -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Formulate.CompatibilityCheck.Tests" />
+  </ItemGroup>
+
 </Project>
