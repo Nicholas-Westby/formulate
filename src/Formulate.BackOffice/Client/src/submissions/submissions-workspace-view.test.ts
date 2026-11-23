@@ -166,14 +166,36 @@ describe('Formulate Submissions view', () => {
 		]);
 	});
 
-	it("names each row's actions after the row, by when it was sent", async () => {
-		const { shadow } = await openView([graceSubmission(), adaSubmission()]);
-		const grace = shown('2026-11-22T11:05:00Z');
-		const [first] = rowsOf(shadow);
+	it("names each row's actions after the row, by its place in the list and when it was sent, so no two are alike", async () => {
+		// Two visitors sent the form in the same second.
+		const [grace, ada] = [graceSubmission(), adaSubmission()];
+		ada.creationDate = grace.creationDate;
+		const { shadow } = await openView([grace, ada]);
+		const date = shown(grace.creationDate);
 
-		expect(first.querySelector('uui-button[label^="Open"]')?.getAttribute('label')).toBe(`Open the submission from ${grace}`);
-		expect(first.querySelector('uui-action-bar uui-button')?.getAttribute('aria-label')).toBe(`Delete the submission from ${grace}`);
-		expect(first.querySelector('uui-action-bar uui-button')?.getAttribute('label')).toBe('general_delete');
+		expect(
+			rowsOf(shadow).map((row) => [
+				row.querySelector('uui-button[label^="Open"]')?.getAttribute('label'),
+				row.querySelector('uui-action-bar uui-button')?.getAttribute('aria-label'),
+			]),
+		).toStrictEqual([
+			[`Open submission 1 of 2, from ${date}`, `Delete submission 1 of 2, from ${date}`],
+			[`Open submission 2 of 2, from ${date}`, `Delete submission 2 of 2, from ${date}`],
+		]);
+		expect(rowsOf(shadow)[0].querySelector('uui-action-bar uui-button')?.getAttribute('label')).toBe('general_delete');
+	});
+
+	it('numbers the rows of a later page on from where the page starts, out of all the submissions', async () => {
+		const { shadow, view } = await openView(manySubmissions(120));
+
+		shadow.querySelector('uui-pagination')!.goToPage(3);
+		await settle(view);
+
+		expect(rowsOf(shadow).map((row) => row.querySelector('uui-button[label^="Open"]')?.getAttribute('label'))).toStrictEqual(
+			Array.from({ length: 20 }, (_, index) =>
+				expect.stringMatching(new RegExp(`^Open submission ${index + 101} of 120, from `)),
+			),
+		);
 	});
 
 	it('opens a submission in a sidebar from its date, or from anywhere else on its row, with the fields of the form', async () => {

@@ -153,11 +153,11 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		await expect(pageLinks).toHaveCount(2);
 		await expect(pageLinks.first()).toHaveAttribute('href', pageUrl);
 		await expect(pageLinks.first()).toHaveAttribute('target', '_blank');
-		// Each row's actions are named after the row.
+		// Each row's actions are named after the row: its place in the list, and when it was sent.
 		const adaRow = table.locator('uui-table-row', { hasText: 'Ada Lovelace' });
 		const graceRow = table.locator('uui-table-row', { hasText: 'Grace Hopper' });
-		await expect(adaRow.getByRole('button', { name: `Open the submission from ${adaDate}`, exact: true })).toBeVisible();
-		await expect(graceRow.getByRole('button', { name: `Delete the submission from ${graceDate}`, exact: true })).toBeVisible();
+		await expect(adaRow.getByRole('button', { name: `Open submission 2 of 2, from ${adaDate}`, exact: true })).toBeVisible();
+		await expect(graceRow.getByRole('button', { name: `Delete submission 1 of 2, from ${graceDate}`, exact: true })).toBeVisible();
 		await page.screenshot({ path: screenshotPath('submissions.png'), animations: 'disabled' });
 
 		// A click on a row opens the submission in a sidebar, with every value in the form's order and its file.
@@ -205,7 +205,7 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		]);
 
 		// Deleting a row asks first, in the danger colour, then leaves the other row; the API agrees.
-		await graceRow.getByRole('button', { name: `Delete the submission from ${graceDate}`, exact: true }).click();
+		await graceRow.getByRole('button', { name: `Delete submission 1 of 2, from ${graceDate}`, exact: true }).click();
 		const confirm = page.locator('umb-confirm-modal');
 		await expect(confirm).toContainText(`the submission from ${graceDate}`);
 		await expect(confirm.locator('uui-button[color="danger"]')).toHaveAttribute('label', 'Delete');

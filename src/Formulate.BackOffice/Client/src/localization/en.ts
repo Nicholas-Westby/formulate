@@ -234,9 +234,11 @@ export default {
 		submissionFiles: 'Files',
 		exportSubmissions: 'Export to CSV',
 		submissionsNotExported: 'The submissions could not be exported.',
-		openSubmission: (date: string) => `Open the submission from ${date}`,
+		// Each row's actions are named after the row's place in the list too, as two submissions can share a date.
+		openSubmission: (position: string, total: string, date: string) => `Open submission ${position} of ${total}, from ${date}`,
 		submissionHeadline: (date: string) => `Submission from ${date}`,
-		deleteSubmission: (date: string) => `Delete the submission from ${date}`,
+		deleteSubmission: (position: string, total: string, date: string) =>
+			`Delete submission ${position} of ${total}, from ${date}`,
 		deleteSubmissionHeadline: 'Delete submission',
 		confirmDeleteSubmission: (date: string) =>
 			`Are you sure you want to delete the submission from ${date}? Its files are deleted with it.`,

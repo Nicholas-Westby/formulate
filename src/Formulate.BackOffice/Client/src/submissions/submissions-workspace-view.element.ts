@@ -49,6 +49,14 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	@state()
 	private _submissions?: ReadonlyArray<SubmissionResponseModel>;
 
+	/** How many submissions come before the page shown. */
+	@state()
+	private _skip = 0;
+
+	/** How many submissions the form has in all. */
+	@state()
+	private _total = 0;
+
 	/** Whether the submissions could not be read. */
 	@state()
 	private _failed = false;
@@ -131,6 +139,8 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 
 		this._failed = false;
 		this._submissions = data.items;
+		this._skip = skip;
+		this._total = data.total;
 		this._currentPage = this.#pagination.getCurrentPageNumber();
 		this._totalPages = this.#pagination.getTotalPages();
 	}
@@ -291,9 +301,13 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	}
 
 	#items(fields: ReadonlyArray<FormulateSubmissionField>): Array<UmbTableItem> {
-		return (this._submissions ?? []).map((submission) => {
+		const total = this.localize.number(this._total);
+
+		return (this._submissions ?? []).map((submission, index) => {
 			const row = submissionRow(submission, fields);
 			const date = this.#dateOf(submission);
+			// The row's place in the list makes its actions' names its own: two submissions can share a date.
+			const position = this.localize.number(this._skip + index + 1);
 
 			return {
 				id: row.id,
@@ -302,7 +316,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 						columnAlias: 'created',
 						value: html`<uui-button
 							compact
-							label=${this.localize.term('formulate_openSubmission', date)}
+							label=${this.localize.term('formulate_openSubmission', position, total, date)}
 							@click=${() => this.#open(submission)}
 							>${date}</uui-button
 						>`,
@@ -322,7 +336,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 							<uui-action-bar>
 								<uui-button
 									label=${this.localize.term('general_delete')}
-									aria-label=${this.localize.term('formulate_deleteSubmission', date)}
+									aria-label=${this.localize.term('formulate_deleteSubmission', position, total, date)}
 									@click=${() => this.#delete(submission)}>
 									<uui-icon name="icon-trash"></uui-icon>
 								</uui-button>
