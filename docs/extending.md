@@ -832,4 +832,4 @@ Formulate's packages are built against Umbraco 17.7.2 and run on 17.8.2 or later
 - Do not use an `[Obsolete]` member. Formulate's own build treats using one as an error.
 - Do not register an OpenAPI or Swagger library in a package. Umbraco 18 replaced the library that 17 uses, and a package that registers the old one crashes an 18 site when it starts.
 
-`src/Formulate.CompatibilityCheck` is a small tool that reads built assemblies and confirms that every Umbraco member they use exists in Umbraco 18 and 19. Run it on your own assemblies in the same way as `.github/workflows/ci.yml` does.
+`src/Formulate.CompatibilityCheck` is a small tool that reads built assemblies and confirms that every Umbraco member they use exists in an Umbraco version, and that each assembly they reference is there at the version they were built against or higher. Run it on your own assemblies in the same way as `.github/workflows/ci.yml` does, against a folder that holds only that Umbraco version's assemblies (`src/Formulate.CompatibilityCheck.UmbracoSite` builds one). A site's own `bin` folder can hide a problem, because the packages it installs can raise Umbraco's dependencies.

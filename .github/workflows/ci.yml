@@ -89,10 +89,14 @@ jobs:
           npm run typecheck
           npm run test:unit
 
-  # Proves: every Umbraco and NPoco type and member the shipped Formulate assemblies reference
-  # still exists, with the same signature, in Umbraco 18 and 19. The assemblies come from a normal
-  # build (compiled against the Umbraco 17.8 floor); the target folder is the dev site built on the
-  # version under test. Umbraco 19 targets .NET 11, so that leg installs the .NET 11 SDK too.
+  # Proves: on the oldest and newest Umbraco of each major in the range, every Umbraco and NPoco
+  # type and member the shipped Formulate assemblies reference still exists, with the same
+  # signature, and every assembly they reference is there at that version or higher. The
+  # assemblies come from a normal build (compiled against Umbraco 17.7.2). The target folder holds
+  # that Umbraco version alone (src/Formulate.CompatibilityCheck.UmbracoSite). The dev site's would
+  # also hold what Formulate's packages bring, which can hide an older assembly that Umbraco ships,
+  # such as NPoco 6.2.0 in Umbraco 18.0.0. Umbraco 19 targets .NET 11, so that leg installs the
+  # .NET 11 SDK too.
   compatibility:
     name: Binary compatibility (Umbraco ${{ matrix.umbraco }})
     runs-on: ubuntu-latest
@@ -100,6 +104,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - umbraco: 17.8.2
+            needs-dotnet-11: false
+          - umbraco: 18.0.0
+            needs-dotnet-11: false
           - umbraco: 18.3.2
             needs-dotnet-11: false
           - umbraco: 19.0.0-rc1
@@ -122,10 +130,12 @@ jobs:
           cache-dependency-path: |
             src/Formulate.BackOffice/Client/package-lock.json
             src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
-      - name: Build the Formulate assemblies (Umbraco 17.8 floor)
+      - name: Build the Formulate assemblies (compiled against Umbraco 17.7.2)
         run: dotnet build src/Formulate/Formulate.csproj -c Release -o "$RUNNER_TEMP/formulate"
-      - name: Build the dev site on Umbraco ${{ matrix.umbraco }}
-        run: dotnet build src/Website/Website.csproj -c Release -p:UmbracoSiteVersion=${{ matrix.umbraco }} -o "$RUNNER_TEMP/site"
+      - name: Gather the assemblies of Umbraco ${{ matrix.umbraco }}
+        run: >-
+          dotnet build src/Formulate.CompatibilityCheck.UmbracoSite -c Release
+          -p:UmbracoSiteVersion=${{ matrix.umbraco }} -o "$RUNNER_TEMP/site"
       - name: Check the references
         run: >-
           dotnet run --project src/Formulate.CompatibilityCheck -c Release --
@@ -134,9 +144,10 @@ jobs:
 
   # Proves: the libraries also compile against exactly Umbraco 18 and 19, with every use of an
   # [Obsolete] member an error (CS0612 and CS0618), so an API that Umbraco deprecates fails here
-  # long before a later major removes it. The packages themselves are still compiled against the
-  # 17.8 floor. Umbraco 19 targets .NET 11, so that leg builds for net11.0 with the .NET 11 SDK.
-  # C# only: the clients' npm builds are skipped.
+  # long before a later major removes it. The packages themselves are still compiled against
+  # Umbraco 17.7.2. The compile range given here is the meta package's supported range too
+  # (src/Directory.Build.props). Umbraco 19 targets .NET 11, so that leg builds for net11.0 with
+  # the .NET 11 SDK. C# only: the clients' npm builds are skipped.
   compile:
     name: Compile against Umbraco ${{ matrix.umbraco }}
     runs-on: ubuntu-latest
@@ -166,7 +177,7 @@ jobs:
           UMBRACO: ${{ matrix.umbraco }}
           TARGET_FRAMEWORK: ${{ matrix.target-framework }}
         run: |
-          args=("-p:UmbracoVersionRange=[$UMBRACO]")
+          args=("-p:UmbracoCompileRange=[$UMBRACO]")
           if [ -n "$TARGET_FRAMEWORK" ]; then
             args+=("-p:TargetFramework=$TARGET_FRAMEWORK")
           fi
@@ -267,11 +278,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Proves: what is shipped works in a real browser on each supported Umbraco version. The dev
-  # site installs the pack job's packages instead of building the source projects
-  # (-p:FormulateFromPackages=true, see src/Website/Website.csproj), and a test reads the site's
-  # log to check it loaded that version (tests/e2e/specs/loaded-formulate.spec.ts). Playwright
-  # boots its own throwaway site per run (SQLite, new folder).
+  # Proves: what is shipped works in a real browser on the oldest and newest version of each
+  # Umbraco major in the range. Umbraco 18.0.0 ships an older NPoco and an older back office than
+  # 17.8.2 and 18.3.2 do. The dev site installs the pack job's packages instead of building the
+  # source projects (-p:FormulateFromPackages=true, see src/Website/Website.csproj), and a test
+  # reads the site's log to check it loaded that version (tests/e2e/specs/loaded-formulate.spec.ts).
+  # Playwright boots its own throwaway site per run (SQLite, new folder).
   e2e:
     name: E2E (Umbraco ${{ matrix.umbraco }})
     runs-on: ubuntu-latest
@@ -280,7 +292,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        umbraco: [17.8.2, 18.3.2, 19.0.0-rc1]
+        umbraco: [17.8.2, 18.0.0, 18.3.2, 19.0.0-rc1]
     env:
       UMBRACO_SITE_VERSION: ${{ matrix.umbraco }}
       # Playwright starts the site on the packages of this version (tests/e2e/playwright.config.ts).
