@@ -93,18 +93,42 @@ export function submissionColumns(
 /** Splits text into the characters people see, so an emoji made of several code points counts as one. */
 const CHARACTERS = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
+/** A character that shows as space, such as a line break or a tab. */
+const SPACE = /^\s+$/;
+
 /**
  * A value as the table shows it, on one line: its line breaks and runs of spaces as single spaces. Up to 100
  * characters show whole. A longer value is cut at the last word boundary in its first 100 characters, and ends
- * with "…"; when no word ends in the second half of them (a long address, say), it is cut at 100.
+ * with "…"; when no word ends in the second half of them (a long address, say), it is cut at 100. Only as much of
+ * the value is read as the cut needs, as a visitor can send a very long one.
  * @param value The stored value.
  */
 export function previewText(value: string): string {
-	const text = value.replace(/\s+/g, ' ').trim();
-	const characters = Array.from(CHARACTERS.segment(text), (character) => character.segment);
+	const characters: Array<string> = [];
+	let spaced = false;
+
+	for (const { segment } of CHARACTERS.segment(value)) {
+		// Spaces show only between words, one at a time.
+		if (SPACE.test(segment)) {
+			spaced = characters.length > 0;
+			continue;
+		}
+
+		if (spaced) {
+			characters.push(' ');
+			spaced = false;
+		}
+
+		characters.push(segment);
+
+		// One character more than is shown says the value is longer, and where its last word ends.
+		if (characters.length > PREVIEW_LENGTH) {
+			break;
+		}
+	}
 
 	if (characters.length <= PREVIEW_LENGTH) {
-		return text;
+		return characters.join('');
 	}
 
 	// A space right after the 100th character ends a word too.

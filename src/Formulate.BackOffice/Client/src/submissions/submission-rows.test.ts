@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { FormFieldDefinitionModel, SubmissionResponseModel } from '../api/index.js';
 import { FIELD_KINDS, FORM_ID, TEXT } from '../test/forms.js';
 import { previewText, submissionColumns, submissionEntries, submissionPage, submissionRow } from './submission-rows.js';
@@ -98,6 +98,32 @@ describe('Formulate submission rows', () => {
 		// With no space, or only one so early that most of the 100 characters would go, the value is cut at 100.
 		expect(previewText('a'.repeat(101))).toBe(`${'a'.repeat(100)}…`);
 		expect(previewText(`ab ${'c'.repeat(120)}`)).toBe(`ab ${'c'.repeat(97)}…`);
+	});
+
+	it('reads only as much of a long value as it shows, as a visitor can send a very long one', () => {
+		const segment = Intl.Segmenter.prototype.segment;
+		let read = 0;
+		// Counts the characters read from each value.
+		const spy = vi.spyOn(Intl.Segmenter.prototype, 'segment').mockImplementation(function (this: Intl.Segmenter, input) {
+			const segments = segment.call(this, input);
+			const counted = {
+				containing: (index?: number) => segments.containing(index),
+				*[Symbol.iterator]() {
+					for (const item of segments) {
+						read++;
+						yield item;
+					}
+				},
+			};
+			return counted as unknown as Intl.Segments;
+		});
+
+		try {
+			expect(previewText(`  ${'word '.repeat(100_000)}`)).toBe(`${'word '.repeat(20).trim()}…`);
+			expect(read).toBeLessThan(200);
+		} finally {
+			spy.mockRestore();
+		}
 	});
 
 	it('counts and cuts characters as people see them, so an emoji is never split', () => {

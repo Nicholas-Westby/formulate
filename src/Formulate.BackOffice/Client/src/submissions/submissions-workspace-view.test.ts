@@ -166,6 +166,23 @@ describe('Formulate Submissions view', () => {
 		]);
 	});
 
+	it('cuts the values of a page once, when the page is read, not each time the view draws', async () => {
+		const segment = vi.spyOn(Intl.Segmenter.prototype, 'segment');
+
+		try {
+			const { view } = await openView(manySubmissions(50));
+			const cuts = segment.mock.calls.length;
+			expect(cuts).toBeGreaterThan(0);
+
+			view.requestUpdate();
+			await settle(view);
+
+			expect(segment.mock.calls.length).toBe(cuts);
+		} finally {
+			segment.mockRestore();
+		}
+	});
+
 	it("names each row's actions after the row, by its place in the list and when it was sent, so no two are alike", async () => {
 		// Two visitors sent the form in the same second.
 		const [grace, ada] = [graceSubmission(), adaSubmission()];

@@ -1,5 +1,5 @@
 import type { UmbTableColumn, UmbTableConfig, UmbTableItem } from '@umbraco-cms/backoffice/components';
-import { css, customElement, html, nothing, state } from '@umbraco-cms/backoffice/external/lit';
+import { css, customElement, html, nothing, state, type PropertyValues } from '@umbraco-cms/backoffice/external/lit';
 import type { UUIButtonState, UUIPaginationElement } from '@umbraco-cms/backoffice/external/uui';
 import { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
 import { umbConfirmModal, umbOpenModal } from '@umbraco-cms/backoffice/modal';
@@ -18,7 +18,12 @@ import { FORMULATE_FORM_WORKSPACE_CONTEXT } from '../forms/workspace/form-worksp
 import type { FormulateFormFieldModel } from '../forms/types.js';
 import { FORMULATE_SUBMISSION_MODAL } from './submission-modal.token.js';
 import { exportSubmissions, reportProblem } from './submission-requests.js';
-import { submissionColumns, submissionRow, type FormulateSubmissionField } from './submission-rows.js';
+import {
+	submissionColumns,
+	submissionRow,
+	type FormulateSubmissionField,
+	type FormulateSubmissionRow,
+} from './submission-rows.js';
 
 /** How many submissions a page shows: as many as Umbraco's collections show (UmbDefaultCollectionContext). */
 const PAGE_SIZE = 50;
@@ -48,6 +53,17 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	/** The page of submissions shown; undefined until it has been read. */
 	@state()
 	private _submissions?: ReadonlyArray<SubmissionResponseModel>;
+
+	/**
+	 * The rows of the page shown, with their values cut as the table shows them: made once for each page read, and
+	 * again only when the columns change, as a visitor's value can be very long. Undefined until both the page and the
+	 * kinds of field have been read.
+	 */
+	@state()
+	private _rows?: ReadonlyArray<FormulateSubmissionRow>;
+
+	/** The fields the table has a column for. */
+	#columns: ReadonlyArray<FormulateSubmissionField> = [];
 
 	/** How many submissions come before the page shown. */
 	@state()
@@ -94,6 +110,18 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 		this.consumeContext(FORMULATE_DEFINITIONS_CONTEXT, async (definitions) => {
 			this._kinds = definitions ? await definitions.getFormFieldDefinitions() : undefined;
 		});
+	}
+
+	protected override willUpdate(changed: PropertyValues) {
+		super.willUpdate(changed);
+
+		if (changed.has('_submissions') || changed.has('_fields') || changed.has('_kinds')) {
+			this.#columns = this._kinds ? submissionColumns(this._fields, this._kinds) : [];
+			this._rows =
+				this._submissions && this._kinds
+					? this._submissions.map((submission) => submissionRow(submission, this.#columns))
+					: undefined;
+		}
 	}
 
 	/** Shows the first page of a form's submissions. */
@@ -292,7 +320,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 			`;
 		}
 
-		if (!this._submissions || !this._kinds) {
+		if (!this._submissions || !this._rows) {
 			return html`<umb-view-loader></umb-view-loader>`;
 		}
 
@@ -304,19 +332,17 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 			`;
 		}
 
-		const columns = submissionColumns(this._fields, this._kinds);
-
 		return html`
 			<umb-table
 				.config=${TABLE_CONFIG}
-				.columns=${this.#columns(columns)}
-				.items=${this.#items(columns)}
+				.columns=${this.#tableColumns(this.#columns)}
+				.items=${this.#items(this.#columns, this._submissions, this._rows)}
 				.onRowRendered=${this.#onRowRendered}></umb-table>
 			${this.#renderPagination()}
 		`;
 	}
 
-	#columns(fields: ReadonlyArray<FormulateSubmissionField>): Array<UmbTableColumn> {
+	#tableColumns(fields: ReadonlyArray<FormulateSubmissionField>): Array<UmbTableColumn> {
 		return [
 			{ name: this.localize.term('formulate_submissionCreated'), alias: 'created' },
 			{ name: this.localize.term('formulate_submissionPage'), alias: 'page' },
@@ -326,11 +352,15 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 		];
 	}
 
-	#items(fields: ReadonlyArray<FormulateSubmissionField>): Array<UmbTableItem> {
+	#items(
+		fields: ReadonlyArray<FormulateSubmissionField>,
+		submissions: ReadonlyArray<SubmissionResponseModel>,
+		rows: ReadonlyArray<FormulateSubmissionRow>,
+	): Array<UmbTableItem> {
 		const total = this.localize.number(this._total);
 
-		return (this._submissions ?? []).map((submission, index) => {
-			const row = submissionRow(submission, fields);
+		return rows.map((row, index) => {
+			const submission = submissions[index]!;
 			const date = this.#dateOf(submission);
 			// The row's place in the list makes its actions' names its own: two submissions can share a date.
 			const position = this.localize.number(this._skip + index + 1);
