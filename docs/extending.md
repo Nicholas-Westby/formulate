@@ -321,7 +321,7 @@ A custom layout kind gets its editor the same way: implement `ILayoutDefinition`
 
 ### The Management API
 
-The back office talks to the server through the Umbraco Management API, at `/umbraco/management/api/v1/formulate/...`. The OpenAPI document is named `formulate`. Formulate's package does not register Swagger or any OpenAPI library, so it does not conflict with the one Umbraco uses on 17 (Swashbuckle) and on 18 and later (`Microsoft.AspNetCore.OpenApi`). Formulate's section alias is `Formulate.Section`. Calls need a signed in back office user. Changing anything needs the Formulate section.
+The back office talks to the server through the Umbraco Management API, at `/umbraco/management/api/v1/formulate/...`. Formulate's controllers are mapped to the API name `formulate` (`[MapToApi]` on `FormulateApiControllerBase`). Formulate's packages serve no OpenAPI document, and they do not register Swagger or any OpenAPI library, so they do not conflict with the one Umbraco uses on 17 (Swashbuckle) and on 18 and later (`Microsoft.AspNetCore.OpenApi`). A site that wants a document for the API, for example to generate a client from it, can register one under that name, as Formulate's dev site does in `src/Website/Composers/FormulateOpenApiComposer.cs`: with Swashbuckle on Umbraco 17, and with Umbraco's `AddBackOfficeOpenApiDocument` on 18 and later. Formulate's section alias is `Formulate.Section`. Calls need a signed in back office user. Changing anything needs the Formulate section.
 
 ## Fields that check with a service, or write their value
 
@@ -638,7 +638,7 @@ A custom field needs these parts. The dev site's sample (`src/Website/SampleFiel
    ```
 
 4. The renderer, as in [a renderer built on a built-in one](#a-renderer-built-on-a-built-in-one), loaded on the pages that have forms.
-5. A back office editor for the field's settings, if it has any. It is optional: a field whose `EditorAlias` has no editor shows "No settings". See [the editor](#an-editor-for-the-fields-settings) below.
+5. A back office editor for the field's settings, if it has any. It is optional: the dialog of a field whose `EditorAlias` has no editor shows "This kind has no settings." See [the editor](#an-editor-for-the-fields-settings) below.
 
 The server checks the field's validations again when the form is submitted, and Store Data and the other handlers get its value like any other field's.
 
