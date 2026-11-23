@@ -193,7 +193,7 @@ How handlers run:
 - Definitions are created once and live for the whole site. A handler that needs scoped services (such as a database scope) takes an `IServiceScopeFactory` in its definition and opens a scope for each submission, as `StoreDataFormHandlerDefinition` does.
 - Do not let a handler's failure change what the visitor sees. Log it, as the built-in handlers do. To stop a submission, use `FormSubmittingNotification`.
 
-The built-in handler kinds are Email, Designed Email, Send Data and Store Data.
+The built-in handler kinds are Send Email, Designed Email, Send Data and Store Data.
 
 ## Validations
 
@@ -337,7 +337,7 @@ Formulate calls it only after every field of the form passed its synchronous val
 
 ### `IFormFieldValueFormatter`
 
-Implement it on the field's definition to change how the value is written for people and receivers. The Email handler and Send Data call it. Designed Email views get the posted values unchanged. Store Data always keeps the posted value.
+Implement it on the field's definition to change how the value is written for people and receivers. The Send Email handler and Send Data call it. Designed Email views get the posted values unchanged. Store Data always keeps the posted value.
 
 ```csharp
 string FormatValue(string value);
@@ -374,7 +374,7 @@ Formulate uses Umbraco's notification system. Write a class that implements `INo
 | `SendingDataNotification` (`Formulate.Extensions.SendData.Notifications`) | Before Send Data sends. | Change `Data`, add `Headers` (such as an API key), or set `Cancel`. It replaces Formulate 3's `SendingData` and `SerializingJson` events. |
 | `SentDataNotification` (`Formulate.Extensions.SendData.Notifications`) | After Send Data sent, whatever came back. | Read `StatusCode`, `ResponseBody` (at most the first 1 MiB, see `IsBodyTruncated`), `Error` and `IsSuccess`. It replaces Formulate 3's result handler, which was a type name created by reflection. |
 
-Store Data and the Email handlers publish no notifications of their own. To change an email, handle Umbraco's `SendEmailNotification`, which Formulate's email handlers go through. When a site handles it, it sends the email itself.
+Store Data and the email handlers publish no notifications of their own. To change an email, handle Umbraco's `SendEmailNotification`, which Formulate's email handlers go through. When a site handles it, it sends the email itself.
 
 `FormSubmittingNotification`'s `Request` is a `FormSubmissionRequest`: the `Form`, the `PageId` (null when the form is not on a content page), the posted `FieldValues` and `FilesValues` by field id, and `ExtraContext`.
 
