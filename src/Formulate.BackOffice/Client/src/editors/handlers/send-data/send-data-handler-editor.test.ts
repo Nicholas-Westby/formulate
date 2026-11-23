@@ -386,11 +386,12 @@ describe('Formulate Send Data handler editor', () => {
 			['GET', 'GET', false],
 			['POST', 'POST', true],
 		]);
+		// Each format by its term, and by the name the server reads it by.
 		expect(optionsOf(editor.format)).toStrictEqual([
-			['Query String', 'Query String', false],
-			['Form Body', 'Form Body', false],
-			['JSON', 'JSON', true],
-			['HubSpot JSON', 'HubSpot JSON', false],
+			['formulate_transmissionFormatQueryString', 'Query String', false],
+			['formulate_transmissionFormatFormBody', 'Form Body', false],
+			['formulate_transmissionFormatJson', 'JSON', true],
+			['formulate_transmissionFormatHubSpotJson', 'HubSpot JSON', false],
 		]);
 		expect([editor.fields.value, editor.fields.fields, editor.fields.headline]).toStrictEqual([
 			SEND_DATA.fields,
@@ -407,8 +408,8 @@ describe('Formulate Send Data handler editor', () => {
 		const picked = (select: Element) => optionsOf(select).find(([, , selected]) => selected);
 
 		expect([blank, cased, unknown].map(({ method, format }) => [picked(method), picked(format)])).toStrictEqual([
-			[['GET', 'GET', true], ['Query String', 'Query String', true]],
-			[['POST', 'POST', true], ['HubSpot JSON', 'HubSpot JSON', true]],
+			[['GET', 'GET', true], ['formulate_transmissionFormatQueryString', 'Query String', true]],
+			[['POST', 'POST', true], ['formulate_transmissionFormatHubSpotJson', 'HubSpot JSON', true]],
 			[['PUT', 'PUT', true], ['formulate_unknownTransmissionFormat', 'XML', true]],
 		]);
 		expect([blank, cased, unknown].map(({ changes }) => changes)).toStrictEqual([[], [], []]);

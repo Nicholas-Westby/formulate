@@ -218,6 +218,10 @@ export default {
 		transmissionFormatDescription:
 			"How the data is sent: in the URL's query string, as a form body, as JSON, or as JSON for a HubSpot form, with the page the form was sent from.",
 		unknownTransmissionFormat: (format: string) => `${format} (not a format Formulate knows, so nothing is sent)`,
+		transmissionFormatQueryString: 'Query string',
+		transmissionFormatFormBody: 'Form body',
+		transmissionFormatJson: 'JSON',
+		transmissionFormatHubSpotJson: 'HubSpot JSON',
 		fieldsToSend: 'Fields to send',
 		fieldsToSendDescription:
 			"The fields whose values are sent, in this order, and the name each is sent with. A blank name sends the field's alias, or its name when it has none.",

@@ -5,7 +5,7 @@ import { FORMULATE_SETTINGS_STYLES } from '../../../core/settings-styles.js';
 import { readItems } from '../../../core/sortable/sortable-rows-input.js';
 import type { FormulateFieldMappingsInputElement } from './field-mappings-input.element.js';
 import './field-mappings-input.element.js';
-import { FORMULATE_TRANSMISSION_FORMATS } from './transmission-formats.js';
+import { FORMULATE_TRANSMISSION_FORMAT_TERMS, FORMULATE_TRANSMISSION_FORMATS } from './transmission-formats.js';
 
 /** The HTTP methods offered, as Formulate 3 offered them; a stored method of another kind stays shown. */
 const METHODS = ['GET', 'POST'];
@@ -35,7 +35,11 @@ export class FormulateSendDataHandlerEditorElement extends FormulateKindEditorEl
 		const format = typeof stored === 'string' ? stored.trim() : '';
 		const formats: Array<string> = Object.values(FORMULATE_TRANSMISSION_FORMATS);
 		const known = format ? formats.find((candidate) => candidate.toLowerCase() === format.toLowerCase()) : FORMULATE_TRANSMISSION_FORMATS.QueryString;
-		const options = formats.map((candidate) => ({ name: candidate, value: candidate, selected: candidate === known }));
+		const options = formats.map((candidate) => ({
+			name: this.localize.term(FORMULATE_TRANSMISSION_FORMAT_TERMS[candidate]!),
+			value: candidate,
+			selected: candidate === known,
+		}));
 
 		// A format the server does not know sends nothing; it stays shown, as it is stored.
 		return known
