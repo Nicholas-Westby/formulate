@@ -376,7 +376,7 @@ public sealed class DesignedEmailTests
         Assert.Equal(new[] { "team@site.test", "ada@allowed.test" }, services.Sent[0].Cc);
         Assert.Equal(new[] { "undisclosed-recipients:;" }, services.Sent[0].To);
         Assert.Equal(new[] { "team@site.test" }, services.Sent[1].Bcc);
-        Assert.Contains("eve@blocked.test", Assert.Single(services.Logs.Warnings).Message);
+        Assert.Contains("Formulate:Email:Whitelist", Assert.Single(services.Logs.Warnings).Message);
     }
 
     [Fact]

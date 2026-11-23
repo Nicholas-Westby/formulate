@@ -107,8 +107,9 @@ public sealed class SendEmailHandlerTests
         // Recipients chosen in the back office are trusted; addresses typed by the visitor must match.
         var sent = Assert.Single(services.Sent);
         Assert.Equal(new[] { "boss@anywhere.test", "ada@allowed.test", "vip@other.test", "grace@ALLOWED.test" }, sent.To);
-        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("eve@blocked.test") && x.Message.Contains("Formulate:Email:Whitelist"));
-        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("mallory@other.test") && x.Message.Contains("Friend's email"));
+        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("Email 1") && x.Message.Contains("Formulate:Email:Whitelist"));
+        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("Friend's email") && x.Message.Contains("Formulate:Email:Whitelist"));
+        Assert.DoesNotContain(services.Logs.Warnings, x => x.Message.Contains("eve@blocked.test") || x.Message.Contains("mallory@other.test"));
     }
 
     [Fact]
@@ -128,7 +129,8 @@ public sealed class SendEmailHandlerTests
         }, submission);
 
         Assert.Equal(new[] { "boss@anywhere.test" }, Assert.Single(services.Sent).To);
-        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("eve@mail.allowed.test") && x.Message.Contains("Formulate:Email:Whitelist"));
+        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("Formulate:Email:Whitelist"));
+        Assert.DoesNotContain(services.Logs.Warnings, x => x.Message.Contains("eve@mail.allowed.test"));
     }
 
     [Fact]
@@ -175,7 +177,8 @@ public sealed class SendEmailHandlerTests
 
         // The handler's own recipients are trusted; the address the visitor typed is not used.
         Assert.Equal(new[] { "boss@anywhere.test" }, Assert.Single(services.Sent).To);
-        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("ada@visitor.test") && x.Message.Contains("has no domains or addresses"));
+        Assert.Contains(services.Logs.Warnings, x => x.Message.Contains("Email") && x.Message.Contains("has no domains or addresses"));
+        Assert.DoesNotContain(services.Logs.Warnings, x => x.Message.Contains("ada@visitor.test"));
     }
 
     [Fact]

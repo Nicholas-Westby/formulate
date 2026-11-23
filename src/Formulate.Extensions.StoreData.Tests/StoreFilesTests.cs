@@ -173,7 +173,8 @@ public sealed class StoreFilesTests : IDisposable
         var entry = Assert.Single(entries);
         Assert.Equal("fine.txt", entry.Value);
         var warning = Assert.Single(_logger.Entries, x => x.Level == LogLevel.Warning);
-        Assert.Contains("blocked.txt", warning.Message);
+        Assert.Contains(field.Id.ToString(), warning.Message);
+        Assert.DoesNotContain("blocked.txt", warning.Message);
         Assert.NotNull(warning.Exception);
     }
 
@@ -201,7 +202,7 @@ public sealed class StoreFilesTests : IDisposable
         Assert.True(File.Exists(Path.Combine(FieldFolder(field), "ok.bin")));
 
         var warning = Assert.Single(_logger.Entries, x => x.Level == LogLevel.Warning);
-        Assert.Contains("big.bin", warning.Message);
+        Assert.DoesNotContain("big.bin", warning.Message);
         Assert.Contains("11", warning.Message);
     }
 

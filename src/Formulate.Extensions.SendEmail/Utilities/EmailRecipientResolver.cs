@@ -85,16 +85,16 @@ namespace Formulate.Extensions.SendEmail.Utilities
                 if (whitelist.AllowsNone)
                 {
                     _logger.LogWarning(
-                        "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) did not send to {Address}, typed into field {FieldName}, because Formulate:Email:Whitelist is set but has no domains or addresses, so it allows none.",
-                        context.HandlerName, context.HandlerId, context.FormName, context.FormId, address.Address, fieldName);
+                        "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) did not send to the address typed into field {FieldName}, because Formulate:Email:Whitelist is set but has no domains or addresses, so it allows none.",
+                        context.HandlerName, context.HandlerId, context.FormName, context.FormId, fieldName);
                     continue;
                 }
 
                 if (whitelist.Allows(address) == false)
                 {
                     _logger.LogWarning(
-                        "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) did not send to {Address}, typed into field {FieldName}, because Formulate:Email:Whitelist does not allow it.",
-                        context.HandlerName, context.HandlerId, context.FormName, context.FormId, address.Address, fieldName);
+                        "Form handler {HandlerName} ({HandlerId}) on form {FormName} ({FormId}) did not send to the address typed into field {FieldName}, because Formulate:Email:Whitelist does not allow it.",
+                        context.HandlerName, context.HandlerId, context.FormName, context.FormId, fieldName);
                     continue;
                 }
 

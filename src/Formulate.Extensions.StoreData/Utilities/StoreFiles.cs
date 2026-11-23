@@ -68,8 +68,8 @@ namespace Formulate.Extensions.StoreData.Utilities
                     if (length > maxBytes)
                     {
                         _logger.LogWarning(
-                            "Rejected the file {FileName} ({Length} bytes) for field {FieldId} of form {FormId}: it is over the {MaxUploadBytes} byte limit.",
-                            UploadFileNames.Sanitize(file.Name), length, field.Id, input.Form.Id, maxBytes);
+                            "Rejected a file ({Length} bytes) for field {FieldId} of form {FormId}: it is over the {MaxUploadBytes} byte limit.",
+                            length, field.Id, input.Form.Id, maxBytes);
                         continue;
                     }
 
@@ -87,8 +87,8 @@ namespace Formulate.Extensions.StoreData.Utilities
                         // One file the file system refuses must not lose the submission and its other values.
                         _logger.LogWarning(
                             ex,
-                            "Could not store the file {FileName} for field {FieldId} of form {FormId}; the rest of the submission is kept.",
-                            storedName, field.Id, input.Form.Id);
+                            "Could not store a file for field {FieldId} of form {FormId}; the rest of the submission is kept.",
+                            field.Id, input.Form.Id);
                         continue;
                     }
 
