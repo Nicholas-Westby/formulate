@@ -213,6 +213,35 @@ for (const tree of TREES) {
 	});
 }
 
+for (const tree of TREES) {
+	test(`the top of ${tree.label} and its folders have a Create button above their list, as Umbraco's trees do`, async ({
+		page,
+	}) => {
+		await page.goto('/umbraco/section/formulate');
+		const outerId = await createFolder(page, tree.apiAlias, 'Outer');
+		const view = page.locator('umb-workspace-editor umb-tree-workspace-view');
+		const create = view.locator('umb-tree-create-action-button');
+		const menu = create.locator('uui-popover-container');
+
+		// The kinds, then the folder, as in the create dialog; each asks for more.
+		await page.goto(`/umbraco/section/formulate/workspace/${tree.rootEntityType}`);
+		await create.locator('uui-button[label="Create"]').click();
+		await expect(menu.locator('uui-menu-item').last()).toHaveAttribute('label', 'Folder...');
+		expect(await menu.locator('uui-menu-item').count()).toBeGreaterThan(1);
+		await menu.locator('uui-menu-item[label="Folder..."] #label-button').click();
+		const dialog = page.locator('umb-folder-create-modal');
+		await dialog.locator('uui-input#name input').fill('Made here');
+		await dialog.locator('uui-button#confirm').click();
+		await expect(dialog).toHaveCount(0);
+		await expect(treeItem(view.locator('umb-tree'), 'Made here')).toBeVisible();
+
+		// A folder's page has one too, for what goes in the folder.
+		await page.goto(`/umbraco/section/formulate/workspace/${tree.folderEntityType}/edit/${outerId}`);
+		await create.locator('uui-button[label="Create"]').click();
+		await expect(menu.locator('uui-menu-item').last()).toHaveAttribute('label', 'Folder...');
+	});
+}
+
 test('a kind picked in the create dialog opens the create route of its workspace', async ({ page }) => {
 	const formKindId = await (async () => {
 		await page.goto('/umbraco/section/formulate');

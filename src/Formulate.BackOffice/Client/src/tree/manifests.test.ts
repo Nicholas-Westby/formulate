@@ -90,6 +90,24 @@ describe('Formulate tree manifests', () => {
 		expect(listsWith('Formulate.Workspace.Layout')).toStrictEqual(['Formulate.Tree.Forms']);
 	});
 
+	it("give each tree's root and folder pages a Create button above the list, as Umbraco's trees have", async () => {
+		const actions = (manifests as Array<Manifest>).filter((manifest) => manifest.type === 'treeAction');
+		const apis = await Promise.all(actions.map(async (action) => (await action.api?.())?.api.name));
+
+		expect(actions.map((action) => [action.kind, action.conditions])).toStrictEqual(
+			TREES.map((tree) => ['create', [{ alias: 'Umb.Condition.TreeAlias', match: tree.alias }]]),
+		);
+		expect(apis).toStrictEqual(TREES.map(() => 'FormulateTreeCreateActionApi'));
+	});
+
+	it('give every tree the table view as well, so its pages and pickers can switch views as Umbraco\'s can', () => {
+		const tables = manifests
+			.filter((manifest) => manifest.type === 'treeView' && manifest.kind === 'table')
+			.flatMap((manifest) => (manifest as { forTrees?: Array<string> }).forTrees ?? []);
+
+		expect(tables).toStrictEqual(TREES.map((tree) => tree.alias));
+	});
+
 	it("list what is in each tree's root and folders in their workspaces, as Umbraco's trees do", () => {
 		const views = (manifests as Array<Manifest>).filter((manifest) => manifest.type === 'workspaceView');
 

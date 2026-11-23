@@ -1,4 +1,5 @@
 import type { ManifestWorkspaceContextMenuStructureKind } from '@umbraco-cms/backoffice/menu';
+import { UMB_TREE_ALIAS_CONDITION } from '@umbraco-cms/backoffice/tree';
 import { UMB_WORKSPACE_CONDITION_ALIAS } from '@umbraco-cms/backoffice/workspace';
 import {
 	FORMULATE_DATA_VALUES_ENTITY_TYPE,
@@ -68,7 +69,8 @@ const trees: Array<UmbExtensionManifest> = [
 ];
 
 // How a tree shows its items outside the section's menu, such as in the move dialog. Umbraco falls back
-// to this view for a tree without one, but warns that the fallback goes in Umbraco 20.
+// to the classic view for a tree without one, but warns that the fallback goes in Umbraco 20. The table view
+// is the other view Umbraco's own trees have, such as Data Types, so the tree's pages and pickers can switch.
 const treeViews: Array<UmbExtensionManifest> = [
 	{
 		type: 'treeView',
@@ -78,6 +80,37 @@ const treeViews: Array<UmbExtensionManifest> = [
 		forTrees: [FORMULATE_FORMS_TREE_ALIAS, FORMULATE_DATA_VALUES_TREE_ALIAS, FORMULATE_VALIDATIONS_TREE_ALIAS],
 		meta: { label: '#tree_classicViewLabel', icon: 'icon-blockquote' },
 	},
+	{
+		type: 'treeView',
+		kind: 'table',
+		alias: 'Formulate.TreeView.Table',
+		name: 'Formulate Table Tree View',
+		forTrees: [FORMULATE_FORMS_TREE_ALIAS, FORMULATE_DATA_VALUES_TREE_ALIAS, FORMULATE_VALIDATIONS_TREE_ALIAS],
+	},
+];
+
+/**
+ * The Create button above the list on a tree's root page and its folders' pages, as Umbraco's own trees have one:
+ * Umbraco's button, with Formulate's options (see FormulateTreeCreateActionApi).
+ * @param tree The tree.
+ * @param name The tree's name in the alias, such as DataValues.
+ * @returns The tree action.
+ */
+function createTreeAction(tree: FormulateTreeDefinition, name: string): UmbExtensionManifest {
+	return {
+		type: 'treeAction',
+		kind: 'create',
+		alias: `Formulate.TreeAction.Create.${name}`,
+		name: `Formulate ${name} Tree Create Action`,
+		api: () => import('../entity-actions/create/tree-create-action.api.js'),
+		conditions: [{ alias: UMB_TREE_ALIAS_CONDITION, match: tree.alias }],
+	};
+}
+
+const treeActions: Array<UmbExtensionManifest> = [
+	createTreeAction(FORMULATE_FORMS_TREE, 'Forms'),
+	createTreeAction(FORMULATE_DATA_VALUES_TREE, 'DataValues'),
+	createTreeAction(FORMULATE_VALIDATIONS_TREE, 'Validations'),
 ];
 
 const treeItems: Array<UmbExtensionManifest> = [
@@ -276,6 +309,7 @@ export const manifests: Array<UmbExtensionManifest> = [
 	...repositories,
 	...trees,
 	...treeViews,
+	...treeActions,
 	...treeItems,
 	...menuItems,
 	...rootWorkspaces,
