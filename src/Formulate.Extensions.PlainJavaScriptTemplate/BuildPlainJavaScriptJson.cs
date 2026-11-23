@@ -1,7 +1,9 @@
 ﻿namespace Formulate.Extensions.PlainJavaScriptTemplate.Core
 {
+    using Formulate.Core.FormFields;
     using Formulate.Core.RenderModels;
     using Formulate.Core.Utilities;
+    using Formulate.Core.Validations;
     using Microsoft.AspNetCore.Antiforgery;
     using Microsoft.AspNetCore.Http;
     using Newtonsoft.Json.Linq;
@@ -83,7 +85,7 @@
                             id = y.Id.ToString("N"),
                             alias = y.Name,
                             validationType = mappedValidation.ValidationType,
-                            configuration = mappedValidation.Configuration
+                            configuration = ReplaceMessageTokens(mappedValidation, x)
                         };
                     }).ToArray(),
                     // The field configuration stores parameters particular to a field (e.g., a list of items).
@@ -157,6 +159,30 @@
             });
 
             return EscapeForScriptBlock(json);
+        }
+
+        /// <summary>
+        /// Replaces the placeholders in the message of a Mandatory or Regular Expression validation with the
+        /// field's values, as Formulate 3 did and as the server does for the messages it returns. The
+        /// configuration of any other validation type is left as it is.
+        /// </summary>
+        private static object ReplaceMessageTokens(PlainJavaScriptValidation validation, IFormField field)
+        {
+            if (validation.ValidationType is not ("required" or "regex") || validation.Configuration is null)
+            {
+                return validation.Configuration!;
+            }
+
+            var configuration = JObject.FromObject(validation.Configuration);
+
+            if (configuration["message"] is not { Type: JTokenType.String } message)
+            {
+                return validation.Configuration;
+            }
+
+            configuration["message"] = ValidationMessage.ReplaceFieldTokens(message.Value<string>()!, field);
+
+            return configuration;
         }
 
         /// <summary>

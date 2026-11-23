@@ -40,6 +40,46 @@ public sealed class FormJsonTests
         Assert.Equal("</script>", parsed["data"]!["name"]!.Value<string>());
     }
 
+    private static JToken BuildValidationConfiguration(string type, object configuration, string? label, string name)
+    {
+        var harness = new FormJsonHarness();
+        var validation = Mock.Of<Formulate.Core.Validations.IValidation>(x => x.Id == Guid.NewGuid() && x.Name == "Rule");
+        harness.AddField("message", label!, new PlainJavaScriptFormField("text"), name, (validation, new PlainJavaScriptValidation(configuration, type)));
+
+        return harness.Build()["data"]!["fields"]![0]!["validations"]![0]!["configuration"]!;
+    }
+
+    [Theory]
+    [InlineData("required")]
+    [InlineData("regex")]
+    public void Placeholders_in_a_validation_message_are_replaced_with_the_fields_values(string type)
+    {
+        var configuration = BuildValidationConfiguration(
+            type, new { message = "{LABEL} ({name}, {alias}) is wrong {{}.", pattern = "^x$" }, "Your message", "Message");
+
+        Assert.Equal("Your message (Message, message) is wrong {.", configuration["message"]!.Value<string>());
+        if (type == "regex")
+        {
+            Assert.Equal("^x$", configuration["pattern"]!.Value<string>());
+        }
+    }
+
+    [Fact]
+    public void A_field_with_no_label_uses_its_name_in_the_message()
+    {
+        var configuration = BuildValidationConfiguration("required", new { message = "{label} is required." }, null, "Message");
+
+        Assert.Equal("Message is required.", configuration["message"]!.Value<string>());
+    }
+
+    [Fact]
+    public void The_configuration_of_another_validation_type_is_left_as_it_is()
+    {
+        var configuration = BuildValidationConfiguration("custom", new { message = "{label}" }, "Your message", "Message");
+
+        Assert.Equal("{label}", configuration["message"]!.Value<string>());
+    }
+
     [Fact]
     public void IsStep_is_copied_from_layout()
     {

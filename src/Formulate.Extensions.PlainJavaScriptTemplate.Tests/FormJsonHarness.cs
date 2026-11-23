@@ -27,6 +27,8 @@ internal sealed class FormJsonHarness
 {
     private readonly List<(IFormField Field, PlainJavaScriptFormField Mapped)> _fields = new();
 
+    private readonly List<(Formulate.Core.Validations.IValidation Validation, PlainJavaScriptValidation Mapped)> _validations = new();
+
     public List<PlainJavaScriptLayoutRow> Rows { get; } = new();
 
     public string QueryString { get; set; } = string.Empty;
@@ -44,13 +46,19 @@ internal sealed class FormJsonHarness
 
     public IFormField AddField(string alias, string label, PlainJavaScriptFormField mapped)
     {
+        return AddField(alias, label, mapped, alias);
+    }
+
+    public IFormField AddField(string alias, string label, PlainJavaScriptFormField mapped, string name, params (Formulate.Core.Validations.IValidation Validation, PlainJavaScriptValidation Mapped)[] validations)
+    {
         var field = new Mock<IFormField>();
         field.SetupGet(x => x.Id).Returns(Guid.NewGuid());
         field.SetupGet(x => x.Alias).Returns(alias);
-        field.SetupGet(x => x.Name).Returns(alias);
+        field.SetupGet(x => x.Name).Returns(name);
         field.SetupGet(x => x.Label).Returns(label);
         field.SetupGet(x => x.Category).Returns((string)null!);
-        field.SetupGet(x => x.Validations).Returns(Array.Empty<Formulate.Core.Validations.IValidation>());
+        field.SetupGet(x => x.Validations).Returns(validations.Select(x => x.Validation).ToArray());
+        _validations.AddRange(validations);
         _fields.Add((field.Object, mapped));
         return field.Object;
     }
@@ -77,6 +85,11 @@ internal sealed class FormJsonHarness
         foreach (var (field, mapped) in _fields)
         {
             mapper.Setup(x => x.Map<PlainJavaScriptFormField>(It.Is<object>(o => ReferenceEquals(o, field)))).Returns(mapped);
+        }
+
+        foreach (var (validation, mapped) in _validations)
+        {
+            mapper.Setup(x => x.Map<PlainJavaScriptValidation>(It.Is<object>(o => ReferenceEquals(o, validation)))).Returns(mapped);
         }
 
         var idKeyMap = new Mock<IIdKeyMap>();

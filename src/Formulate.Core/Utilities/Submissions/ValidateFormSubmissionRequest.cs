@@ -2,6 +2,7 @@ namespace Formulate.Core.Utilities.Submissions
 {
     using Formulate.Core.Submissions.Requests;
     using Formulate.Core.Submissions.Responses;
+    using Formulate.Core.Validations;
     using System.Collections.Generic;
     using System.Linq;
 
@@ -17,7 +18,13 @@ namespace Formulate.Core.Utilities.Submissions
 
                 if (result.ErrorMessages.Any())
                 {
-                    errors.Add(new ValidationErrorSubmissionResponse(item.Persisted.Name, item.Persisted.Id, result.ErrorMessages));
+                    // The page replaces the same placeholders in the messages it shows before posting.
+                    var messages = result.ErrorMessages
+                        .Select(x => ValidationMessage.ReplaceFieldTokens(x, item.Field))
+                        .Distinct()
+                        .ToArray();
+
+                    errors.Add(new ValidationErrorSubmissionResponse(item.Persisted.Name, item.Persisted.Id, messages));
                 }
             }
 
