@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="FormulateCheckUmbracoRanges">
 
   <!-- Compiler settings shared by every project under src. -->
   <PropertyGroup>
@@ -48,6 +48,16 @@
     <!-- First segment of the site version. Split as a string, since "19.0.0-rc1" is not a System.Version. -->
     <UmbracoMajor>$(UmbracoSiteVersion.Split('.')[0])</UmbracoMajor>
   </PropertyGroup>
+
+  <!--
+    UmbracoVersionRange was the single range before UmbracoSupportedRange and UmbracoCompileRange. Nothing reads
+    it now, so a build given it would compile against 17.7.2, and a compile check run with the old name would pass
+    without checking anything. Runs before restore and build.
+  -->
+  <Target Name="FormulateCheckUmbracoRanges">
+    <Error Condition="'$(UmbracoVersionRange)' != ''"
+           Text="UmbracoVersionRange is no longer read. To compile against one Umbraco version, use UmbracoCompileRange, such as '-p:UmbracoCompileRange=[18.3.2]'. UmbracoSupportedRange sets the Umbraco versions the Formulate package allows. See src/Directory.Build.props." />
+  </Target>
 
   <!-- Package metadata. A project opts in to packing with <IsPackable>true</IsPackable>. -->
   <PropertyGroup>
