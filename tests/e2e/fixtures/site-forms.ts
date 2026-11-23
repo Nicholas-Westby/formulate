@@ -63,9 +63,16 @@ export async function findKinds(page: Page): Promise<SiteKinds> {
 			'/formulate/tree/forms/create-options',
 		),
 	]);
-	const layout = layoutKinds.find((kind) => !kind.isLegacy && /basic/i.test(kind.name));
+	const currentLayoutKinds = layoutKinds.filter((kind) => !kind.isLegacy);
+	const layout = currentLayoutKinds.find((kind) => /basic/i.test(kind.name));
 	const form = formOptions.find((option) => option.entityType === 'formulate-form' && option.name === 'Form');
 	const template = templates.find((candidate) => candidate.isDefault) ?? templates[0];
+	// With one kind of layout, Create on a form opens the new layout without asking which kind, as the create-route
+	// test in layout.spec.ts expects. A second kind, such as one a package adds, makes Create ask first.
+	expect(
+		currentLayoutKinds.map((kind) => kind.name),
+		'the site has one kind of layout besides the legacy ones, so Create on a form skips the kind dialog',
+	).toHaveLength(1);
 	expect(layout, 'the Basic layout kind exists').toBeTruthy();
 	expect(form?.kindId, 'the Forms root offers the plain Form kind').toBeTruthy();
 	expect(template, 'a template exists').toBeTruthy();
