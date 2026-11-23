@@ -311,7 +311,7 @@ public sealed class FieldMapDefinitionTests
     {
         // Umbraco's own URL provider gives "#" for a page that is not in the content cache, as when the page was
         // unpublished or deleted after the link was picked: UrlProvider.GetUrl returns "#" when it finds no content
-        // (read in Umbraco.Core 17.6.0, 18.3.2 and 19.0.0-rc1).
+        // (read in Umbraco.Core 18.3.2 and 19.0.0-rc1, and the test passes on 17.8.2).
         var missing = Guid.Parse("0c1e2c5a-8d4b-4f5e-9a39-2f2d6e1b7c41");
         var cache = new Mock<IPublishedContentCache>();
         cache.Setup(x => x.GetById(missing)).Returns((IPublishedContent?)null);

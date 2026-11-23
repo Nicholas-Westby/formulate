@@ -6,7 +6,7 @@ import { FormulateKindEditorElementBase, readSettings, readText } from '../../..
 import { FORMULATE_SETTINGS_STYLES } from '../../../core/settings-styles.js';
 
 /**
- * The settings of Umbraco's default Rich Text data type, which are the same on Umbraco 17.6 to 19: its
+ * The settings of Umbraco's default Rich Text data type, which are the same on Umbraco 17.8 to 19: its
  * toolbar, its extensions, the largest size of an image it inserts, the size of its link dialog, and the media
  * types its media picker offers (Image and Vector Graphics). Two of its extensions are left out, as they work
  * only in a document's rich text: Block, whose blocks need the document's block settings and are stored

@@ -91,7 +91,7 @@ jobs:
 
   # Proves: every Umbraco and NPoco type and member the shipped Formulate assemblies reference
   # still exists, with the same signature, in Umbraco 18 and 19. The assemblies come from a normal
-  # build (compiled against the Umbraco 17.6 floor); the target folder is the dev site built on the
+  # build (compiled against the Umbraco 17.8 floor); the target folder is the dev site built on the
   # version under test. Umbraco 19 targets .NET 11, so that leg installs the .NET 11 SDK too.
   compatibility:
     name: Binary compatibility (Umbraco ${{ matrix.umbraco }})
@@ -122,7 +122,7 @@ jobs:
           cache-dependency-path: |
             src/Formulate.BackOffice/Client/package-lock.json
             src/Formulate.Extensions.PlainJavaScriptTemplate/Client/package-lock.json
-      - name: Build the Formulate assemblies (Umbraco 17.6 floor)
+      - name: Build the Formulate assemblies (Umbraco 17.8 floor)
         run: dotnet build src/Formulate/Formulate.csproj -c Release -o "$RUNNER_TEMP/formulate"
       - name: Build the dev site on Umbraco ${{ matrix.umbraco }}
         run: dotnet build src/Website/Website.csproj -c Release -p:UmbracoSiteVersion=${{ matrix.umbraco }} -o "$RUNNER_TEMP/site"
@@ -135,7 +135,7 @@ jobs:
   # Proves: the libraries also compile against exactly Umbraco 18 and 19, with every use of an
   # [Obsolete] member an error (CS0612 and CS0618), so an API that Umbraco deprecates fails here
   # long before a later major removes it. The packages themselves are still compiled against the
-  # 17.6 floor. Umbraco 19 targets .NET 11, so that leg builds for net11.0 with the .NET 11 SDK.
+  # 17.8 floor. Umbraco 19 targets .NET 11, so that leg builds for net11.0 with the .NET 11 SDK.
   # C# only: the clients' npm builds are skipped.
   compile:
     name: Compile against Umbraco ${{ matrix.umbraco }}
@@ -280,7 +280,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        umbraco: [17.6.2, 17.8.2, 18.3.2, 19.0.0-rc1]
+        umbraco: [17.8.2, 18.3.2, 19.0.0-rc1]
     env:
       UMBRACO_SITE_VERSION: ${{ matrix.umbraco }}
       # Playwright starts the site on the packages of this version (tests/e2e/playwright.config.ts).

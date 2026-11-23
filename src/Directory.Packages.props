@@ -19,19 +19,18 @@
   <ItemGroup>
     <PackageVersion Include="Umbraco.Cms" Version="$(UmbracoSiteVersion)" />
     <PackageVersion Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="$(UmbracoSiteVersion)" />
-    <!-- Builds the dev site's OpenAPI document on Umbraco 17, the version Umbraco 17.6 to 17.8 use. -->
+    <!-- Builds the dev site's OpenAPI document on Umbraco 17, the version Umbraco 17.8 uses. -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <!--
-      The version the range's floor depends on through NPoco: 6.2.0 for Umbraco 17.6 (later versions bring newer
-      ones to sites). A build against Umbraco 17.8 or later, such as CI's compile checks, needs 6.4.0: a lower
-      direct reference than the one Umbraco brings fails restore as a downgrade (NU1605).
+      The version the range's floor depends on through NPoco (Umbraco 17.8.2 asks for 6.4.0; later versions bring
+      newer ones to sites). A lower direct reference than the one Umbraco brings fails restore as a downgrade
+      (NU1605).
     -->
-    <PackageVersion Include="NPoco.Abstractions" Version="6.2.0" Condition="!$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoFloorVersion)', '17.8.0'))" />
-    <PackageVersion Include="NPoco.Abstractions" Version="6.4.0" Condition="$([MSBuild]::VersionGreaterThanOrEquals('$(UmbracoFloorVersion)', '17.8.0'))" />
+    <PackageVersion Include="NPoco.Abstractions" Version="6.4.0" />
   </ItemGroup>
 
   <!--

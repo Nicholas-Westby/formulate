@@ -16,9 +16,9 @@
   <!-- Umbraco versions. Override on the command line, e.g. -p:UmbracoSiteVersion=18.3.2 -->
   <PropertyGroup>
     <!-- Every library depends on this range: compiled against the floor, allowed on later majors. -->
-    <UmbracoVersionRange Condition="'$(UmbracoVersionRange)' == ''">[17.6.0, 20.0.0)</UmbracoVersionRange>
+    <UmbracoVersionRange Condition="'$(UmbracoVersionRange)' == ''">[17.8.2, 20.0.0)</UmbracoVersionRange>
     <!--
-      The range's floor without a prerelease label, such as 17.6.0. CI's compile checks build the libraries
+      The range's floor without a prerelease label, such as 17.8.2. CI's compile checks build the libraries
       against a later Umbraco with an exact range, such as -p:UmbracoVersionRange=[19.0.0-rc1], and the
       settings below follow it (Directory.Packages.props uses it too).
     -->
