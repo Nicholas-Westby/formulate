@@ -8,7 +8,6 @@ import {
 	findKinds,
 	formEvents,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 } from '../fixtures/site-forms.ts';
@@ -62,7 +61,6 @@ test('a submission from a page is emailed to the To, Cc and Bcc recipients with 
 	// This test's emails are the ones whose subjects start with it.
 	const run = randomUUID().slice(0, 8);
 
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const name = formField(fieldKind(kinds, 'Text'), 'Name', 'fullName');
 	const email = formField(fieldKind(kinds, 'Text'), 'Email', 'email');

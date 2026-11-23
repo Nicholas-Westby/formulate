@@ -9,7 +9,6 @@ import {
 	fieldKind,
 	findKinds,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 } from '../fixtures/site-forms.ts';
@@ -34,7 +33,6 @@ async function itemBoxes(list: Locator) {
 test('radio button lists are laid out in the orientation chosen, with the Basic theme', async ({ page, context, seededPage }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const items = await createKindItem(page, 'data-values', {
 		name: 'Orientation sizes',
@@ -104,7 +102,6 @@ test('radio button lists are laid out in the orientation chosen, with the Basic 
 test('a reCAPTCHA field without a site key adds no Google script, makes no request to Google and warns once', async ({ page, context, seededPage }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const captcha = formField(fieldKind(kinds, 'reCAPTCHA'), 'Prove it', 'proveIt');
 	const second = formField(fieldKind(kinds, 'reCAPTCHA'), 'Prove it again', 'proveItAgain');

@@ -1,43 +1,75 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+/** A field of a form sent to the Management API: a value, or a file. */
+type FormValue = string | { name: string; mimeType: string; buffer: Buffer };
 
 /**
- * Calls the Management API from a signed-in back office page, through the back office's own HTTP client,
- * so each request is signed in the way the running Umbraco version does it: Umbraco 17 and 18 send a
- * placeholder bearer token next to the sign-in cookie, Umbraco 19 sends the cookie alone.
- * @param page A page showing the back office.
+ * What the back office sends as its bearer token. Umbraco 17 and 18 keep a signed-in user's access token in an
+ * HttpOnly cookie, and take a request's token from that cookie when the request carries this placeholder, as the
+ * back office's own requests do; without it, they answer 401. Umbraco 19 has no token cookie: it signs a request
+ * in by the back office's sign-in cookie alone, and answers requests that carry the placeholder as well.
+ */
+const TOKEN_PLACEHOLDER = 'Bearer [redacted]';
+
+/**
+ * Calls the Management API from the test runner, with the sign-in cookies of the page's browser context, the way
+ * the back office calls it. The page need not show the back office, so a test can set things up before it opens
+ * any page, and clean up from whatever page it ends on.
+ *
+ * On Umbraco 17 and 18, the access token in the cookie is the one the back office got when it last started, since
+ * it trades the token for a new one each time. If the site answers 401 because that one has run out, the call starts
+ * the back office once in a page of its own, to get a new one, and calls again.
+ * @param page A page of the signed-in browser context.
  * @param method The HTTP method.
  * @param path The path after /umbraco/management/api/v1, such as /server/information.
  * @param body The request body, sent as JSON.
  * @returns The response body.
  */
-export async function callManagementApi<T = unknown>(
-	page: Page,
-	method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-	path: string,
-	body?: unknown,
-): Promise<T> {
-	const result = await page.evaluate(
-		async (request) => {
-			// A variable, so TypeScript does not look for the module: the page's import map resolves it.
-			const httpClientModule = '@umbraco-cms/backoffice/http-client';
-			const { umbHttpClient } = await import(httpClientModule);
-			const { data, error, response } = await umbHttpClient.request({
-				method: request.method,
-				url: `/umbraco/management/api/v1${request.path}`,
-				body: request.body,
-				headers: { 'Content-Type': 'application/json' },
-				security: [{ scheme: 'bearer', type: 'http' }],
-				throwOnError: false,
-			});
+export function callManagementApi<T = unknown>(page: Page, method: Method, path: string, body?: unknown): Promise<T> {
+	return send<T>(page, method, path, body === undefined ? {} : { data: body });
+}
 
-			return { status: response?.status ?? 0, data, error };
-		},
-		{ method, path, body },
-	);
+/**
+ * Sends a form to the Management API, as it takes files (see callManagementApi).
+ * @param page A page of the signed-in browser context.
+ * @param path The path after /umbraco/management/api/v1, such as /temporary-file.
+ * @param form The form's fields, by name.
+ * @returns The response body.
+ */
+export function sendFormToManagementApi<T = unknown>(page: Page, path: string, form: Record<string, FormValue>): Promise<T> {
+	return send<T>(page, 'POST', path, { multipart: form });
+}
 
-	if (result.status < 200 || result.status > 299) {
-		throw new Error(`${method} ${path} answered ${result.status}: ${JSON.stringify(result.error)}`);
+async function send<T>(page: Page, method: Method, path: string, content: { data?: unknown; multipart?: Record<string, FormValue> }): Promise<T> {
+	const call = () =>
+		page.request.fetch(`/umbraco/management/api/v1${path}`, { method, headers: { Authorization: TOKEN_PLACEHOLDER }, ...content });
+	let response = await call();
+
+	if (response.status() === 401) {
+		console.log(`${method} ${path} answered 401, so the back office is started to renew the sign-in.`);
+		await refreshSignIn(page);
+		response = await call();
 	}
 
-	return result.data as T;
+	const text = await response.text();
+
+	if (!response.ok()) {
+		throw new Error(`${method} ${path} answered ${response.status()}: ${text}`);
+	}
+
+	return (text ? JSON.parse(text) : undefined) as T;
+}
+
+/** Starts the back office in a page of its own, which trades the context's access token for a new one. */
+async function refreshSignIn(page: Page) {
+	const backOffice = await page.context().newPage();
+
+	try {
+		await backOffice.goto('/umbraco/section/formulate');
+		await expect(backOffice.locator('umb-backoffice-header')).toBeVisible();
+	} finally {
+		await backOffice.close();
+	}
 }

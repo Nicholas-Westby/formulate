@@ -56,7 +56,7 @@ export async function emptyTree(page: Page, treeAlias: string) {
 /**
  * Stores legacy data values at the top of the Data Values tree, as an older Formulate left them: the API
  * creates none, so the site's file of new List data values is copied with the Legacy kind and a new ID.
- * @param page A page showing the back office.
+ * @param page A page of the signed-in browser context.
  * @param name The name of the legacy data values.
  * @returns Their ID.
  */

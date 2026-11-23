@@ -9,7 +9,6 @@ import {
 	fieldKind,
 	findKinds,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 } from '../fixtures/site-forms.ts';
@@ -41,7 +40,6 @@ test.use({ actionTimeout: 15_000 });
 test('a custom field renderer built on a built-in one renders, validates and is stored, from modules that load once', async ({ page, context, seededPage }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const required = await createKindItem(page, 'validation', {
 		name: 'Custom renderer required',
@@ -124,7 +122,6 @@ test('a custom field renderer built on a built-in one renders, validates and is 
 		}
 
 		// Store Data kept the value.
-		await openBackOffice(page);
 		await expect.poll(async () => (await readSubmissions(page, formId)).length).toBe(1);
 		const [submission] = await readSubmissions(page, formId);
 		expect(submission!.values).toEqual(expect.arrayContaining([expect.objectContaining({ fieldName: 'Phone', value: '+1 555 0100' })]));

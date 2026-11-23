@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Locator, Page } from '@playwright/test';
 import { KINDS, createKindItem } from '../fixtures/formulate-api.ts';
-import { callManagementApi } from '../fixtures/management-api.ts';
+import { callManagementApi, sendFormToManagementApi } from '../fixtures/management-api.ts';
 import { SEEDED_PAGE_ID, expect, test } from '../fixtures/seeded-page.ts';
 import {
 	cleanUp,
@@ -10,7 +10,6 @@ import {
 	fieldKind,
 	findKinds,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 	type FormField,
@@ -86,32 +85,11 @@ async function selectLine(text: Locator, words: string) {
 /** Uploads a blue PNG, logo.png, and makes an image of it in the media library; returns the media's ID. */
 async function createImage(page: Page, name: string) {
 	const temporaryFileId = randomUUID();
-	// The file is sent as a form, as the Management API takes it, through the back office's own HTTP client, with no
-	// Content-Type of the client's own, so the browser gives the form's.
-	const status = await page.evaluate(
-		async ({ temporaryFileId, png }) => {
-			const file = new File([Uint8Array.from(atob(png), (character) => character.charCodeAt(0))], 'logo.png', { type: 'image/png' });
-			const body = new FormData();
-			body.append('Id', temporaryFileId);
-			body.append('File', file);
-			// A variable, so TypeScript does not look for the module: the page's import map resolves it.
-			const httpClientModule = '@umbraco-cms/backoffice/http-client';
-			const { umbHttpClient } = await import(httpClientModule);
-			const { response } = await umbHttpClient.request({
-				method: 'POST',
-				url: '/umbraco/management/api/v1/temporary-file',
-				body,
-				bodySerializer: null,
-				headers: { 'Content-Type': null },
-				security: [{ scheme: 'bearer', type: 'http' }],
-				throwOnError: false,
-			});
-
-			return response?.status ?? 0;
-		},
-		{ temporaryFileId, png: BLUE_PNG },
-	);
-	expect(status, 'the image is uploaded').toBe(201);
+	// The file is sent as a form, as the Management API takes it.
+	await sendFormToManagementApi(page, '/temporary-file', {
+		Id: temporaryFileId,
+		File: { name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from(BLUE_PNG, 'base64') },
+	});
 	const id = randomUUID();
 	await callManagementApi(page, 'POST', '/media', {
 		id,
@@ -201,7 +179,6 @@ test('a form renders with the theme, validates in the browser, and its submissio
 		expect(problems, 'no console errors').toEqual([]);
 
 		// Store Data kept one row, with the values, and the URL of the page it was sent from.
-		await openBackOffice(page);
 		await expect.poll(async () => (await readSubmissions(page, formId)).length).toBe(1);
 		const [submission] = await readSubmissions(page, formId);
 		expect(submission!.values).toEqual(
@@ -289,7 +266,6 @@ test('a multi-step form moves between its steps and is stored when it is sent', 
 		});
 		expect(problems, 'no console errors').toEqual([]);
 
-		await openBackOffice(page);
 		await expect.poll(async () => (await readSubmissions(page, formId)).length).toBe(1);
 		const [submission] = await readSubmissions(page, formId);
 		expect(submission!.values).toEqual(
@@ -308,7 +284,6 @@ test('a multi-step form moves between its steps and is stored when it is sent', 
 test("a Rich Text field's text edited in its dialog is stored as the editor writes it, and shows on the page", async ({ page, context, seededPage }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const intro = formField(fieldKind(kinds, 'Rich Text'), 'Intro', 'intro', { configuration: { text: '<p>Welcome to our form.</p>' } });
 	const { formId, layoutId } = await createStoredForm(page, kinds, 'Frontend rich text form', [intro], undefined);
@@ -336,7 +311,6 @@ test("a Rich Text field's text edited in its dialog is stored as the editor writ
 test("a link to a content page, picked in a Rich Text field's editor, takes visitors to that page", async ({ page, context, seededPage }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const intro = formField(fieldKind(kinds, 'Rich Text'), 'Intro', 'intro', {
 		configuration: { text: '<p>Welcome to our form.</p><p>Contact us</p>' },
@@ -380,7 +354,6 @@ test("a link to a content page, picked in a Rich Text field's editor, takes visi
 test("an image picked from the media library in a Rich Text field's editor shows on the page", async ({ page, context, seededPage }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const mediaId = await createImage(page, 'Frontend logo');
 	const intro = formField(fieldKind(kinds, 'Rich Text'), 'Intro', 'intro', {

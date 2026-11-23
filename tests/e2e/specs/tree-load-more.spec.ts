@@ -15,8 +15,6 @@ interface CreateOption {
 
 test('Load more shows every form at the Forms root', async ({ page }) => {
 	test.setTimeout(120_000);
-	await page.goto('/umbraco/section/formulate');
-	await expect(page.locator('umb-backoffice-header')).toBeVisible();
 
 	const pageSize = treePageSize(await getUmbracoVersion(page));
 	const options = await callManagementApi<Array<CreateOption>>(page, 'GET', '/formulate/tree/forms/create-options');
@@ -39,8 +37,7 @@ test('Load more shows every form at the Forms root', async ({ page }) => {
 	}
 
 	try {
-		// Load the section again, so the Forms root learns that it now has items.
-		await page.reload();
+		await page.goto('/umbraco/section/formulate');
 		const root = page.locator('umb-section-sidebar').locator('uui-menu-item[label="Forms"]');
 		const formItems = root.locator('uui-menu-item');
 		const loadMore = root.locator('umb-tree-load-more-button');

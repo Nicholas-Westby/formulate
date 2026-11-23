@@ -1,6 +1,6 @@
 import { KINDS, createKindItem } from '../fixtures/formulate-api.ts';
 import { expect, test } from '../fixtures/seeded-page.ts';
-import { cleanUp, createForm, createPage, fieldKind, findKinds, formField, openBackOffice, waitForPage, watchPage } from '../fixtures/site-forms.ts';
+import { cleanUp, createForm, createPage, fieldKind, findKinds, formField, waitForPage, watchPage } from '../fixtures/site-forms.ts';
 
 /** The Store Data handler's kind. */
 const STORE_DATA_KIND_ID = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
@@ -20,7 +20,6 @@ test("the placeholders in a validation's message are replaced with the field's v
 }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const required = await createKindItem(page, 'validation', {
 		name: 'Messages required',

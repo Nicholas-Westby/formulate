@@ -8,7 +8,6 @@ import {
 	findKinds,
 	formEvents,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 } from '../fixtures/site-forms.ts';
@@ -43,7 +42,6 @@ test("Send Data sends a page's submission to the echo in each transmission forma
 	const run = `/dev/echo/${randomUUID()}/`;
 	const echoUrl = (name: string) => `${plainOrigin}${run}${name}?source=e2e`;
 
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const name = formField(fieldKind(kinds, 'Text'), 'Full name', 'fullName');
 	const email = formField(fieldKind(kinds, 'Text'), 'Email', 'email');

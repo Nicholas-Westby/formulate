@@ -177,7 +177,6 @@ export async function cleanUp(
 	page: Page,
 	items: { documentIds: string[]; formIds: string[]; validationIds?: string[]; mediaIds?: string[] },
 ) {
-	await openBackOffice(page);
 	for (const id of items.documentIds) {
 		await callManagementApi(page, 'PUT', `/document/${id}/move-to-recycle-bin`).catch(() => undefined);
 	}
@@ -237,12 +236,6 @@ export async function waitForPage(site: Page, path: string) {
 	await expect
 		.poll(async () => (await site.request.get(path)).text(), { message: `${path} is published` })
 		.toContain('formulate-plain-js-forms');
-}
-
-/** Opens the back office, so the Management API can be called from the page. */
-export async function openBackOffice(page: Page) {
-	await page.goto('/umbraco/section/formulate');
-	await expect(page.locator('umb-backoffice-header')).toBeVisible();
 }
 
 /** The form's events so far, by name (see watchPage). */

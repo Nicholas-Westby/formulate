@@ -14,7 +14,6 @@ import {
 	fieldKind,
 	findKinds,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 } from '../fixtures/site-forms.ts';
@@ -145,14 +144,12 @@ function storedConfiguration(field: FileField) {
 test.use({ actionTimeout: 15_000 });
 
 test.afterEach(async ({ page }) => {
-	await openBackOffice(page);
 	await emptyTree(page, 'forms');
 	await emptyTree(page, 'data-values');
 });
 
 test('an Extended Radio Button List and a reCAPTCHA field are added in the designer, set up, and kept as set', async ({ page }) => {
 	test.setTimeout(240_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const extendedList = fieldKind(kinds, 'Extended Radio Button List');
 	const recaptcha = fieldKind(kinds, 'reCAPTCHA');
@@ -223,7 +220,6 @@ test('an Extended Radio Button List set up in the designer shows its choices, th
 }) => {
 	void seededPage;
 	test.setTimeout(240_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	await createKindItem(page, 'data-values', { name: 'Sizes', kindId: KINDS.pairList, configuration: { items: SIZES } });
 	// A new field, with what its kind gives a new field: no data values and no orientation.

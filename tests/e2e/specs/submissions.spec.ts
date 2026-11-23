@@ -9,7 +9,6 @@ import {
 	fieldKind,
 	findKinds,
 	formField,
-	openBackOffice,
 	waitForPage,
 	watchPage,
 } from '../fixtures/site-forms.ts';
@@ -101,7 +100,6 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 	void seededPage;
 	test.setTimeout(180_000);
 	const { origin } = siteAddresses(process.env.FORMULATE_E2E_PORT);
-	await openBackOffice(page);
 
 	// A form that is not saved yet has no submissions, so it has no Submissions view.
 	await page.goto(`/umbraco/section/formulate/workspace/formulate-form/create/parent/formulate-forms-root/null/${BASIC_LAYOUT_FORM_KIND_ID}`);
@@ -235,7 +233,6 @@ test('the Submissions view lists what visitors sent, newest first, opens each wi
 		expect(await cellsOf(table)).toEqual([['', adaDate, pageText, 'Ada Lovelace', 'ada@example.com', 'notes.txt', '']]);
 	} finally {
 		await site.close();
-		await openBackOffice(page);
 		await deleteSubmissions(page, formId).catch(() => undefined);
 		await cleanUp(page, { documentIds: pageId ? [pageId] : [], formIds: [formId] });
 	}
@@ -293,7 +290,6 @@ test("at 1280 and 1024 pixels each row's actions stay on screen, however long it
 }) => {
 	void seededPage;
 	test.setTimeout(180_000);
-	await openBackOffice(page);
 	const kinds = await findKinds(page);
 	const { formId, layoutId } = await createForm(page, kinds, {
 		name: 'Long submissions test form',
@@ -369,7 +365,6 @@ test("at 1280 and 1024 pixels each row's actions stay on screen, however long it
 		await expect(rows).toHaveCount(LONG_VISITORS.length);
 	} finally {
 		await site.close();
-		await openBackOffice(page);
 		await deleteSubmissions(page, formId).catch(() => undefined);
 		await cleanUp(page, { documentIds: pageId ? [pageId] : [], formIds: [formId] });
 	}
