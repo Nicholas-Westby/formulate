@@ -14,6 +14,7 @@ import {
 } from '../api/index.js';
 import { FORMULATE_DEFINITIONS_CONTEXT } from '../core/definitions.context-token.js';
 import { isNotFoundError } from '../core/item-gone.js';
+import { isSameKind } from '../core/kind-id.js';
 import { FORMULATE_FORM_WORKSPACE_CONTEXT } from '../forms/workspace/form-workspace.context-token.js';
 import type { FormulateFormFieldModel } from '../forms/types.js';
 import { FORMULATE_SUBMISSION_MODAL } from './submission-modal.token.js';
@@ -24,6 +25,9 @@ import {
 	type FormulateSubmissionField,
 	type FormulateSubmissionRow,
 } from './submission-rows.js';
+
+/** The kind of the Store Data handler, which keeps the submissions (StoreDataFormHandlerDefinition.Constants.KindId). */
+const STORE_DATA_KIND_ID = '238ea920-71f4-4d8c-9cc4-33d7181c9c46';
 
 /** How many submissions a page shows: as many as Umbraco's collections show (UmbDefaultCollectionContext). */
 const PAGE_SIZE = 50;
@@ -45,6 +49,10 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	/** The form's fields, as the workspace has them, so the columns have the fields' current names. */
 	@state()
 	private _fields: ReadonlyArray<FormulateFormFieldModel> = [];
+
+	/** Whether the form keeps what visitors send: whether it has an enabled Store Data handler. */
+	@state()
+	private _keepsSubmissions = false;
 
 	/** The kinds of field; undefined until they have been read. */
 	@state()
@@ -104,6 +112,14 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 
 		this.consumeContext(FORMULATE_FORM_WORKSPACE_CONTEXT, (workspace) => {
 			this.observe(workspace?.fields, (fields) => (this._fields = fields ?? []), '_formulateObserveFields');
+			this.observe(
+				workspace?.handlers,
+				(handlers) =>
+					(this._keepsSubmissions = (handlers ?? []).some(
+						(handler) => handler.enabled && isSameKind(handler.kindId, STORE_DATA_KIND_ID),
+					)),
+				'_formulateObserveHandlers',
+			);
 			this.observe(workspace?.unique, (unique) => this.#showForm(unique ?? undefined), '_formulateObserveUnique');
 		});
 
@@ -324,10 +340,12 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 			return html`<umb-view-loader></umb-view-loader>`;
 		}
 
+		// A form with no Store Data handler keeps nothing, which is the usual reason it has no submissions.
 		if (!this._submissions.length) {
 			return html`
 				<div id="empty" class="uui-text">
 					<h4>${this.localize.term('formulate_noSubmissions')}</h4>
+					${this._keepsSubmissions ? nothing : html`<p>${this.localize.term('formulate_noStoreDataHandler')}</p>`}
 				</div>
 			`;
 		}

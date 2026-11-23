@@ -2,13 +2,14 @@ import '@umbraco-cms/backoffice/components';
 import { UmbModalManagerContext, type UmbModalContext } from '@umbraco-cms/backoffice/modal';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { SubmissionResponseModel } from '../api/index.js';
-import { pathAndQuery } from '../test/fake-api.js';
-import { createFormWorkspaceHost, FORM_ID, registerFormRepositories } from '../test/forms.js';
+import { jsonResponse, pathAndQuery } from '../test/fake-api.js';
+import { createFormWorkspaceHost, FORM_ID, registerFormRepositories, STORE_DATA } from '../test/forms.js';
 import { destroyKept, keep } from '../test/kind-items.js';
 import { loadFormulateEnglish } from '../test/localization.js';
 import {
 	ADA_ID,
 	adaSubmission,
+	applicationForm,
 	CV_ID,
 	EMAIL_ID,
 	EXPORT_BYTES,
@@ -115,6 +116,32 @@ function submissionRequests(requests: Array<Request>) {
 }
 
 const LIST = `/submission?formId=${FORM_ID}`;
+
+/** The text of each part of what the view says when there are no submissions. */
+function emptyState(shadow: ShadowRoot) {
+	return [...shadow.querySelectorAll('#empty > *')].map((part) => part.textContent?.trim());
+}
+
+/** An API answer that gives the application form a Store Data handler, enabled or not. */
+function formWithStoreData(enabled: boolean) {
+	return (_request: Request, path: string) =>
+		path === `/form/${FORM_ID}`
+			? jsonResponse({
+					...applicationForm(),
+					// The kind's ID as the server writes it.
+					handlers: [
+						{
+							id: '5d6e7f80-9a1b-4c2d-8e3f-4a5b6c7d8e9f',
+							kindId: STORE_DATA.replaceAll('-', '').toUpperCase(),
+							name: 'Store',
+							alias: 'store',
+							enabled,
+							configuration: null,
+						},
+					],
+				})
+			: undefined;
+}
 
 describe('Formulate Submissions view', () => {
 	it("lists the form's submissions as the API gives them, newest first, with their dates, pages, values and files", async () => {
@@ -249,14 +276,30 @@ describe('Formulate Submissions view', () => {
 		expect(opened.map(({ alias }) => alias)).toStrictEqual(['Umb.Modal.Confirm']);
 	});
 
-	it('says, in one sentence, that a form with no submissions has none, and that Store Data keeps them', async () => {
+	it('says that a form with no submissions has none, and how to keep them when it has no Store Data handler', async () => {
+		// The application form has no handlers.
 		const { shadow } = await openView([]);
 
 		expect(shadow.querySelector('umb-table')).toBeNull();
-		expect(shadow.querySelector('#empty')?.textContent?.trim()).toBe(
-			'There are no submissions yet: a Store Data handler on this form keeps each one that visitors send.',
-		);
+		expect(emptyState(shadow)).toStrictEqual([
+			'There are no submissions yet.',
+			'Only a form with an enabled Store Data handler keeps what visitors send. Add one, or enable it, in the Handlers view.',
+		]);
 		expect(shadow.querySelector('uui-button[label="Export to CSV"]')).toBeNull();
+	});
+
+	it('says how to keep submissions when the Store Data handler of the form is not enabled', async () => {
+		const { shadow } = await openView([], { answer: formWithStoreData(false) });
+
+		expect(emptyState(shadow)[1]).toBe(
+			'Only a form with an enabled Store Data handler keeps what visitors send. Add one, or enable it, in the Handlers view.',
+		);
+	});
+
+	it('says only that there are no submissions yet when the form keeps them', async () => {
+		const { shadow } = await openView([], { answer: formWithStoreData(true) });
+
+		expect(emptyState(shadow)).toStrictEqual(['There are no submissions yet.']);
 	});
 
 	it('says so when the submissions cannot be read, offers no export, and reads them again with Retry', async () => {

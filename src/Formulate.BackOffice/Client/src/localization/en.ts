@@ -227,7 +227,9 @@ export default {
 		storeDataDescription:
 			'Stores each submission of this form in the Umbraco database: the values of its fields, the page it was sent from and the files sent with it. There is nothing to set here.',
 		submissions: 'Submissions',
-		noSubmissions: 'There are no submissions yet: a Store Data handler on this form keeps each one that visitors send.',
+		noSubmissions: 'There are no submissions yet.',
+		noStoreDataHandler:
+			'Only a form with an enabled Store Data handler keeps what visitors send. Add one, or enable it, in the Handlers view.',
 		submissionsNotRead: 'The submissions could not be read.',
 		submissionCreated: 'Created',
 		submissionPage: 'Page',
