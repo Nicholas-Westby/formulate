@@ -35,6 +35,18 @@ function register(manifest: Omit<ManifestFormulateKindEditor, 'element' | 'name'
 	REGISTERED.push(manifest.alias);
 }
 
+/** Registers a kind editor whose element module exports no element, as a broken build of a package gives. */
+function registerBroken(alias: string, editorAlias: string) {
+	umbExtensionsRegistry.register({
+		type: 'formulateValidationEditor',
+		alias,
+		name: alias,
+		element: () => Promise.resolve({}),
+		meta: { editorAlias },
+	} as ManifestFormulateKindEditor);
+	REGISTERED.push(alias);
+}
+
 /** Shows a slot in a back office host, and records the values it reports as changed. */
 async function renderSlot(props: {
 	type: FormulateKindEditorSlotElement['type'];
@@ -256,6 +268,49 @@ describe('Formulate kind editor slot', () => {
 		await expect.poll(() => notAvailable(), { timeout: 3000 }).not.toBeNull();
 		expect(editor()).toBeNull();
 		expect(warn.mock.calls.at(-1)?.[1]).toStrictEqual(['Test.Editor.NotHere: its conditions do not allow it here.']);
+	});
+
+	it('logs that an editor is not available once for its alias, however many slots show it', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+		vi.spyOn(console, 'error').mockImplementation(() => undefined);
+		registerBroken('Test.Editor.BrokenTwice', 'test-broken-twice');
+
+		const first = await renderSlot({ type: 'formulateValidationEditor', editorAlias: 'test-broken-twice', value: {} });
+		await expect.poll(() => first.notAvailable(), { timeout: 3000 }).not.toBeNull();
+		// Another field of the kind, or the same dialog opened again.
+		const second = await renderSlot({ type: 'formulateValidationEditor', editorAlias: 'test-broken-twice', value: {} });
+		await expect.poll(() => second.notAvailable(), { timeout: 3000 }).not.toBeNull();
+
+		expect(warn.mock.calls.filter(([message]) => String(message).includes('"test-broken-twice"'))).toHaveLength(1);
+	});
+
+	it('clears its timer when it is taken out of the page, and checks again when it is shown again', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+		vi.spyOn(console, 'error').mockImplementation(() => undefined);
+		const timers = vi.spyOn(globalThis, 'setTimeout');
+		const cleared = vi.spyOn(globalThis, 'clearTimeout');
+		registerBroken('Test.Editor.BrokenGone', 'test-broken-gone');
+		const { slot, notAvailable } = await renderSlot({ type: 'formulateValidationEditor', editorAlias: 'test-broken-gone', value: {} });
+		const host = slot.parentElement!;
+		// The slot's own warnings, not core's about the broken manifest.
+		const warned = () => warn.mock.calls.filter(([message]) => String(message).startsWith('Formulate:'));
+
+		// The slot waits for the editor to be shown, then says it is not available.
+		const timerIndex = await vi.waitFor(() => {
+			const index = timers.mock.calls.findIndex(([, delay]) => delay === 500);
+			expect(index).toBeGreaterThanOrEqual(0);
+			return index;
+		});
+		slot.remove();
+		expect(cleared).toHaveBeenCalledWith(timers.mock.results[timerIndex]!.value);
+
+		await new Promise((resolve) => setTimeout(resolve, 700));
+		expect(warned()).toStrictEqual([]);
+		expect(notAvailable()).toBeNull();
+
+		host.append(slot);
+		await expect.poll(() => notAvailable(), { timeout: 3000 }).not.toBeNull();
+		expect(warned()).toHaveLength(1);
 	});
 
 	it('changes to the matching editor when the editor alias changes', async () => {

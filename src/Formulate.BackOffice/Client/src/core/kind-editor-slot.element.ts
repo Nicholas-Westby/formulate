@@ -16,6 +16,9 @@ const SHOW_EDITOR_TIMEOUT_MS = 500;
 /** The alias of the slot's observer of the editors that have the kind's editor alias. */
 const OBSERVE_MATCHING_EDITORS = 'formulateObserveMatchingEditors';
 
+/** The editors said to be not available in the console, by their type and editor alias, so each is said once. */
+const WARNED_UNAVAILABLE = new Set<string>();
+
 /**
  * Why an editor that has the kind's editor alias is not shown, for the console.
  * @param manifest The editor's manifest.
@@ -97,6 +100,9 @@ export class FormulateKindEditorSlotElement extends UmbLitElement {
 
 	/** The search whose editor is being checked for, so it is checked once. */
 	#checking?: symbol;
+
+	/** The timer that gives the editor time to be shown, while it runs. */
+	#checkTimer?: ReturnType<typeof setTimeout>;
 
 	protected override willUpdate(changed: PropertyValues<this>) {
 		super.willUpdate(changed);
@@ -189,7 +195,18 @@ export class FormulateKindEditorSlotElement extends UmbLitElement {
 
 		this.#checking = search;
 		const reasons = await Promise.all((this.#matching ?? []).map(whyNotShown));
-		await new Promise((resolve) => setTimeout(resolve, SHOW_EDITOR_TIMEOUT_MS));
+
+		// Taken out of the page meanwhile: it checks again when it is shown again.
+		if (this.#checking !== search) {
+			return;
+		}
+
+		clearTimeout(this.#checkTimer);
+		this.#checkTimer = setTimeout(() => this.#sayUnavailable(search, reasons), SHOW_EDITOR_TIMEOUT_MS);
+	}
+
+	#sayUnavailable(search: symbol, reasons: Array<string>) {
+		this.#checkTimer = undefined;
 
 		if (this.#checking === search) {
 			this.#checking = undefined;
@@ -200,10 +217,24 @@ export class FormulateKindEditorSlotElement extends UmbLitElement {
 		}
 
 		this._unavailable = true;
-		console.warn(
-			`Formulate: the ${this.type} with the editor alias "${this.editorAlias}" is not available, so the kind's settings are not shown. They are kept as they are.`,
-			reasons,
-		);
+		const warned = `${this.type} ${this.editorAlias}`;
+
+		// Each field or dialog of the kind shows it; the console says it once.
+		if (!WARNED_UNAVAILABLE.has(warned)) {
+			WARNED_UNAVAILABLE.add(warned);
+			console.warn(
+				`Formulate: the ${this.type} with the editor alias "${this.editorAlias}" is not available, so the kind's settings are not shown. They are kept as they are.`,
+				reasons,
+			);
+		}
+	}
+
+	override disconnectedCallback() {
+		super.disconnectedCallback();
+		clearTimeout(this.#checkTimer);
+		this.#checkTimer = undefined;
+		// Shown again, it observes the editors again, and checks again.
+		this.#checking = undefined;
 	}
 
 	#properties(): Record<string, unknown> {
