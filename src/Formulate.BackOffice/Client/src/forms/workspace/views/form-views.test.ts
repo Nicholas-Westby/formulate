@@ -295,7 +295,7 @@ describe('Formulate form Fields view', () => {
 		expect(context.getFields().map((field) => field.id)).toStrictEqual([OTHER_FIELD_ID, FIELD_ID]);
 		expect(rowsOf(shadow).map((row) => row.name)).toStrictEqual(['State', 'Name']);
 		expect(shadow.activeElement).toBe(shadow.querySelector(`.row[data-key="${FIELD_ID}"] .handle`));
-		expect(shadow.querySelector('#announcement')?.textContent).toBe('formulate_itemMoved');
+		await expect.poll(() => shadow.querySelector('#announcement')?.textContent).toBe('formulate_itemMoved');
 	});
 
 	it('shows only Add for a form without fields, with the list there for the sorter to find', async () => {

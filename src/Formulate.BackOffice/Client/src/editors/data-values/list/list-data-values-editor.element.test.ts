@@ -103,9 +103,10 @@ describe('Formulate List data values editor', () => {
 		press(handle(2), 'Enter');
 		await element.updateComplete;
 		expect(handle(2).getAttribute('aria-pressed')).toBe('true');
-		expect(announcement()).toBe(
-			'Picked up item 3 of 3. Press the up and down arrow keys to move it, Enter to put it down, or Escape to put it back.',
-		);
+		// The live region says each move on the next frame.
+		await expect
+			.poll(() => announcement())
+			.toBe('Picked up item 3 of 3. Press the up and down arrow keys to move it, Enter to put it down, or Escape to put it back.');
 		press(handle(2), 'ArrowUp');
 		await expect.poll(() => announcement()).toBe('Moved to item 2 of 3.');
 		press(handle(1), 'ArrowUp');
@@ -125,7 +126,7 @@ describe('Formulate List data values editor', () => {
 		press(handle(1), ' ');
 		await element.updateComplete;
 		expect(values()).toStrictEqual(['Green', 'Red', 'Blue']);
-		expect(announcement()).toBe('Put down at item 2 of 3.');
+		await expect.poll(() => announcement()).toBe('Put down at item 2 of 3.');
 		expect(handle(1).getAttribute('aria-pressed')).toBe('false');
 
 		// Escape with nothing picked up is left to the dialog.
@@ -138,6 +139,28 @@ describe('Formulate List data values editor', () => {
 			{ items: [{ value: 'Red' }, { value: 'Green' }, { value: 'Blue' }] },
 			{ items: [{ value: 'Green' }, { value: 'Red' }, { value: 'Blue' }] },
 		]);
+	});
+
+	it('says the same move again when it is made twice in a row, emptying the live region first', async () => {
+		loadFormulateEnglish();
+		const { element, shadow, rows, values } = await render(COLORS);
+		const region = shadow.querySelector('#announcement[role="status"]')!;
+		const said: Array<string> = [];
+		new MutationObserver(() => said.push(region.textContent?.trim() ?? '')).observe(region, {
+			characterData: true,
+			childList: true,
+			subtree: true,
+		});
+
+		// Red moves down to item 2, then Green, now first, moves down to item 2 too: the same words twice.
+		press(rows()[0].querySelector('.handle')!, 'ArrowDown');
+		await expect.poll(() => region.textContent?.trim()).toBe('Moved to item 2 of 3.');
+		press(rows()[0].querySelector('.handle')!, 'ArrowDown');
+		await expect.poll(() => said.filter((text) => text !== '')).toStrictEqual(['Moved to item 2 of 3.', 'Moved to item 2 of 3.']);
+		await element.updateComplete;
+
+		expect(values()).toStrictEqual(['Red', 'Green', 'Blue']);
+		expect(said.at(-2)).toBe('');
 	});
 
 	it('picks an item up when its handle is clicked, as screen readers press buttons', async () => {

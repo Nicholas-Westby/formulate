@@ -1,6 +1,7 @@
 import { UmbControllerBase } from '@umbraco-cms/backoffice/class-api';
 import { css, html, type TemplateResult } from '@umbraco-cms/backoffice/external/lit';
 import type { UmbLitElement } from '@umbraco-cms/backoffice/lit-element';
+import { FormulateLiveRegion } from '../live-region.js';
 
 /** The announcements of the moves, and the ones that say where a row is instead of its place in the list. */
 const PLACE_TERMS = {
@@ -51,13 +52,14 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 	/** Whether a row is being moved, which takes its handle out of the page for a moment. */
 	#moving = false;
 
-	/** What the last keyboard move did, for screen readers. */
-	#announcement = '';
+	/** What the last keyboard move did, for screen readers: said again when the same move is made twice. */
+	#announcement: FormulateLiveRegion;
 
 	constructor(host: UmbLitElement, args: FormulateKeyboardSorterArgs) {
 		super(host);
 		this.#host = host;
 		this.#args = args;
+		this.#announcement = new FormulateLiveRegion(host);
 	}
 
 	/** The row picked up with the keyboard, if any. */
@@ -109,7 +111,7 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 	/** The hint the handles point to, and the announcements of the moves, for screen readers. */
 	renderStatus(): TemplateResult {
 		return html`<span id="move-hint" hidden>${this.#host.localize.term('formulate_moveHint')}</span>
-			<div id="announcement" role="status">${this.#announcement}</div>`;
+			<div id="announcement" role="status">${this.#announcement.text}</div>`;
 	}
 
 	#indexOf(key: string) {
@@ -183,10 +185,12 @@ export class FormulateKeyboardSorter extends UmbControllerBase {
 	#announce(term: keyof typeof PLACE_TERMS, key: string, index: number) {
 		const place = this.#args.describePlace?.(key);
 
-		this.#announcement =
+		this.#announcement.say(
 			place === undefined
 				? this.#host.localize.term(term, index + 1, this.#args.getKeys().length)
-				: this.#host.localize.term(PLACE_TERMS[term], place);
+				: this.#host.localize.term(PLACE_TERMS[term], place),
+		);
+		// The list shows the row that is picked up or put down.
 		this.#host.requestUpdate();
 	}
 

@@ -226,7 +226,7 @@ describe('Formulate Basic layout designer, rows', () => {
 
 		expect(changes).toStrictEqual([{ autoPopulate: false, rows: [row([12, EMAIL]), row([12, NAME])] }]);
 		expect(rowsElement()!.shadowRoot!.activeElement).toBe(first);
-		expect(rowsElement()!.shadowRoot!.querySelector('#announcement')?.textContent?.trim()).toBe('Moved to item 2 of 2.');
+		await expect.poll(() => rowsElement()!.shadowRoot!.querySelector('#announcement')?.textContent?.trim()).toBe('Moved to item 2 of 2.');
 	});
 });
 
@@ -267,12 +267,13 @@ describe('Formulate Basic layout designer, fields', () => {
 		handle.focus();
 		press(handle, 'Enter');
 		await settle(editor);
-		expect(announcement()).toContain('Picked up, in the unused fields.');
+		// The live region says each move on the next frame.
+		await expect.poll(() => announcement()).toContain('Picked up, in the unused fields.');
 
 		press(handle, 'ArrowUp');
 		await settle(editor);
 		expect(shownRows()).toStrictEqual([[[6, 'Name'], [6]], [[12, 'Email', 'State']]]);
-		expect(announcement()).toBe('Moved to row 2, cell 1, place 2 of 2.');
+		await expect.poll(() => announcement()).toBe('Moved to row 2, cell 1, place 2 of 2.');
 
 		press(fieldHandle(keyOf(STATE))!, 'ArrowUp');
 		press(fieldHandle(keyOf(STATE))!, 'ArrowUp');
@@ -297,7 +298,8 @@ describe('Formulate Basic layout designer, fields', () => {
 
 		press(fieldHandle(keyOf(NAME))!, 'ArrowDown');
 		await settle(editor);
-		expect([unused(), announcement()]).toStrictEqual([['Name', 'Email', 'State', 'Intro', 'Submit'], 'Moved to the unused fields.']);
+		expect(unused()).toStrictEqual(['Name', 'Email', 'State', 'Intro', 'Submit']);
+		await expect.poll(() => announcement()).toBe('Moved to the unused fields.');
 
 		press(fieldHandle(keyOf(NAME))!, 'ArrowDown');
 		await settle(editor);
@@ -320,7 +322,7 @@ describe('Formulate Basic layout designer, fields', () => {
 		await settle(editor);
 
 		expect(shownRows()).toStrictEqual([[[6, 'Name'], [6]], [[12, 'Email']]]);
-		expect(announcement()).toBe('Put back in row 1, cell 1, place 1 of 1.');
+		await expect.poll(() => announcement()).toBe('Put back in row 1, cell 1, place 1 of 1.');
 		expect(changes.at(-1)).toStrictEqual({ autoPopulate: false, rows });
 	});
 
