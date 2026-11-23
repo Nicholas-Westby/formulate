@@ -62,15 +62,32 @@ namespace Formulate.Core.Tests.SubmissionTests
             var page = Create().Resolve(1234);
 
             Assert.Null(page.Url);
-            Assert.Equal("Contact", page.Name);
+            Assert.Null(page.Name);
         }
 
         [Fact]
-        public void Unknown_page_has_no_url()
+        public void Unpublished_or_trashed_page_has_neither_url_nor_name()
+        {
+            PageExists(null, "Secret draft");
+
+            var page = Create().Resolve(1234);
+
+            Assert.Null(page.Url);
+            Assert.Null(page.Name);
+        }
+
+        [Fact]
+        public void Unknown_page_has_neither_url_nor_name()
         {
             _idKeyMap.Setup(x => x.GetKeyForId(5, UmbracoObjectTypes.Document)).Returns(Attempt<Guid>.Fail());
+            var entity = new Mock<IEntitySlim>();
+            entity.SetupGet(x => x.Name).Returns("Hidden");
+            _entities.Setup(x => x.Get(5, UmbracoObjectTypes.Document)).Returns(entity.Object);
 
-            Assert.Null(Create().Resolve(5).Url);
+            var page = Create().Resolve(5);
+
+            Assert.Null(page.Url);
+            Assert.Null(page.Name);
         }
 
         [Fact]

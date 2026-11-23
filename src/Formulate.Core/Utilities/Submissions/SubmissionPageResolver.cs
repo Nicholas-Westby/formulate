@@ -37,7 +37,11 @@ namespace Formulate.Core.Utilities.Submissions
                 return SubmissionPage.None;
             }
 
-            return new SubmissionPage(GetUrl(pageId.Value), GetName(pageId.Value));
+            // The ID comes from the visitor. Only a page that is published and routable is named, so
+            // unpublished and trashed pages never reach a submission or an email.
+            var url = GetUrl(pageId.Value);
+
+            return url is null ? SubmissionPage.None : new SubmissionPage(url, GetName(pageId.Value));
         }
 
         private string GetUrl(int pageId)
