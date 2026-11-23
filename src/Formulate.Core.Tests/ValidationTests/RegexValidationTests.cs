@@ -105,7 +105,7 @@
         }
 
         [Fact]
-        public void Catastrophic_regex_times_out_as_pass_and_logs()
+        public void Catastrophic_regex_times_out_as_failure_and_logs()
         {
             var logger = new CapturingLogger();
             var validation = Create("^(a+)+$", "Never shown.", logger: logger);
@@ -115,7 +115,7 @@
             var errors = validation.ValidateStrings(value);
             clock.Stop();
 
-            Assert.Empty(errors);
+            Assert.Equal(new[] { "Never shown." }, errors);
             Assert.InRange(clock.Elapsed, TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(10));
             var entry = Assert.Single(logger.Entries, x => x.Level == LogLevel.Warning);
             Assert.Contains("^(a+)+$", entry.Message);

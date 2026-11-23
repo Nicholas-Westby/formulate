@@ -104,8 +104,11 @@
             catch (RegexMatchTimeoutException)
             {
                 _logger?.LogWarning(
-                    "The regular expression {Pattern} of validation {ValidationId} took longer than {Timeout} to check a value, so the value was accepted.",
+                    "The regular expression {Pattern} of validation {ValidationId} took longer than {Timeout} to check a value, so the value was refused.",
                     Configuration.Regex, Id, MatchTimeout);
+
+                // A value built to be slow must not skip the check.
+                return new[] { Configuration.Message };
             }
 
             return Array.Empty<string>();
