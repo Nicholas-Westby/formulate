@@ -248,13 +248,50 @@ describe('Formulate Submissions view', () => {
 		expect(shadow.querySelector('uui-button[label="Export to CSV"]')).toBeNull();
 	});
 
-	it('says so when the submissions cannot be read', async () => {
-		const { shadow } = await openView([adaSubmission()], {
-			answer: (_request, path) => (path === '/submission' ? problemResponse(500, 'Server error', 'The database is down.') : undefined),
+	it('says so when the submissions cannot be read, offers no export, and reads them again with Retry', async () => {
+		let down = true;
+		const { shadow, requests, view } = await openView([adaSubmission()], {
+			answer: (_request, path) =>
+				down && path === '/submission' ? problemResponse(500, 'Server error', 'The database is down.') : undefined,
 		});
 
 		expect(shadow.querySelector('umb-table')).toBeNull();
-		expect(shadow.querySelector('#failed')?.textContent?.trim()).toBe('The submissions could not be read.');
+		expect(shadow.querySelector('#failed h4')?.textContent?.trim()).toBe('The submissions could not be read.');
+		expect(shadow.querySelector('uui-button[label="Export to CSV"]')).toBeNull();
+
+		down = false;
+		click(shadow.querySelector('#failed uui-button[label="general_retry"]')!);
+		await settle(view);
+
+		expect(shadow.querySelector('#failed')).toBeNull();
+		expect(cellsOf(shadow).map((cells) => cells[2])).toStrictEqual(['Ada Lovelace']);
+		expect(submissionRequests(requests)).toStrictEqual([`GET ${LIST}&skip=0&take=50`, `GET ${LIST}&skip=0&take=50`]);
+	});
+
+	it('keeps the pages, but offers no export, when another page cannot be read', async () => {
+		let down = false;
+		const { shadow, view } = await openView(manySubmissions(120), {
+			answer: (_request, path) =>
+				down && path === '/submission' ? problemResponse(500, 'Server error', 'The database is down.') : undefined,
+		});
+		const pagination = shadow.querySelector('uui-pagination')!;
+
+		down = true;
+		pagination.goToPage(2);
+		await settle(view);
+
+		// Not the first page's rows, and not an export of them.
+		expect(shadow.querySelector('umb-table')).toBeNull();
+		expect(shadow.querySelector('#failed h4')?.textContent?.trim()).toBe('The submissions could not be read.');
+		expect(shadow.querySelector('uui-button[label="Export to CSV"]')).toBeNull();
+		expect(shadow.querySelector('uui-pagination')?.current).toBe(2);
+
+		down = false;
+		shadow.querySelector('uui-pagination')!.goToPage(3);
+		await settle(view);
+
+		expect(rowsOf(shadow)).toHaveLength(20);
+		expect(shadow.querySelector('uui-button[label="Export to CSV"]')).not.toBeNull();
 	});
 
 	it('asks before deleting a submission, in the danger colour, then shows the page again without it', async () => {

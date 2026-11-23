@@ -70,6 +70,9 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	@state()
 	private _exportState?: UUIButtonState;
 
+	@state()
+	private _retryState?: UUIButtonState;
+
 	#formId?: string;
 	#pagination = new UmbPaginationManager();
 
@@ -195,6 +198,17 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 		await this.#read();
 	}
 
+	/** Reads the current page again, after it could not be read. */
+	async #retry() {
+		if (this._retryState === 'waiting') {
+			return;
+		}
+
+		this._retryState = 'waiting';
+		await this.#read();
+		this._retryState = undefined;
+	}
+
 	async #export() {
 		if (!this.#formId || this._exportState === 'waiting') {
 			return;
@@ -243,7 +257,7 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	override render() {
 		return html`
 			<umb-body-layout header-transparent>
-				${this._submissions?.length ? this.#renderToolbar() : nothing} ${this.#renderContent()}
+				${this._submissions?.length && !this._failed ? this.#renderToolbar() : nothing} ${this.#renderContent()}
 			</umb-body-layout>
 		`;
 	}
@@ -262,8 +276,20 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 	}
 
 	#renderContent() {
+		// What could not be read is not shown, and not offered for export; the pages stay, to read another.
 		if (this._failed) {
-			return html`<p id="failed">${this.localize.term('formulate_submissionsNotRead')}</p>`;
+			return html`
+				<div id="failed" class="uui-text">
+					<h4>${this.localize.term('formulate_submissionsNotRead')}</h4>
+					<uui-button
+						color="default"
+						look="outline"
+						label=${this.localize.term('general_retry')}
+						.state=${this._retryState}
+						@click=${() => this.#retry()}></uui-button>
+				</div>
+				${this.#renderPagination()}
+			`;
 		}
 
 		if (!this._submissions || !this._kinds) {
@@ -380,14 +406,11 @@ export class FormulateFormSubmissionsWorkspaceViewElement extends UmbLitElement 
 				width: 100%;
 			}
 
-			#empty {
+			#empty,
+			#failed {
 				height: 80%;
 				align-content: center;
 				text-align: center;
-			}
-
-			#failed {
-				margin: 0;
 			}
 
 			uui-button[compact] {
