@@ -1,5 +1,4 @@
 import type { ManifestWorkspaceContextMenuStructureKind } from '@umbraco-cms/backoffice/menu';
-import { UMB_TREE_ALIAS_CONDITION } from '@umbraco-cms/backoffice/tree';
 import { UMB_WORKSPACE_CONDITION_ALIAS } from '@umbraco-cms/backoffice/workspace';
 import {
 	FORMULATE_DATA_VALUES_ENTITY_TYPE,
@@ -22,6 +21,11 @@ import {
 } from '../constants.js';
 import { FORMULATE_DATA_VALUES_TREE, FORMULATE_FORMS_TREE, FORMULATE_VALIDATIONS_TREE } from './trees.js';
 import type { FormulateTreeDefinition } from './types.js';
+
+// Umbraco's tree alias condition (UMB_TREE_ALIAS_CONDITION in @umbraco-cms/backoffice/tree), written out rather
+// than imported: Umbraco 18.0 does not have it, and a missing import stops all of Formulate's back office from
+// loading. Umbraco 18.0 has no tree actions either, so it never checks this condition.
+const TREE_ALIAS_CONDITION = 'Umb.Condition.TreeAlias';
 
 const repositories: Array<UmbExtensionManifest> = [
 	{
@@ -103,7 +107,7 @@ function createTreeAction(tree: FormulateTreeDefinition, name: string): UmbExten
 		alias: `Formulate.TreeAction.Create.${name}`,
 		name: `Formulate ${name} Tree Create Action`,
 		api: () => import('../entity-actions/create/tree-create-action.api.js'),
-		conditions: [{ alias: UMB_TREE_ALIAS_CONDITION, match: tree.alias }],
+		conditions: [{ alias: TREE_ALIAS_CONDITION, match: tree.alias }],
 	};
 }
 
