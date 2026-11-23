@@ -1,5 +1,4 @@
 import { expect, test } from '../fixtures/login.ts';
-import { getUmbracoVersion, rootWorkspaceUrlEnd } from '../fixtures/umbraco-version.ts';
 import { readBuildProperty } from '../support/repo.ts';
 import { screenshotPath } from '../support/screenshots.ts';
 
@@ -45,14 +44,13 @@ test('the Formulate section shows the welcome dashboard and the three trees', as
 
 test('selecting a tree root opens a page with the tree name', async ({ page }) => {
 	await page.goto('/umbraco/section/formulate');
-	const urlEnd = rootWorkspaceUrlEnd(await getUmbracoVersion(page));
 	const sidebar = page.locator('umb-section-sidebar');
 
 	for (const tree of TREES) {
 		const root = sidebar.locator(`uui-menu-item[label="${tree.label}"]`);
 		await root.locator('#label-button').click();
 
-		await expect(page).toHaveURL(new RegExp(`/umbraco/section/formulate/workspace/${tree.rootEntityType}${urlEnd}$`));
+		await expect(page).toHaveURL(new RegExp(`/umbraco/section/formulate/workspace/${tree.rootEntityType}$`));
 		await expect(page.locator('umb-workspace-editor').getByRole('heading', { name: tree.label })).toBeVisible();
 		// The root is the active item of its tree.
 		await expect(root).toHaveAttribute('active', '');
@@ -60,6 +58,6 @@ test('selecting a tree root opens a page with the tree name', async ({ page }) =
 
 	// The back button returns to the root before, with its page.
 	await page.goBack();
-	await expect(page).toHaveURL(new RegExp(`/umbraco/section/formulate/workspace/${TREES[1]!.rootEntityType}${urlEnd}$`));
+	await expect(page).toHaveURL(new RegExp(`/umbraco/section/formulate/workspace/${TREES[1]!.rootEntityType}$`));
 	await expect(page.locator('umb-workspace-editor').getByRole('heading', { name: TREES[1]!.label })).toBeVisible();
 });
