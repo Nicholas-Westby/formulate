@@ -75,7 +75,9 @@ export default defineConfig({
 	// The baseURL is the worker's site's (fixtures/site.ts).
 	use: {
 		ignoreHTTPSErrors: true,
-		trace: 'retain-on-failure',
+		// A failed test keeps a trace, with a snapshot of the page at each step. Recording a filmstrip of screenshots as
+		// well made the whole run about 15% slower, so the trace has none; the test's last screenshot is kept on its own.
+		trace: { mode: 'retain-on-failure', screenshots: false },
 		screenshot: 'only-on-failure',
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
