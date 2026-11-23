@@ -1,15 +1,18 @@
 import { customElement, html } from '@umbraco-cms/backoffice/external/lit';
+import { readSettings } from '../../../core/kind-editor.js';
 import { givesEmailLine } from './email-fields.js';
 import { FormulateEmailHandlerEditorElementBase } from './email-handler-editor-base.js';
 
 /**
  * The editor of the Email handler (SendEmailConfiguration): who sends the email and who gets it, its subject
  * and message, and which of the submitted values are added below the message. Its Fields to include offers
- * the fields the email can write a line for (see givesEmailLine).
+ * the fields the email can write a line for with the settings as they are (see givesEmailLine).
  */
 @customElement('formulate-send-email-handler-editor')
 export class FormulateSendEmailHandlerEditorElement extends FormulateEmailHandlerEditorElementBase {
 	override render() {
+		const includeHiddenFields = readSettings(this.value).includeHiddenFields === true;
+
 		return html`
 			${this.renderEmailSettings()}
 			${this.renderToggle('append-fields', 'appendFields', 'formulate_appendFields', 'formulate_appendFieldsDescription')}
@@ -21,7 +24,7 @@ export class FormulateSendEmailHandlerEditorElement extends FormulateEmailHandle
 				'fieldsToInclude',
 				'formulate_fieldsToInclude',
 				'formulate_fieldsToIncludeDescription',
-				givesEmailLine,
+				(_field, definition) => givesEmailLine(definition, includeHiddenFields),
 			)}
 		`;
 	}

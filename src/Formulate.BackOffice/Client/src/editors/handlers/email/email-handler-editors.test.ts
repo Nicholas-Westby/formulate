@@ -272,16 +272,57 @@ const EVERY_KIND_FIELDS = [
 	validations: [],
 }));
 
+/**
+ * Shows the Send Email editor for a form with a field of each kind, and gives what the dialog of one of its pickers
+ * offers, by the fields' names.
+ */
+async function renderEveryKindForm(value: object) {
+	fakeApi((request) => jsonResponse(new URL(request.url).pathname === `${API}/definition/form-field` ? EMAIL_FIELD_KINDS : []));
+	const host = createTestHost();
+	new FormulateDefinitionsContext(host);
+	// The dialogs the pickers open, as the back office's modal manager holds them.
+	const modals = new UmbModalManagerContext(host);
+	const opened: Array<UmbModalContext> = [];
+	modals.modals.subscribe((stack) => stack.forEach((modal) => opened.includes(modal) || opened.push(modal)));
+	const editor = new FormulateSendEmailHandlerEditorElement();
+	editor.value = value;
+	editor.context = { formFields: EVERY_KIND_FIELDS };
+	host.append(editor);
+	await settle(editor);
+	const namesOffered = async (id: string) => {
+		const picker = editor.shadowRoot!.querySelector(`formulate-form-field-picker#${id}`)!;
+		const before = opened.length;
+		click(picker.shadowRoot!.querySelector('#btn-add')!);
+		await expect.poll(() => opened.length).toBe(before + 1);
+		const dialog = opened.at(-1)!;
+		dialog.reject();
+
+		return (dialog.data as FormulatePickFieldsModalData).fields.map((field) => field.name);
+	};
+
+	return { editor, namesOffered };
+}
+
+/** The ID of the field of EVERY_KIND_FIELDS with this name. */
+function idOf(name: string) {
+	return EVERY_KIND_FIELDS.find((field) => field.name === name)!.id;
+}
+
 describe('Formulate Email handler editor, the fields to include', () => {
 	it('can write a line for a field with a posted value, for an upload, and for a Text Constant, its text', () => {
-		const lines = EVERY_KIND_FIELDS.map((field) => [
-			field.name,
-			givesEmailLine(field, EMAIL_FIELD_KINDS.find((kind) => kind.kindId === field.kindId)),
-		]);
+		const lines = (includeHiddenFields: boolean) =>
+			EVERY_KIND_FIELDS.map((field) => [
+				field.name,
+				givesEmailLine(
+					EMAIL_FIELD_KINDS.find((kind) => kind.kindId === field.kindId),
+					includeHiddenFields,
+				),
+			]);
 
 		// SendEmailContentBuilder.Build: no value is posted for a transitory, hidden or not installed kind
-		// (AttemptSubmitForm.GetInputFieldIds), and the value of a kind that stores nothing is left out.
-		expect(lines).toStrictEqual([
+		// (AttemptSubmitForm.GetInputFieldIds), the value of a kind that stores nothing is left out, and so is a
+		// Hidden field's, unless the handler includes hidden fields.
+		expect(lines(true)).toStrictEqual([
 			['Name', true],
 			['Source', true],
 			['Heading', false],
@@ -292,36 +333,46 @@ describe('Formulate Email handler editor, the fields to include', () => {
 			['Captcha', false],
 			['Odd', false],
 		]);
+		expect(lines(false)).toStrictEqual([
+			['Name', true],
+			['Source', false],
+			['Heading', false],
+			['Intro', false],
+			['Send', false],
+			['Campaign', true],
+			['CV', true],
+			['Captcha', false],
+			['Odd', false],
+		]);
+	});
+
+	it('counts a server side kind whose definition is hidden as a hidden field, as the server does', () => {
+		const kind = fieldKind({ kindId: '6b1e0c55-1d2f-4a8b-9c3d-4e5f6a7b8c9d', name: 'Secret', isServerSideOnly: true, isHidden: true });
+
+		expect([givesEmailLine(kind, true), givesEmailLine(kind, false)]).toStrictEqual([true, false]);
 	});
 
 	it('offers only the fields the email can write a line for, and still a field picked before', async () => {
-		fakeApi((request) => jsonResponse(new URL(request.url).pathname === `${API}/definition/form-field` ? EMAIL_FIELD_KINDS : []));
-		const host = createTestHost();
-		new FormulateDefinitionsContext(host);
-		// The dialogs the pickers open, as the back office's modal manager holds them.
-		const modals = new UmbModalManagerContext(host);
-		const opened: Array<UmbModalContext> = [];
-		modals.modals.subscribe((stack) => stack.forEach((modal) => opened.includes(modal) || opened.push(modal)));
-		const editor = new FormulateSendEmailHandlerEditorElement();
-		const heading = EVERY_KIND_FIELDS.find((field) => field.name === 'Heading')!;
-		editor.value = { ...SEND_EMAIL, fieldsToInclude: [{ id: heading.id }] };
-		editor.context = { formFields: EVERY_KIND_FIELDS };
-		host.append(editor);
-		await settle(editor);
-		const namesOffered = async (id: string) => {
-			const picker = editor.shadowRoot!.querySelector(`formulate-form-field-picker#${id}`)!;
-			const before = opened.length;
-			click(picker.shadowRoot!.querySelector('#btn-add')!);
-			await expect.poll(() => opened.length).toBe(before + 1);
-			const dialog = opened.at(-1)!;
-			dialog.reject();
+		const { namesOffered } = await renderEveryKindForm({ ...SEND_EMAIL, fieldsToInclude: [{ id: idOf('Heading') }] });
 
-			return (dialog.data as FormulatePickFieldsModalData).fields.map((field) => field.name);
-		};
-
-		expect(await namesOffered('fields-to-include')).toStrictEqual(['Name', 'Source', 'Heading', 'Campaign', 'CV']);
+		expect(await namesOffered('fields-to-include')).toStrictEqual(['Name', 'Heading', 'Campaign', 'CV']);
 		// Who to send the email to can come from any field, as before.
 		expect(await namesOffered('recipient-fields')).toHaveLength(EVERY_KIND_FIELDS.length);
+	});
+
+	it('offers a Hidden field while the email includes hidden fields, and while it is picked', async () => {
+		const { editor, namesOffered } = await renderEveryKindForm({ ...SEND_EMAIL, includeHiddenFields: false, fieldsToInclude: [] });
+
+		expect(await namesOffered('fields-to-include')).toStrictEqual(['Name', 'Campaign', 'CV']);
+
+		toggle(editor.shadowRoot!.querySelector('uui-toggle#include-hidden-fields')!, true);
+		await settle(editor);
+		expect(await namesOffered('fields-to-include')).toStrictEqual(['Name', 'Source', 'Campaign', 'CV']);
+
+		// A field picked before stays offered when the setting is off, so it can still be seen and let go of.
+		editor.value = { ...SEND_EMAIL, includeHiddenFields: false, fieldsToInclude: [{ id: idOf('Source') }] };
+		await settle(editor);
+		expect(await namesOffered('fields-to-include')).toStrictEqual(['Name', 'Source', 'Campaign', 'CV']);
 	});
 });
 
