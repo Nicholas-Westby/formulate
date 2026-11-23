@@ -400,7 +400,11 @@ test("an image picked from the media library in a Rich Text field's editor shows
 			await mediaPicker.locator('uui-card-media[title="Frontend logo"]').click();
 			await mediaPicker.getByRole('button', { name: 'Choose', exact: true }).click();
 			const details = page.locator('umb-media-caption-alt-text-modal');
-			await details.getByRole('textbox', { name: 'alt text' }).fill('Our logo');
+			const altText = details.getByRole('textbox', { name: 'alt text' });
+			// The dialog puts the media's name in the box once it has loaded the media. If that lands while the test
+			// types, the box keeps both, as "Frontend logoOur logo".
+			await expect(altText).toHaveValue('Frontend logo');
+			await altText.fill('Our logo');
 			await details.getByRole('button', { name: 'Submit', exact: true }).click();
 			await expect(text.getByRole('img', { name: 'Our logo', exact: true })).toBeVisible();
 		});
