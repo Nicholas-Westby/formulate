@@ -96,11 +96,15 @@ const CHARACTERS = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 /** A character that shows as space, such as a line break or a tab. */
 const SPACE = /^\s+$/;
 
+/** The spaces, commas, semicolons and colons at the end of a cut value, which the ellipsis takes the place of. */
+const CUT_SEPARATORS = /[\s,;:]+$/;
+
 /**
  * A value as the table shows it, on one line: its line breaks and runs of spaces as single spaces. Up to 100
  * characters show whole. A longer value is cut at the last word boundary in its first 100 characters, and ends
- * with "…"; when no word ends in the second half of them (a long address, say), it is cut at 100. Only as much of
- * the value is read as the cut needs, as a visitor can send a very long one.
+ * with "…", in place of a comma, semicolon or colon after its last word; when no word ends in the second half of
+ * them (a long address, say), it is cut at 100. Only as much of the value is read as the cut needs, as a visitor
+ * can send a very long one.
  * @param value The stored value.
  */
 export function previewText(value: string): string {
@@ -134,8 +138,10 @@ export function previewText(value: string): string {
 	// A space right after the 100th character ends a word too.
 	const space = characters.lastIndexOf(' ', PREVIEW_LENGTH);
 	const end = space >= PREVIEW_LENGTH / 2 ? space : PREVIEW_LENGTH;
+	const shown = characters.slice(0, end).join('');
 
-	return `${characters.slice(0, end).join('').trimEnd()}…`;
+	// The ellipsis follows the last word, not a comma, semicolon or colon after it, unless that is all there is.
+	return `${shown.replace(CUT_SEPARATORS, '') || shown}…`;
 }
 
 /**

@@ -100,6 +100,15 @@ describe('Formulate submission rows', () => {
 		expect(previewText(`ab ${'c'.repeat(120)}`)).toBe(`ab ${'c'.repeat(97)}…`);
 	});
 
+	it('ends a cut value with its last word, not with the comma, semicolon or colon after it', () => {
+		// Each is cut at the space after its first 95 characters, which end with a comma, a semicolon or a colon.
+		expect(previewText('word, '.repeat(30))).toBe(`${'word, '.repeat(15)}word…`);
+		expect(previewText('Note: done; '.repeat(15))).toBe(`${'Note: done; '.repeat(7)}Note: done…`);
+		expect(previewText('Item: '.repeat(30))).toBe(`${'Item: '.repeat(15)}Item…`);
+		// A value of nothing but commas keeps them, so the cell does not look empty.
+		expect(previewText(','.repeat(150))).toBe(`${','.repeat(100)}…`);
+	});
+
 	it('reads only as much of a long value as it shows, as a visitor can send a very long one', () => {
 		const segment = Intl.Segmenter.prototype.segment;
 		let read = 0;
@@ -165,7 +174,7 @@ describe('Formulate submission rows', () => {
 			[],
 		);
 
-		expect(row.files).toBe(`${names[0]}, ${names[1]},…`);
+		expect(row.files).toBe(`${names[0]}, ${names[1]}…`);
 	});
 
 	it('shows the host and path of the page a submission was sent from, as a link only to an http or https address', () => {
