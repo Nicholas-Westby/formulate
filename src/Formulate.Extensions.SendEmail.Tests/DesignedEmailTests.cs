@@ -285,6 +285,24 @@ public sealed class DesignedEmailTests
     }
 
     [Fact]
+    public async Task Built_in_samples_do_not_print_the_recipients()
+    {
+        var submission = Enquiry();
+        await using var services = EmailTestServices.Create();
+
+        await services.SendDesignedEmailAsync(new { recipients = Team, htmlEmailRazorPath = SampleHtml }, submission);
+        await services.SendDesignedEmailAsync(new { recipients = Team, textEmailRazorPath = SampleText }, submission);
+
+        Assert.Equal(2, services.Sent.Count);
+
+        foreach (var sent in services.Sent)
+        {
+            Assert.DoesNotContain("team@site.test", sent.Message.Body);
+            Assert.DoesNotContain("boss@site.test", sent.Message.Body);
+        }
+    }
+
+    [Fact]
     public async Task Built_in_subject_sample_names_the_page_when_the_handler_has_no_subject()
     {
         var form = Form();

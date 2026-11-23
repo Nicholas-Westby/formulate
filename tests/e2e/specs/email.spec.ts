@@ -196,7 +196,9 @@ test('a submission from a page is emailed to the To, Cc and Bcc recipients with 
 		expect(html).toContain('<li><strong>fullName:</strong> Ada Lovelace</li>');
 		expect(html).toContain('<li><strong>email:</strong> ada@example.com</li>');
 		expect(html).toContain('<li><strong>visitDate:</strong> 2026-03-05</li>');
-		expect(html).toContain(`The sender ${SENDER} sent this email to designed@example.com.`);
+		expect(html).toContain(`The sender ${SENDER} sent this email.`);
+		// The built-in sample leaves the recipients out, as they can include Bcc addresses.
+		expect(html).not.toContain('designed@example.com');
 	} finally {
 		await site.close();
 		await cleanUp(page, { documentIds: [created.id], formIds: [formId] });

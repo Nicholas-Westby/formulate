@@ -48,9 +48,9 @@
         }
     </ul>
 
-    @* The sender and the recipients. *@
+    @* The sender. The recipients are left out: the model lists Bcc addresses too. *@
     <p>
-        The sender @Model.SenderEmail sent this email to @(string.Join(", ", Model.RecipientEmails)).
+        The sender @Model.SenderEmail sent this email.
     </p>
 
 </body>

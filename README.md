@@ -180,7 +180,7 @@ The Send Email and Designed Email handlers send through Umbraco's email sender, 
   - A JSON `null` counts as not set.
   - When the setting is given both as an array and as one value, the single value wins.
 - `Formulate:Email:Headers` from Formulate 3 is not supported, because Umbraco's email sender cannot add headers. A startup warning names the setting when it is present. To add headers, handle Umbraco's `SendEmailNotification` for these emails and send them yourself.
-- Designed Email views are Razor views in your site. The handler's view paths are saved on the handler. Sample views ship in the package at `~/Views/Formulate/Email/Sample (HTML).cshtml`, `Sample (Text).cshtml` and `Sample (Subject).cshtml`. To change one, copy it to your site and set the handler's path to the copy. A view of your own at a sample's path replaces the sample.
+- Designed Email views are Razor views in your site. The handler's view paths are saved on the handler. Sample views ship in the package at `~/Views/Formulate/Email/Sample (HTML).cshtml`, `Sample (Text).cshtml` and `Sample (Subject).cshtml`. To change one, copy it to your site and set the handler's path to the copy. A view of your own at a sample's path replaces the sample. The view's model lists every recipient in `RecipientEmails`, Bcc addresses included, so a view should not print them: the built-in samples do not.
 
 ### Send Data
 
