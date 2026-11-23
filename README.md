@@ -16,6 +16,7 @@ Website: [www.formulate.rocks](https://www.formulate.rocks/)
 - [Install](#install)
 - [Show a form on a page](#show-a-form-on-a-page)
 - [Settings](#settings)
+- [Security and hosting notes](#security-and-hosting-notes)
 - [What Formulate does with submissions](#what-formulate-does-with-submissions)
 - [Extending Formulate](#extending-formulate)
 - [Upgrading from Formulate 3](#upgrading-from-formulate-3)
@@ -148,6 +149,13 @@ Two limits exist, and both default to 10 MB.
 To allow larger files in Store Data, raise both settings. The submissions limit is checked first, so raising only Store Data's changes nothing.
 
 ASP.NET Core and Kestrel have request size limits of their own. Raise those too when you raise the Formulate limits. Formulate only reads files for Upload fields. Files posted under any other name, and text posted under an upload field, are ignored.
+
+## Security and hosting notes
+
+- **Give the Formulate section only to people you trust with the site's code.** A Designed Email can render any Razor view in the site. Send Data posts from the server to any http or https address, internal addresses included. A Rich Text field can hold markup that runs on public pages, as a content editor's rich text can.
+- **Do not cache pages that show a form.** Each form carries an anti-forgery token tied to the visitor's cookie. If a page is output-cached, or a CDN caches it as HTML, one visitor's token is served to others and their submissions are refused. A site on several servers needs shared Data Protection keys, or a token made on one server fails on another.
+- **Set `AllowedHosts`, or give the site its domains in Umbraco.** The page URLs in submissions and emails are absolute. For content with no domain, Umbraco builds the URL from the request's host.
+- **Uploads are kept outside the web root** and are downloaded only as attachments.
 
 ## What Formulate does with submissions
 
