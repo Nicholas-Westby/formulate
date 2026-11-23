@@ -37,6 +37,17 @@ You can add more kinds in C#. See [Extending Formulate](https://github.com/Nicho
 
 The server also checks Regular Expression validations when a form is submitted. You can turn that off with the setting `Formulate:Submissions:EnableServerSideValidation`.
 
+# Placeholders in Messages
+
+The message of a Mandatory or Regular Expression validation can use the field's own values. Formulate replaces these placeholders, in any letter case, both in the browser and in the errors the server sends back:
+
+* **{name}** is the field's name.
+* **{alias}** is the field's alias.
+* **{label}** is the field's label, or its name when it has no label.
+* **{% raw %}{{}{% endraw %}** gives a `{`, in case your message needs a curly brace.
+
+For example, a Mandatory validation with the message "{label} is required." shows "Message is required." on a field labelled Message, so one validation can serve many fields. Anything else in braces is left as you wrote it.
+
 # Pick Validations on a Field
 
 1. Open the form and its Fields tab, then edit the field (or add one).
