@@ -225,30 +225,29 @@ namespace Formulate.Extensions.StoreData.Services
         }
 
         /// <summary>
-        /// Reads a form's submissions in order, a batch at a time, each batch starting after the last row of the one before.
+        /// Reads a form's submissions in order, a batch at a time. Each batch is the next page of the same stable order
+        /// (newest first, then by submission ID), so no date is ever compared and the database's precision for dates
+        /// does not matter. A submission that arrives while the export runs moves the rows one place down, so a row
+        /// that was already read comes again at the start of the next batch: it is skipped, by its ID.
         /// </summary>
+        /// <exception cref="InvalidOperationException">A batch had no row that was not read already, so the export cannot go on.</exception>
         private IEnumerable<FormulateSubmissionDto> Submissions(Guid formId)
         {
-            FormulateSubmissionDto? last = null;
+            var read = new HashSet<Guid>();
+            long skip = 0;
 
             while (true)
             {
-                var batch = _repository.PageAfter(formId, last, ExportBatchSize);
-
-                // Every batch must move past the one before. If the database does not hand back the key it was
-                // given (a date stored with less precision than the one read back, say) the same rows would
-                // come again for ever, so stop instead.
-                if (last is not null && batch.Any(x => x.SubmissionId == last.SubmissionId))
-                {
-                    _logger.LogWarning(
-                        "Stopped exporting form {FormId}: the batch after submission {SubmissionId} did not move past it.",
-                        formId, last.SubmissionId);
-                    yield break;
-                }
+                var (_, batch) = _repository.Page(formId, skip, ExportBatchSize);
+                var fresh = 0;
 
                 foreach (var item in batch)
                 {
-                    yield return item;
+                    if (read.Add(item.SubmissionId ?? Guid.Empty))
+                    {
+                        fresh++;
+                        yield return item;
+                    }
                 }
 
                 if (batch.Count < ExportBatchSize)
@@ -256,7 +255,19 @@ namespace Formulate.Extensions.StoreData.Services
                     yield break;
                 }
 
-                last = batch[^1];
+                // A full batch of rows that were all read already means the export is not moving on (rows are arriving
+                // faster than it reads, or the database does not keep to its order). A short file would hide that.
+                if (fresh == 0)
+                {
+                    _logger.LogError(
+                        "Stopped exporting form {FormId}: the batch after {Skip} submissions had none that was not exported already.",
+                        formId, skip);
+
+                    throw new InvalidOperationException(
+                        $"The export of form {formId} could not finish: it stopped moving through the submissions after {skip} of them.");
+                }
+
+                skip += batch.Count;
             }
         }
 

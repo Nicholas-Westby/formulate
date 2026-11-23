@@ -79,15 +79,13 @@ internal sealed class FakeSubmissionRepository : ISubmissionRepository
 {
     public Func<Models.FormulateSubmissionDto, Task>? OnInsert { get; set; }
 
-    public Func<Models.FormulateSubmissionDto?, IReadOnlyList<Models.FormulateSubmissionDto>>? OnPageAfter { get; set; }
+    public Func<long, long, (long Total, IReadOnlyList<Models.FormulateSubmissionDto> Items)>? OnPage { get; set; }
 
     public Task InsertAsync(Models.FormulateSubmissionDto submission, CancellationToken cancellationToken) =>
         OnInsert?.Invoke(submission) ?? throw new NotSupportedException();
 
-    public IReadOnlyList<Models.FormulateSubmissionDto> PageAfter(Guid formId, Models.FormulateSubmissionDto? after, int take) =>
-        OnPageAfter?.Invoke(after) ?? throw new NotSupportedException();
-
-    public (long Total, IReadOnlyList<Models.FormulateSubmissionDto> Items) Page(Guid formId, long skip, long take) => throw new NotSupportedException();
+    public (long Total, IReadOnlyList<Models.FormulateSubmissionDto> Items) Page(Guid formId, long skip, long take) =>
+        OnPage?.Invoke(skip, take) ?? throw new NotSupportedException();
 
     public Models.FormulateSubmissionDto? Get(Guid submissionId) => throw new NotSupportedException();
 

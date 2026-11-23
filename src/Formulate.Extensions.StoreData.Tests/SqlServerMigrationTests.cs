@@ -1,4 +1,11 @@
+using Formulate.BackOffice.Api.Services;
+using Formulate.Core.FormFields;
+using Formulate.Core.Forms;
 using Formulate.Extensions.StoreData.Migrations;
+using Formulate.Extensions.StoreData.Services;
+using Formulate.Extensions.StoreData.Utilities;
+using Moq;
+using Umbraco.Cms.Infrastructure.Scoping;
 using Formulate.Extensions.StoreData.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -98,7 +105,78 @@ public sealed class SqlServerMigrationTests
         }
     }
 
-    private static async Task BootUmbracoAsync(string contentRoot, string connectionString)
+    /// <summary>
+    /// Exports more than 500 submissions (several batches) on a real SQL Server, whose datetime column and parameters
+    /// have less precision than a .NET date. Runs only where FORMULATE_TEST_SQLSERVER is set, which is CI.
+    /// </summary>
+    [Fact(SkipUnless = nameof(HasSqlServer), SkipType = typeof(SqlServerMigrationTests), Skip = "Set " + ConnectionStringVariable + " to a SQL Server connection string to run this.")]
+    public async Task The_CSV_export_of_more_than_500_submissions_is_complete_on_SQL_Server()
+    {
+        var server = new SqlConnectionStringBuilder(Environment.GetEnvironmentVariable(ConnectionStringVariable));
+        var databaseName = "formulate_export_" + Guid.NewGuid().ToString("N");
+        var contentRoot = Path.Combine(Path.GetTempPath(), "formulate-sqlserver-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(contentRoot);
+
+        await using (var master = new SqlConnection(server.ConnectionString))
+        {
+            await master.OpenAsync(TestContext.Current.CancellationToken);
+            await using var create = master.CreateCommand();
+            create.CommandText = $"CREATE DATABASE [{databaseName}]";
+            await create.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+
+        var database = new SqlConnectionStringBuilder(server.ConnectionString) { InitialCatalog = databaseName };
+
+        try
+        {
+            await BootUmbracoAsync(contentRoot, database.ConnectionString, async services =>
+            {
+                var repository = new SubmissionRepository(new ScopedSubmissionDatabase(services.GetRequiredService<IScopeProvider>()));
+                var form = new PersistedForm { Id = Guid.NewGuid(), Name = "Contact", Fields = Array.Empty<PersistedFormField>() };
+                var forms = new Mock<IFormEntityRepository>();
+                forms.Setup(x => x.Get(form.Id)).Returns(form);
+                var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+                // Dates a few ticks apart, and some equal, so none of them survives a rounding to 3.33 ms.
+                for (var i = 0; i < 1203; i++)
+                {
+                    await repository.InsertAsync(
+                        new FormulateSubmissionDto { SubmissionId = Guid.NewGuid(), FormId = form.Id, CreationDate = start.AddTicks((i / 2) * 7), DataValues = "[]", FileValues = "[]" },
+                        TestContext.Current.CancellationToken);
+                }
+
+                var root = Path.Combine(contentRoot, "uploads");
+                var service = new SubmissionQueryService(
+                    repository,
+                    forms.Object,
+                    new TestJsonUtility(),
+                    new UploadFolders(root, null),
+                    new FormFieldDefinitionCollection(() => Array.Empty<IFormFieldDefinition>()),
+                    new CapturingLogger<SubmissionQueryService>());
+
+                var result = service.Export(form.Id);
+
+                Assert.Equal(ServiceStatus.Success, result.Status);
+                using var reader = new StreamReader(result.Value!);
+                var lines = (await reader.ReadToEndAsync(TestContext.Current.CancellationToken)).TrimStart('\uFEFF').Split("\r\n");
+
+                // The header, 1203 rows, and the empty text after the last line break; each row once.
+                Assert.Equal(1203 + 2, lines.Length);
+                Assert.Equal(1203, lines[1..^1].Select(x => x[..36]).Distinct().Count());
+            });
+        }
+        finally
+        {
+            SqlConnection.ClearAllPools();
+            await using var master = new SqlConnection(server.ConnectionString);
+            await master.OpenAsync(TestContext.Current.CancellationToken);
+            await using var drop = master.CreateCommand();
+            drop.CommandText = $"ALTER DATABASE [{databaseName}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{databaseName}]";
+            await drop.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
+        }
+    }
+
+    private static async Task BootUmbracoAsync(string contentRoot, string connectionString, Func<IServiceProvider, Task>? afterPlan = null)
     {
         // Umbraco loads every library the test host lists, and one of them (xunit.abstractions) is not on disk.
         AppDomain.CurrentDomain.AssemblyResolve += EmptyAssemblyFor;
@@ -131,6 +209,11 @@ public sealed class SqlServerMigrationTests
             // Runs the plan the way Umbraco's package migration runner does after a site starts.
             var runner = app.Services.GetRequiredService<PackageMigrationRunner>();
             await runner.RunPackagePlansAsync(new[] { PlanName });
+
+            if (afterPlan is not null)
+            {
+                await afterPlan(app.Services);
+            }
         }
         finally
         {

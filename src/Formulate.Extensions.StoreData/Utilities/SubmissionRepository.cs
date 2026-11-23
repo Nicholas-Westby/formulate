@@ -31,19 +31,6 @@ namespace Formulate.Extensions.StoreData.Utilities
             });
         }
 
-        public IReadOnlyList<FormulateSubmissionDto> PageAfter(Guid formId, FormulateSubmissionDto? after, int take)
-        {
-            return _database.Run<IReadOnlyList<FormulateSubmissionDto>>(db => after is null
-                ? db.SkipTake<FormulateSubmissionDto>(0, take, $"WHERE FormId = @0 {Order}", formId)
-                : db.SkipTake<FormulateSubmissionDto>(
-                    0,
-                    take,
-                    $"WHERE FormId = @0 AND (CreationDate < @1 OR (CreationDate = @1 AND SubmissionId > @2)) {Order}",
-                    formId,
-                    after.CreationDate,
-                    after.SubmissionId!.Value));
-        }
-
         public FormulateSubmissionDto? Get(Guid submissionId)
         {
             return _database.Run(db => db.FirstOrDefault<FormulateSubmissionDto>("WHERE SubmissionId = @0", submissionId));

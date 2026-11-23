@@ -393,19 +393,79 @@ public sealed class SubmissionQueryServiceTests : IDisposable
     }
 
     [Fact]
-    public void Export_stops_with_a_warning_when_a_batch_makes_no_progress()
+    public void Export_fails_instead_of_returning_a_short_file_when_a_batch_has_no_row_it_has_not_written()
     {
-        // A database that hands back the key it was given (say a date with less precision) would repeat a batch for ever.
+        // A database that gives the same full batch whatever the skip (rows added faster than the export reads, say)
+        // would repeat it for ever; the export must fail, not stop quietly with a file that lacks submissions.
         var rows = Enumerable.Range(0, 500)
             .Select(i => new FormulateSubmissionDto { SubmissionId = Guid.NewGuid(), FormId = _form.Id, CreationDate = DateTime.UtcNow, DataValues = "[]", FileValues = "[]" })
             .ToArray();
-        var repository = new FakeSubmissionRepository { OnPageAfter = _ => rows };
+        var repository = new FakeSubmissionRepository { OnPage = (_, _) => (10_000, rows) };
+        var service = new SubmissionQueryService(repository, _forms.Object, new TestJsonUtility(), _folders, new FormFieldDefinitionCollection(() => _definitions), _logger);
+
+        var error = Assert.Throws<InvalidOperationException>(() => service.Export(_form.Id));
+
+        Assert.Contains(_form.Id.ToString(), error.Message);
+    }
+
+    [Fact]
+    public void Export_has_each_submission_once_when_one_arrives_between_batches()
+    {
+        for (var i = 0; i < 1203; i++)
+        {
+            _database.Seed(new FormulateSubmissionDto { SubmissionId = Guid.NewGuid(), FormId = _form.Id, CreationDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(i), DataValues = "[]", FileValues = "[]" });
+        }
+
+        // A newer submission arrives after the first batch of the second pass has been read, which pushes every
+        // row one place down the order: the next batch starts with a row that was already written.
+        var pages = 0;
+        var repository = new InsertingRepository(_repository, () =>
+        {
+            if (++pages == 4)
+            {
+                _database.Seed(new FormulateSubmissionDto { SubmissionId = Guid.NewGuid(), FormId = _form.Id, CreationDate = new DateTime(2027, 1, 1, 0, 0, 0, DateTimeKind.Utc), DataValues = "[]", FileValues = "[]" });
+            }
+        });
         var service = new SubmissionQueryService(repository, _forms.Object, new TestJsonUtility(), _folders, new FormFieldDefinitionCollection(() => _definitions), _logger);
 
         var lines = ReadCsv(service.Export(_form.Id).Value!);
 
-        Assert.Equal(500 + 2, lines.Length);
-        Assert.Contains(_logger.Entries, x => x.Level == Microsoft.Extensions.Logging.LogLevel.Warning && x.Message.Contains("did not move past"));
+        var ids = lines[1..^1].Select(x => x[..36]).ToArray();
+        Assert.Equal(ids.Length, ids.Distinct().Count());
+        Assert.Equal(1203, ids.Length);
+    }
+
+    [Fact]
+    public void Export_of_more_than_one_batch_has_every_submission_once_in_order()
+    {
+        for (var i = 0; i < 1203; i++)
+        {
+            _database.Seed(new FormulateSubmissionDto { SubmissionId = Guid.NewGuid(), FormId = _form.Id, CreationDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds(i), DataValues = "[]", FileValues = "[]" });
+        }
+
+        var lines = ReadCsv(CreateService().Export(_form.Id).Value!);
+
+        var dates = lines[1..^1].Select(x => x.Split(',')[1]).ToArray();
+        Assert.Equal(1203, dates.Length);
+        Assert.Equal(dates.OrderByDescending(x => x, StringComparer.Ordinal), dates);
+    }
+
+    /// <summary>A repository that runs <paramref name="afterPage"/> after each page it gives.</summary>
+    private sealed class InsertingRepository(ISubmissionRepository inner, Action afterPage) : ISubmissionRepository
+    {
+        public Task InsertAsync(FormulateSubmissionDto submission, CancellationToken cancellationToken) => inner.InsertAsync(submission, cancellationToken);
+
+        public (long Total, IReadOnlyList<FormulateSubmissionDto> Items) Page(Guid formId, long skip, long take)
+        {
+            var page = inner.Page(formId, skip, take);
+            afterPage();
+
+            return page;
+        }
+
+        public FormulateSubmissionDto? Get(Guid submissionId) => inner.Get(submissionId);
+
+        public bool Delete(Guid submissionId) => inner.Delete(submissionId);
     }
 
     [Fact]

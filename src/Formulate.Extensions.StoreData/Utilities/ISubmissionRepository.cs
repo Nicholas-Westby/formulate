@@ -14,13 +14,6 @@ namespace Formulate.Extensions.StoreData.Utilities
         /// </summary>
         (long Total, IReadOnlyList<FormulateSubmissionDto> Items) Page(Guid formId, long skip, long take);
 
-        /// <summary>
-        /// Gets the next batch of a form's submissions in the same order as <see cref="Page"/>, starting
-        /// after <paramref name="after"/> (or at the newest when it is null). Unlike a skip, it is not
-        /// disturbed by rows added or deleted between batches.
-        /// </summary>
-        IReadOnlyList<FormulateSubmissionDto> PageAfter(Guid formId, FormulateSubmissionDto? after, int take);
-
         FormulateSubmissionDto? Get(Guid submissionId);
 
         /// <summary>
