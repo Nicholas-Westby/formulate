@@ -4,6 +4,7 @@ import { expect, test } from '../fixtures/login.ts';
 import { createFolder, emptyTree } from '../fixtures/formulate-api.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
 import { TREES, childNames, confirmDelete, expandTreeItem, runEntityAction, sidebar, treeItem } from '../fixtures/tree.ts';
+import { getUmbracoVersion, hasTreePages, moveButtonLabel } from '../fixtures/umbraco-version.ts';
 import { screenshotPath } from '../support/screenshots.ts';
 
 interface CreateOption {
@@ -83,6 +84,7 @@ for (const tree of TREES) {
 		const renamed = `Renamed ${suffix}`;
 		const nested = `Nested ${suffix}`;
 		await page.goto('/umbraco/section/formulate');
+		const version = await getUmbracoVersion(page);
 		const root = treeItem(sidebar(page), tree.label);
 
 		// Create a folder at the top of the tree.
@@ -125,7 +127,7 @@ for (const tree of TREES) {
 		const picker = page.locator('umb-tree-picker-modal');
 		await expect(picker).toBeVisible();
 		await expect(picker.locator(`uui-menu-item[label="${tree.label}"]`)).toBeVisible();
-		const move = picker.locator('uui-button[label="Move"]');
+		const move = picker.locator(`uui-button[label="${moveButtonLabel(version)}"]`);
 		await picker.locator(`uui-menu-item[label="${tree.label}"]`).locator('#label-button').first().click();
 		if (tree.apiAlias === 'forms') {
 			// The dialog slides in from the right, and Move turns on once a place is picked; the screenshot
@@ -161,9 +163,12 @@ for (const tree of TREES) {
 		const name = page.locator('umb-folder-workspace-editor').locator('uui-input#nameInput input');
 		await expect(name).toHaveValue('Archive');
 		await name.fill('Old archive');
-		// The footer says where the folder is, with the name being typed, and the page lists what is in it.
+		// The footer says where the folder is, with the name being typed, and the page lists what is in it (not on
+		// Umbraco 18.0, whose folder pages have no list).
 		await expect(page.locator('umb-workspace-breadcrumb uui-breadcrumb-item')).toHaveText([tree.label, 'Old archive']);
-		await expect(page.locator('umb-tree-workspace-view').getByText('No items')).toBeVisible();
+		if (hasTreePages(await getUmbracoVersion(page))) {
+			await expect(page.locator('umb-tree-workspace-view').getByText('No items')).toBeVisible();
+		}
 		if (tree.apiAlias === 'forms') {
 			await page.screenshot({ path: screenshotPath('folder-workspace.png'), animations: 'disabled' });
 		}
@@ -198,6 +203,7 @@ for (const tree of TREES) {
 for (const tree of TREES) {
 	test(`the top of ${tree.label} and its folders list what is in them, as Umbraco's trees do`, async ({ page }) => {
 		await page.goto('/umbraco/section/formulate');
+		test.skip(!hasTreePages(await getUmbracoVersion(page)), "Umbraco 18.0's trees have no such list.");
 		const outerId = await createFolder(page, tree.apiAlias, 'Outer');
 		await createFolder(page, tree.apiAlias, 'Inner', outerId);
 		const workspace = page.locator('umb-workspace-editor');
@@ -218,6 +224,7 @@ for (const tree of TREES) {
 		page,
 	}) => {
 		await page.goto('/umbraco/section/formulate');
+		test.skip(!hasTreePages(await getUmbracoVersion(page)), "Umbraco 18.0's trees have no such list or button.");
 		const outerId = await createFolder(page, tree.apiAlias, 'Outer');
 		const view = page.locator('umb-workspace-editor umb-tree-workspace-view');
 		const create = view.locator('umb-tree-create-action-button');

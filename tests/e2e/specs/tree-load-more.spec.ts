@@ -1,13 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '../fixtures/login.ts';
 import { callManagementApi } from '../fixtures/management-api.ts';
+import { getUmbracoVersion, treePageSize } from '../fixtures/umbraco-version.ts';
 import { screenshotPath } from '../support/screenshots.ts';
 
-/** The forms Umbraco shows at once under a tree item before "Load more". */
-const PAGE_SIZE = 100;
-
-/** More forms than Umbraco shows at once. */
-const FORM_COUNT = PAGE_SIZE + 5;
+/** More forms than Umbraco shows at once (see treePageSize). */
+const FORM_COUNT = 105;
 
 interface CreateOption {
 	entityType: string;
@@ -20,6 +18,7 @@ test('Load more shows every form at the Forms root', async ({ page }) => {
 	await page.goto('/umbraco/section/formulate');
 	await expect(page.locator('umb-backoffice-header')).toBeVisible();
 
+	const pageSize = treePageSize(await getUmbracoVersion(page));
 	const options = await callManagementApi<Array<CreateOption>>(page, 'GET', '/formulate/tree/forms/create-options');
 	const formKindId = options.find((option) => option.entityType === 'formulate-form' && option.name === 'Form')?.kindId;
 	expect(formKindId, 'the forms root offers the plain Form kind').toBeTruthy();
@@ -47,7 +46,7 @@ test('Load more shows every form at the Forms root', async ({ page }) => {
 		const loadMore = root.locator('umb-tree-load-more-button');
 
 		await root.locator('#caret-button').click();
-		await expect(formItems).toHaveCount(PAGE_SIZE);
+		await expect(formItems).toHaveCount(pageSize);
 
 		let shown = await formItems.count();
 		while (shown < FORM_COUNT) {
