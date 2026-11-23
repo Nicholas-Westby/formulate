@@ -145,3 +145,13 @@ test("the site gets no reCAPTCHA keys, whatever appsettings.Local.json sets", ()
 	assert.equal(ENVIRONMENT.Formulate__Recaptcha__SiteKey, '');
 	assert.equal(ENVIRONMENT.Formulate__Recaptcha__SecretKey, '');
 });
+
+test("the site knows its own address, so Umbraco has no application URL warning and can build links", () => {
+	// Without one, Umbraco 17 warns at start that "Application URL auto-detection is disabled and no explicit URL is
+	// configured", and its notifications log "no site URL is set". The run's site is at its HTTPS address.
+	assert.equal(ENVIRONMENT.Umbraco__CMS__WebRouting__UmbracoApplicationUrl, ADDRESSES.origin);
+});
+
+test("the dev site detects its address from the first request when it is not given one", () => {
+	assert.equal(developmentSettings().Umbraco.CMS.WebRouting.ApplicationUrlDetection, 'FirstRequest');
+});

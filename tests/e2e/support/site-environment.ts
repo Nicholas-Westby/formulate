@@ -103,6 +103,9 @@ export function siteEnvironment(options: SiteAddresses & { runFolder: string }):
 		// specs/loaded-formulate.spec.ts reads, where email goes and what the seed did
 		// (appsettings.Development.json keeps those at Information).
 		Serilog__MinimumLevel__Default: 'Warning',
+		// The site's own address, which Umbraco otherwise warns it does not know (and then logs "no site URL is set"
+		// for each notification it cannot send). It is the one the run's site listens on over HTTPS.
+		Umbraco__CMS__WebRouting__UmbracoApplicationUrl: origin,
 		// Each run's log is its own, in the run folder.
 		Umbraco__CMS__Logging__Directory: join(runFolder, 'Logs'),
 		// The dev site's own connection string (appsettings.Development.json), with the run's database.
