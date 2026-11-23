@@ -1,6 +1,7 @@
 import { UmbNotificationContext } from '@umbraco-cms/backoffice/notification';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FormulateDefinitionsContext } from '../../../core/definitions.context.js';
+import { createDefinitionsHost, renderEditor, settle } from '../../../test/editors.js';
 import { fakeApi, jsonResponse } from '../../../test/fake-api.js';
 import { CONFIG, serveForms } from '../../../test/forms.js';
 import { API } from '../../../test/kind-items.js';
@@ -14,30 +15,9 @@ import { FormulateRecaptchaFieldEditorElement } from './recaptcha-field-editor.e
 // stored value, such as one Formulate 3 wrote, is ignored. The editor says whether this site has both keys set, as
 // Formulate's configuration (GET formulate/config, recaptchaConfigured) tells it.
 
-/** A back office host with the definitions context, which reads Formulate's configuration from the fake API. */
-function createDefinitionsHost() {
-	const host = createTestHost();
-	new FormulateDefinitionsContext(host);
-
-	return host;
-}
-
-async function settle(element: { updateComplete: Promise<unknown> }) {
-	for (let i = 0; i < 3; i++) {
-		await element.updateComplete;
-		await new Promise((resolve) => setTimeout(resolve, 0));
-	}
-}
-
 /** Shows the editor in a host, and records the values it stores. */
-async function render(value: unknown, host: HTMLElement = createDefinitionsHost()) {
-	const element = new FormulateRecaptchaFieldEditorElement();
-	element.value = value;
-	const changes: Array<unknown> = [];
-	element.addEventListener('change', () => changes.push(element.value));
-	host.append(element);
-	await settle(element);
-	const shadow = element.shadowRoot!;
+async function render(value: unknown, host?: HTMLElement) {
+	const { element, changes, shadow } = await renderEditor(new FormulateRecaptchaFieldEditorElement(), value, { host });
 
 	return {
 		element,

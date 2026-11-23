@@ -1,9 +1,9 @@
 import { UmbChangeEvent } from '@umbraco-cms/backoffice/event';
 import { umbExtensionsRegistry } from '@umbraco-cms/backoffice/extension-registry';
 import { afterEach, describe, expect, it } from 'vitest';
-import { FormulateDefinitionsContext } from '../../core/definitions.context.js';
 import { FORMULATE_FIELD_EDITOR_TYPE, type FormulateKindEditorElementBase } from '../../core/kind-editor.js';
 import { FormulateKindEditorSlotElement } from '../../core/kind-editor-slot.element.js';
+import { renderEditor, settle } from '../../test/editors.js';
 import { serveForms } from '../../test/forms.js';
 import { SERVER_CONSTANTS } from '../../test/server-constants.js';
 import { createTestHost } from '../../test/test-host.js';
@@ -26,27 +26,10 @@ const NO_ID = '00000000-0000-0000-0000-000000000000';
  * Shows an editor in a back office host that has the definitions and Formulate's configuration, and records
  * the values it stores.
  */
-async function render<T extends FormulateKindEditorElementBase>(element: T, value: unknown, readonly = false) {
+function render<T extends FormulateKindEditorElementBase>(element: T, value: unknown, readonly = false) {
 	serveForms();
-	const host = createTestHost();
-	new FormulateDefinitionsContext(host);
-	element.value = value;
-	element.readonly = readonly;
-	const changes: Array<unknown> = [];
-	element.addEventListener('change', (event) => {
-		changes.push(event instanceof UmbChangeEvent ? JSON.parse(JSON.stringify(element.value)) : 'not an UmbChangeEvent');
-	});
-	host.append(element);
-	await settle(element);
 
-	return { element, changes, shadow: element.shadowRoot! };
-}
-
-async function settle(element: { updateComplete: Promise<unknown> }) {
-	for (let i = 0; i < 3; i++) {
-		await element.updateComplete;
-		await new Promise((resolve) => setTimeout(resolve, 0));
-	}
+	return renderEditor(element, value, { readonly });
 }
 
 /** Picks an option of a uui-select as a user does. */
