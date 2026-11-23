@@ -1,6 +1,6 @@
 # Upgrading from Formulate 3
 
-Formulate 3 ran on Umbraco 8. Formulate 5 runs on Umbraco 17.6 or later, 18 and 19. There is no automatic migration of Formulate 3 data yet. This guide lists what is the same, what changed, and what you do by hand.
+Formulate 3 ran on Umbraco 8. Formulate 5 runs on Umbraco 17.8.2 or later, 18 and 19. There is no automatic migration of Formulate 3 data yet. This guide lists what is the same, what changed, and what you do by hand.
 
 Formulate 4 was never released, so there is nothing to upgrade from there.
 
@@ -23,7 +23,7 @@ Formulate 4 was never released, so there is nothing to upgrade from there.
 
 ## Steps
 
-1. Get the site running on Umbraco 17.6 or later (the latest 17.x is best), 18 or 19.
+1. Get the site running on Umbraco 17.8.2 or later (the latest 17.x is best), 18 or 19.
 2. Remove the old Formulate packages, including Formulate Pro, from the site.
 3. Install `Umbraco.Community.Formulate`:
 

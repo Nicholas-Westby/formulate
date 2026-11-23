@@ -12,7 +12,7 @@ Formulate 5 is a rewrite of the parts of Formulate that depended on Umbraco 8. S
 
 Read [Upgrading from Formulate 3](docs/upgrading-from-v3.md) for the steps.
 
-- The packages have new IDs (`Umbraco.Community.Formulate` and the packages it brings in), and the site must run Umbraco 17.6 or later, 18 or 19. There is no Umbraco 8 to 17 upgrade path in Formulate.
+- The packages have new IDs (`Umbraco.Community.Formulate` and the packages it brings in), and the site must run Umbraco 17.8.2 or later, 18 or 19. There is no Umbraco 8 to 17 upgrade path in Formulate.
 - The form picker is a new property editor, `Formulate.FormLayoutPicker`. It stores a layout id, not Formulate 3's configured form id, so every page needs its form picked again.
 - Layouts and configured forms (`ConfiguredForms`) from Formulate 3 are not picked up. Add a layout to each form. The template is saved on the layout.
 - Forms are shown with the `FormulateForm` view component, not a partial view path.
@@ -24,8 +24,8 @@ Read [Upgrading from Formulate 3](docs/upgrading-from-v3.md) for the steps.
 
 ### Requirements
 
-- Umbraco 17.6.0 or later 17.x (LTS), on .NET 10. It also runs on Umbraco 18 and on the Umbraco 19 release candidate (.NET 11). The packages depend on Umbraco `[17.6.0, 20.0.0)`.
-- Use the latest 17.x. The 17.6.0 floor pulls in dependencies that have published advisories.
+- Umbraco 17.8.2 or later 17.x (LTS), on .NET 10. It also runs on Umbraco 18 and on the Umbraco 19 release candidate (.NET 11). The packages depend on Umbraco `[17.8.2, 20.0.0)`.
+- Use the latest 17.x.
 
 ### Packages
 
@@ -52,7 +52,7 @@ The packages are renamed, because the old IDs belong to another NuGet account. I
 - Server side checks for regular expressions run the same way as in the browser, apart from a few characters that `\s` matches (see the README).
 - A browser API for custom field renderers and validators: `api.min.js` (also on `window.formulatePlainJs`) exports `registerFieldRenderer`, `registerValidator`, `FieldRendererBase`, every built-in renderer and the helpers, so a renderer can build on the built-in ones. A phone field is `class RenderPhone extends RenderText { static inputType = "tel"; }`. The window lists Formulate 3 used still work. See [Changing how forms render in the browser](docs/extending.md#changing-how-forms-render-in-the-browser).
 - Extension points: `IVerifiedFormField` (a server check that waits on the network, used by reCAPTCHA), `IFormFieldValueFormatter` (how a field's value is written in emails and Send Data), `IBuildFormSubmissionFields`, `ISubmissionPageResolver`, `FormSubmittingNotification` (can cancel a submission with a message the visitor sees), `SendingDataNotification` and `SentDataNotification`. See [Extending Formulate](docs/extending.md).
-- A compatibility check (`src/Formulate.CompatibilityCheck`) and CI that build, test and run browser tests on Umbraco 17.6, 17.8, 18.3 and 19.0.0-rc1.
+- A compatibility check (`src/Formulate.CompatibilityCheck`) and CI that build, test and run browser tests on Umbraco 17.8, 18.3 and 19.0.0-rc1.
 - Browser tests that also run against the packed NuGet packages, the way a site installs Formulate: CI packs first, then runs the browser tests on each Umbraco version on a site built from those packages, and a test checks that the site loaded that version. `npm run test:packages` in `tests/e2e` does the same on a developer's machine.
 - Compile checks against Umbraco 18.3.2 and 19.0.0-rc1 that make every use of an `[Obsolete]` Umbraco member an error, so an API that Umbraco deprecates fails CI before a later major removes it. The back office client is also type-checked against the back office of Umbraco 18 and 19 (`npm run typecheck:18` and `typecheck:19`).
 - The back office shows the package's own version, on the Formulate welcome page and in Umbraco's list of installed packages.

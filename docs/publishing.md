@@ -31,7 +31,7 @@ Eight packages, all at the same version, all from this repository:
 
 The IDs come from `src/Directory.Build.props` (`Umbraco.Community.` plus the project name). The old IDs `Formulate`, `Formulate.Binaries` and `Formulate.Deploy` belong to Rhythm Agency's NuGet account, and `Formulate.Core` belongs to an unrelated account. That is why Formulate 5 has new IDs.
 
-The version is `5.0.0`, set in `src/Directory.Build.props` as `VersionPrefix`. A release overrides it with the tag (see below). The packages depend on Umbraco `[17.6.0, 20.0.0)`.
+The version is `5.0.0`, set in `src/Directory.Build.props` as `VersionPrefix`. A release overrides it with the tag (see below). The packages depend on Umbraco `[17.8.2, 20.0.0)`.
 
 ## One-time setup
 
@@ -78,7 +78,7 @@ Do this after the first release, so the prefix is in use when NuGet looks at it.
 
 A release is a tag. The tag is the version. `release.yml` does the rest.
 
-1. Check that `v5/main` is green. Open the Actions tab and look at the latest CI run on `v5/main`. It builds, tests, checks Umbraco 18 and 19 compatibility, packs, and runs the browser tests on those packages on Umbraco 17.6.2, 17.8.2, 18.3.2 and 19.0.0-rc1. To run the browser tests on packages from your own checkout, run `npm run test:packages` in `tests/e2e` (see the [README](../README.md#running-the-tests)).
+1. Check that `v5/main` is green. Open the Actions tab and look at the latest CI run on `v5/main`. It builds, tests, checks Umbraco 18 and 19 compatibility, packs, and runs the browser tests on those packages on Umbraco 17.8.2, 18.3.2 and 19.0.0-rc1. To run the browser tests on packages from your own checkout, run `npm run test:packages` in `tests/e2e` (see the [README](../README.md#running-the-tests)).
 2. Update `CHANGELOG.md`. Move the notes under the new version and date. Commit and push to `v5/main`.
 3. Make sure your local checkout is the commit you mean to release:
 
@@ -111,7 +111,7 @@ A tag with a suffix, such as `v5.0.0-rc.1`, builds `5.0.0-rc.1`. NuGet marks it 
 
 Use a prerelease to try the whole process before 5.0.0. Prerelease versions can never be removed from NuGet, only unlisted, so use a suffix such as `-rc.1`, not `-test`.
 
-Advise people to use the latest Umbraco 17.x. Formulate's 17.6.0 floor pulls in dependencies that have published advisories, and later 17.x releases fix them. The README says so.
+Advise people to use the latest Umbraco 17.x. The README says so.
 
 ## Publish by hand
 

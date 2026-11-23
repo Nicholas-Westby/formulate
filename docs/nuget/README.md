@@ -4,7 +4,7 @@ Formulate is a form builder for Umbraco. You build forms in the back office, lay
 
 ## Requirements
 
-Umbraco 17.6.0 or later 17.x (LTS), 18 or 19, which means .NET 10 or .NET 11. Use the latest 17.x release you can.
+Umbraco 17.8.2 or later 17.x (LTS), 18 or 19, which means .NET 10 or .NET 11. Use the latest 17.x release you can.
 
 ## Install
 

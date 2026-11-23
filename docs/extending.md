@@ -825,7 +825,7 @@ The renderer dispatches events on the form's `.formulate-wrapper` element. They 
 
 ## Compatibility rules
 
-Formulate's packages are built against Umbraco 17.6 and run on 17, 18 and 19. If your extension also needs to run on all three:
+Formulate's packages are built against Umbraco 17.8 and run on 17, 18 and 19. If your extension also needs to run on all three:
 
 - Do not call members Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`: `Id`, `Name`, `SortOrder`, `CreatorId`, `CreateDate`, `WriterId`, `UpdateDate`, `Cultures` and `ItemType`. The source compiles against both, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` (with `IIdKeyMap`) or an extension method.
 - Do not use an `[Obsolete]` member. Formulate's own build treats using one as an error.

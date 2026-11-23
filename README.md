@@ -29,10 +29,10 @@ Website: [www.formulate.rocks](https://www.formulate.rocks/)
 
 | Formulate | Umbraco | .NET |
 | --- | --- | --- |
-| 5.x | 17.6.0 or later 17.x (LTS), 18, and the 19 release candidate | .NET 10 (Umbraco 17 and 18), .NET 11 (Umbraco 19) |
+| 5.x | 17.8.2 or later 17.x (LTS), 18, and the 19 release candidate | .NET 10 (Umbraco 17 and 18), .NET 11 (Umbraco 19) |
 
-- The packages say they work with Umbraco `[17.6.0, 20.0.0)`. Formulate is built against 17.6 and checked on 17.6, 17.8, 18.3 and 19.0.0-rc1.
-- Use the latest 17.x release of Umbraco that you can. The 17.6.0 floor pulls in dependencies that have published security advisories, and later 17.x releases fix them.
+- The packages say they work with Umbraco `[17.8.2, 20.0.0)`. Formulate is built against 17.8 and checked on 17.8, 18.3 and 19.0.0-rc1.
+- Use the latest 17.x release of Umbraco that you can.
 - Formulate 5 does not run on Umbraco 16 or earlier. For Umbraco 8, use Formulate 3.
 - A site with a prerelease of Umbraco 19 needs the .NET 11 SDK. A package built for .NET 10 loads inside a .NET 11 site.
 
@@ -316,7 +316,7 @@ Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco
 
 This mode keeps the packages it restores in `src/Website/obj/FormulatePackages`, not in NuGet's own folder. That folder grows by about 0.7 GB for each Umbraco version you run the tests on. You can delete it at any time; the next run downloads what it needs again.
 
-The compatibility check runs in CI. It reads the built Formulate assemblies and confirms that every Umbraco member they use exists in Umbraco 18 and 19. Code compiled against 17.6 must not use members that Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`, such as `Id` and `Name`. The source compiles against both 17 and 18, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` or an extension method instead.
+The compatibility check runs in CI. It reads the built Formulate assemblies and confirms that every Umbraco member they use exists in Umbraco 18 and 19. Code compiled against 17.8 must not use members that Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`, such as `Id` and `Name`. The source compiles against both 17 and 18, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` or an extension method instead.
 
 CI also compiles the libraries against Umbraco 18.3.2 and 19.0.0-rc1. There, as in every build, using an `[Obsolete]` member is an error, so an API that Umbraco deprecates shows up before a later version removes it. To run the same checks (the second needs the .NET 11 SDK):
 
