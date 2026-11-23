@@ -30,8 +30,9 @@ Website: [www.formulate.rocks](https://www.formulate.rocks/)
 | --- | --- | --- |
 | 5.x | 17.8.2 or later 17.x (LTS), 18, and the 19 release candidate | .NET 10 (Umbraco 17 and 18), .NET 11 (Umbraco 19) |
 
-- The packages say they work with Umbraco `[17.8.2, 20.0.0)`. Formulate is built against 17.8 and checked on 17.8, 18.3 and 19.0.0-rc1.
+- `Umbraco.Community.Formulate` says it works with Umbraco `[17.8.2, 20.0.0)`, so NuGet refuses to install it on an older Umbraco. The packages it brings in are built against Umbraco 17.7.2 and say `[17.7.2, 20.0.0)`, because Umbraco 18.0.0 to 18.3.0 ship an older NPoco than 17.8.2 does. Formulate is checked on 17.8.2, 18.0.0, 18.3.2 and 19.0.0-rc1.
 - Use the latest 17.x release of Umbraco that you can.
+- On Umbraco 18.0.x, the page of a tree's root or folder shows no list and no Create button, since Umbraco added those in 18.1. Use Create in the tree item's menu instead.
 - Formulate 5 does not run on Umbraco 16 or earlier. For Umbraco 8, use Formulate 3.
 - A site with a prerelease of Umbraco 19 needs the .NET 11 SDK. A package built for .NET 10 loads inside a .NET 11 site.
 
@@ -288,7 +289,8 @@ The projects:
 | `Formulate.BackOffice` | The back office API and the back office client (`Client`, built with Vite). |
 | `Formulate.Extensions.PlainJavaScriptTemplate` | The renderer (`Client`, TypeScript) and the Basic theme (Sass). |
 | `Formulate.Extensions.SendEmail`, `SendData`, `StoreData` | The handlers. |
-| `Formulate.CompatibilityCheck` | Checks that the built assemblies only use Umbraco members that exist in Umbraco 18 and 19. |
+| `Formulate.CompatibilityCheck` | Checks that the built assemblies only use Umbraco and NPoco members that exist in an Umbraco version, and that each assembly they reference is there at the referenced version or higher. |
+| `Formulate.CompatibilityCheck.UmbracoSite` | Gathers the assemblies of one Umbraco version, without Formulate, for the compatibility check. It has no code and is not packaged. |
 | `Website` | The dev site. It is not packaged. |
 | `*.Tests` | The .NET tests. |
 
@@ -328,13 +330,21 @@ Set `UMBRACO_SITE_VERSION` (for example `18.3.2`) to run them on another Umbraco
 
 This mode keeps the packages it restores in `src/Website/obj/FormulatePackages`, not in NuGet's own folder. That folder grows by about 0.7 GB for each Umbraco version you run the tests on. You can delete it at any time; the next run downloads what it needs again.
 
-The compatibility check runs in CI. It reads the built Formulate assemblies and confirms that every Umbraco member they use exists in Umbraco 18 and 19. Code compiled against 17.8 must not use members that Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`, such as `Id` and `Name`. The source compiles against both 17 and 18, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` or an extension method instead.
+The compatibility check runs in CI on Umbraco 17.8.2, 18.0.0, 18.3.2 and 19.0.0-rc1. It reads the built Formulate assemblies and confirms that every Umbraco and NPoco member they use exists in that version, and that every assembly they reference, apart from .NET's own, is there at the referenced version or higher. .NET does not load a lower version of an assembly than the one code was built against, which is why the libraries are built against Umbraco 17.7.2. Code compiled against 17 must not use members that Umbraco 18 moved from `IPublishedContent` to `IPublishedElement`, such as `Id` and `Name`. The source compiles against both 17 and 18, but an assembly built against 17 throws `MissingMethodException` on 18 when it runs the call. Use `Key` or an extension method instead. To run the check on one version (Umbraco 19 needs the .NET 11 SDK):
+
+```
+dotnet build src/Formulate/Formulate.csproj -c Release -o artifacts/compat/formulate
+dotnet build src/Formulate.CompatibilityCheck.UmbracoSite -c Release -p:UmbracoSiteVersion=18.0.0 -o artifacts/compat/umbraco-18.0.0
+dotnet run --project src/Formulate.CompatibilityCheck -c Release -- artifacts/compat/umbraco-18.0.0 artifacts/compat/formulate/Formulate*.dll
+```
+
+Check against a folder that holds that Umbraco alone, as above. The dev site's `bin` also holds what Formulate's own packages bring, which can hide an assembly that Umbraco ships at a lower version.
 
 CI also compiles the libraries against Umbraco 18.3.2 and 19.0.0-rc1. There, as in every build, using an `[Obsolete]` member is an error, so an API that Umbraco deprecates shows up before a later version removes it. To run the same checks (the second needs the .NET 11 SDK):
 
 ```
-dotnet build src/Formulate/Formulate.csproj -c Release '-p:UmbracoVersionRange=[18.3.2]' -p:SkipClientBuild=true
-dotnet build src/Formulate/Formulate.csproj -c Release '-p:UmbracoVersionRange=[19.0.0-rc1]' -p:TargetFramework=net11.0 -p:SkipClientBuild=true
+dotnet build src/Formulate/Formulate.csproj -c Release '-p:UmbracoCompileRange=[18.3.2]' -p:SkipClientBuild=true
+dotnet build src/Formulate/Formulate.csproj -c Release '-p:UmbracoCompileRange=[19.0.0-rc1]' -p:TargetFramework=net11.0 -p:SkipClientBuild=true
 ```
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the build, the tests, the compatibility and compile checks, and the browser tests on the packed packages, on every pull request and on every push to `v5/main`.
