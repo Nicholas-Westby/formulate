@@ -29,13 +29,13 @@ export default {
 		noSettings: 'This kind has no settings.',
 		editorNotAvailable: 'The editor for this kind is not available, so its settings cannot be changed here.',
 		errorMessage: 'Error message',
-		mandatoryMessageDescription: 'Shown when the field is left empty.',
+		mandatoryMessageDescription: 'Shown when the field is left empty. `{label}`, `{name}` and `{alias}` in the message are replaced with the field\'s label, name and alias.',
 		clientSideOnly: 'Client side only',
 		clientSideOnlyDescription:
 			'Only the browser checks that the field is filled in. The server accepts the form without it.',
 		regularExpression: 'Regular expression',
 		regularExpressionDescription: 'The pattern a value must match, such as ^\\d{5}$ for a five digit zip code.',
-		regexMessageDescription: 'Shown when the value does not match the pattern.',
+		regexMessageDescription: 'Shown when the value does not match the pattern. `{label}`, `{name}` and `{alias}` in the message are replaced with the field\'s label, name and alias.',
 		regexInvalid: (reason: string) =>
 			`Browsers cannot read this regular expression, so they cannot check values with it: ${reason}`,
 		items: 'Items',

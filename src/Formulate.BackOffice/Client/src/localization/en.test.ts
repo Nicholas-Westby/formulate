@@ -22,6 +22,14 @@ describe('Formulate English terms', () => {
 		expect(notAsWritten).toStrictEqual([]);
 	});
 
+	it('say that the placeholders in a validation message are replaced with the field values, in code', () => {
+		for (const description of [en.formulate.mandatoryMessageDescription, en.formulate.regexMessageDescription]) {
+			expect(description).toContain(
+				"`{label}`, `{name}` and `{alias}` in the message are replaced with the field's label, name and alias.",
+			);
+		}
+	});
+
 	it("say that the whitelist limits the recipient fields' addresses, by the name the server reads it by", () => {
 		// EmailRecipientResolver sends to an address from these fields only when Formulate:Email:Whitelist allows it.
 		const setting = `${SERVER_CONSTANTS.emailSettings.SectionName}:Whitelist`;
