@@ -20,7 +20,7 @@ Here are those steps, explained in detail.
 # Create a Form
 
 1. Open the Formulate section. Under Forms, open the menu of the Forms root and choose Create.
-2. The dialog offers Folder, Form and Form with Basic Layout. Choose Form with Basic Layout. When you save the form, Formulate also makes a layout for it (more on that below). Name the form "Contact Us".
+2. The dialog offers Form with Basic Layout, Form and Folder. Choose Form with Basic Layout. When you save the form, Formulate also makes a layout for it (more on that below). Name the form "Contact Us".
 
 ![The Create dialog with Form with Basic Layout](/images/v5/tutorials/simple-form-create.png)
 
